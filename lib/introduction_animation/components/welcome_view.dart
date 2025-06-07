@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 
 class WelcomeView extends StatelessWidget {
   final AnimationController animationController;
-  const WelcomeView({Key? key, required this.animationController})
-      : super(key: key);
+  const WelcomeView({super.key, required this.animationController});
 
   @override
   Widget build(BuildContext context) {
-    final _firstHalfAnimation =
+    final firstHalfAnimation =
         Tween<Offset>(begin: Offset(1, 0), end: Offset(0, 0)).animate(
       CurvedAnimation(
         parent: animationController,
@@ -18,7 +17,7 @@ class WelcomeView extends StatelessWidget {
         ),
       ),
     );
-    final _secondHalfAnimation =
+    final secondHalfAnimation =
         Tween<Offset>(begin: Offset(0, 0), end: Offset(-1, 0)).animate(
       CurvedAnimation(
         parent: animationController,
@@ -30,7 +29,7 @@ class WelcomeView extends StatelessWidget {
       ),
     );
 
-    final _welcomeFirstHalfAnimation =
+    final welcomeFirstHalfAnimation =
         Tween<Offset>(begin: Offset(2, 0), end: Offset(0, 0))
             .animate(CurvedAnimation(
       parent: animationController,
@@ -41,7 +40,7 @@ class WelcomeView extends StatelessWidget {
       ),
     ));
 
-    final _welcomeImageAnimation =
+    final welcomeImageAnimation =
         Tween<Offset>(begin: Offset(4, 0), end: Offset(0, 0))
             .animate(CurvedAnimation(
       parent: animationController,
@@ -51,19 +50,21 @@ class WelcomeView extends StatelessWidget {
         curve: Curves.fastOutSlowIn,
       ),
     ));
+
+    
     return SlideTransition(
-      position: _firstHalfAnimation,
+      position: firstHalfAnimation,
       child: SlideTransition(
-        position: _secondHalfAnimation,
+        position: secondHalfAnimation,
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 100),
+          padding: const EdgeInsets.only(bottom: 50, top: 26),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SlideTransition(
-                position: _welcomeImageAnimation,
+                position: welcomeImageAnimation,
                 child: Container(
-                  constraints: BoxConstraints(maxWidth: 350, maxHeight: 350),
+                  constraints: BoxConstraints(maxWidth: 300, maxHeight: 300),
                   child: Image.asset(
                     'assets/introduction_animation/welcome.png',
                     fit: BoxFit.contain,
@@ -71,8 +72,10 @@ class WelcomeView extends StatelessWidget {
                 ),
               ),
               SlideTransition(
-                position: _welcomeFirstHalfAnimation,
+                position: welcomeFirstHalfAnimation,
+              
                 child: Text(
+                  
                   "Welcome",
                   style: TextStyle(fontSize: 25.0, fontWeight: FontWeight.bold),
                 ),
@@ -81,10 +84,39 @@ class WelcomeView extends StatelessWidget {
                 padding:
                     EdgeInsets.only(left: 64, right: 64, top: 16, bottom: 16),
                 child: Text(
-                  "Stay organised and live stress-free with you-do app",
+                  "Stay informed and share your story with echo",
                   textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 14.0,
+                  ),
                 ),
               ),
+
+              
+
+              // Padding(
+              //   padding: EdgeInsets.only(
+              //       bottom: MediaQuery.of(context).padding.bottom + 16),
+              //   child: InkWell(
+              //     onTap: () {
+              //       animationController.animateTo(0.8);
+              //     },
+              //     child: Container(
+              //       width: 200,
+              //       height: 50,
+              //       decoration: BoxDecoration(
+              //         color: Color.fromARGB(255, 29, 78, 156),
+              //         borderRadius: BorderRadius.circular(30),
+              //       ),
+              //       child: Center(
+              //         child: Text(
+              //           "Get Started",
+              //           style: TextStyle(color: Colors.white, fontSize: 16),
+              //         ),
+              //       ),
+              //     ),
+              //   ),
+              // ),
             ],
           ),
         ),

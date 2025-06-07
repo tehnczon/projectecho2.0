@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 class CareView extends StatelessWidget {
   final AnimationController animationController;
 
-  const CareView({Key? key, required this.animationController})
-      : super(key: key);
+  const CareView({super.key, required this.animationController});
 
   @override
   Widget build(BuildContext context) {
-    final _firstHalfAnimation =
+    final firstHalfAnimation =
         Tween<Offset>(begin: Offset(1, 0), end: Offset(0, 0))
             .animate(CurvedAnimation(
       parent: animationController,
@@ -18,7 +17,7 @@ class CareView extends StatelessWidget {
         curve: Curves.fastOutSlowIn,
       ),
     ));
-    final _secondHalfAnimation =
+    final secondHalfAnimation =
         Tween<Offset>(begin: Offset(0, 0), end: Offset(-1, 0))
             .animate(CurvedAnimation(
       parent: animationController,
@@ -28,7 +27,7 @@ class CareView extends StatelessWidget {
         curve: Curves.fastOutSlowIn,
       ),
     ));
-    final _relaxFirstHalfAnimation =
+    final relaxFirstHalfAnimation =
         Tween<Offset>(begin: Offset(2, 0), end: Offset(0, 0))
             .animate(CurvedAnimation(
       parent: animationController,
@@ -38,7 +37,7 @@ class CareView extends StatelessWidget {
         curve: Curves.fastOutSlowIn,
       ),
     ));
-    final _relaxSecondHalfAnimation =
+    final relaxSecondHalfAnimation =
         Tween<Offset>(begin: Offset(0, 0), end: Offset(-2, 0))
             .animate(CurvedAnimation(
       parent: animationController,
@@ -49,7 +48,7 @@ class CareView extends StatelessWidget {
       ),
     ));
 
-    final _imageFirstHalfAnimation =
+    final imageFirstHalfAnimation =
         Tween<Offset>(begin: Offset(4, 0), end: Offset(0, 0))
             .animate(CurvedAnimation(
       parent: animationController,
@@ -59,7 +58,7 @@ class CareView extends StatelessWidget {
         curve: Curves.fastOutSlowIn,
       ),
     ));
-    final _imageSecondHalfAnimation =
+    final imageSecondHalfAnimation =
         Tween<Offset>(begin: Offset(0, 0), end: Offset(-4, 0))
             .animate(CurvedAnimation(
       parent: animationController,
@@ -71,18 +70,19 @@ class CareView extends StatelessWidget {
     ));
 
     return SlideTransition(
-      position: _firstHalfAnimation,
+      
+      position: firstHalfAnimation,
       child: SlideTransition(
-        position: _secondHalfAnimation,
+        position: secondHalfAnimation,
         child: Padding(
           padding: const EdgeInsets.only(bottom: 100),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SlideTransition(
-                position: _imageFirstHalfAnimation,
+                position: imageFirstHalfAnimation,
                 child: SlideTransition(
-                  position: _imageSecondHalfAnimation,
+                  position: imageSecondHalfAnimation,
                   child: Container(
                     constraints: BoxConstraints(maxWidth: 350, maxHeight: 250),
                     child: Image.asset(
@@ -93,22 +93,44 @@ class CareView extends StatelessWidget {
                 ),
               ),
               SlideTransition(
-                position: _relaxFirstHalfAnimation,
-                child: SlideTransition(
-                  position: _relaxSecondHalfAnimation,
-                  child: Text(
-                    "Care",
-                    style:
-                        TextStyle(fontSize: 26.0, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              ),
+  position: relaxSecondHalfAnimation,
+  child: SlideTransition(
+    position: relaxFirstHalfAnimation,
+    child: RichText(
+      textAlign: TextAlign.center,
+      text: TextSpan(
+        style: DefaultTextStyle.of(context).style.copyWith(
+          color: Colors.black, // ensure text is visible
+        ),
+        children: [
+          TextSpan(
+            text: "Here, ",
+            style: TextStyle(
+              fontSize: 26.0,
+              fontWeight: FontWeight.bold,
+              color: Color(0xff21B8D3),
+            ),
+          ),
+          TextSpan(
+            text: "You’re Not Alone",
+            style: TextStyle(
+              fontSize: 16.0,
+              color: Color(0xff73B8D5),
+            ),
+          ),
+        ],
+      ),
+    ),
+  ),
+),
+
               Padding(
                 padding:
                     EdgeInsets.only(left: 64, right: 64, bottom: 16, top: 16),
                 child: Text(
-                  "Lorem ipsum dolor sit amet,consectetur adipiscing elit,sed do eiusmod tempor incididunt ut labore",
+                  "Our app provides content without judgment -live confidently, safely, and with dignity. ",
                   textAlign: TextAlign.center,
+                  style: TextStyle(color: Color(0xff2EBCD5)),
                 ),
               ),
             ],

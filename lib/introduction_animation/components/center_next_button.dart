@@ -4,51 +4,55 @@ import 'package:flutter/material.dart';
 class CenterNextButton extends StatelessWidget {
   final AnimationController animationController;
   final VoidCallback onNextClick;
-  const CenterNextButton(
-      {Key? key, required this.animationController, required this.onNextClick})
-      : super(key: key);
+
+  const CenterNextButton({
+    super.key,
+    required this.animationController,
+    required this.onNextClick,
+  });
+
+  
 
   @override
   Widget build(BuildContext context) {
-    final _topMoveAnimation =
-        Tween<Offset>(begin: Offset(0, 5), end: Offset(0, 0))
-            .animate(CurvedAnimation(
-      parent: animationController,
-      curve: Interval(
-        0.0,
-        0.2,
-        curve: Curves.fastOutSlowIn,
+    final topMoveAnimation = Tween<Offset>(
+      begin: Offset(0, 5),
+      end: Offset(0, 0),
+    ).animate(
+      CurvedAnimation(
+        parent: animationController,
+        curve: Interval(0.0, 0.2, curve: Curves.fastOutSlowIn),
       ),
-    ));
-    final _signUpMoveAnimation =
-        Tween<double>(begin: 0, end: 1.0).animate(CurvedAnimation(
-      parent: animationController,
-      curve: Interval(
-        0.6,
-        0.8,
-        curve: Curves.fastOutSlowIn,
+    );
+
+    final signUpMoveAnimation = Tween<double>(
+      begin: 0,
+      end: 1.0,
+    ).animate(
+      CurvedAnimation(
+        parent: animationController,
+        curve: Interval(0.6, 0.8, curve: Curves.fastOutSlowIn),
       ),
-    ));
-    final _loginTextMoveAnimation =
-        Tween<Offset>(begin: Offset(0, 5), end: Offset(0, 0))
-            .animate(CurvedAnimation(
-      parent: animationController,
-      curve: Interval(
-        0.6,
-        0.8,
-        curve: Curves.fastOutSlowIn,
-      ),
-    ));
+    );
+
+    final List<Color> iconColors = [
+      Color(0xffD34156),
+      Color(0xffB38EA5),
+      Color(0xff73B8D5),
+      Color.fromARGB(255, 5, 15, 22),
+      Color(0xff9E1635),
+    ];
 
     return Padding(
-      padding:
-          EdgeInsets.only(bottom: 16 + MediaQuery.of(context).padding.bottom),
+      padding: EdgeInsets.only(
+        bottom: 16 + MediaQuery.of(context).padding.bottom,
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           SlideTransition(
-            position: _topMoveAnimation,
+            position: topMoveAnimation,
             child: AnimatedBuilder(
               animation: animationController,
               builder: (context, child) => AnimatedOpacity(
@@ -62,23 +66,24 @@ class CenterNextButton extends StatelessWidget {
             ),
           ),
           SlideTransition(
-            position: _topMoveAnimation,
+            position: topMoveAnimation,
             child: AnimatedBuilder(
               animation: animationController,
               builder: (context, child) => Padding(
                 padding: EdgeInsets.only(
-                    bottom: 38 - (38 * _signUpMoveAnimation.value)),
+                  bottom: 38 - (38 * signUpMoveAnimation.value),
+                ),
                 child: Container(
                   height: 58,
-                  width: 58 + (200 * _signUpMoveAnimation.value),
+                  width: 58 + (200 * signUpMoveAnimation.value),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(
-                        8 + 32 * (1 - _signUpMoveAnimation.value)),
-                    color: Color(0xff132137),
+                        8 + 32 * (1 - signUpMoveAnimation.value)),
+                    color: _getAnimatedColor(animationController.value),
                   ),
                   child: PageTransitionSwitcher(
                     duration: Duration(milliseconds: 480),
-                    reverse: _signUpMoveAnimation.value < 0.7,
+                    reverse: signUpMoveAnimation.value < 0.7,
                     transitionBuilder: (
                       Widget child,
                       Animation<double> animation,
@@ -86,43 +91,63 @@ class CenterNextButton extends StatelessWidget {
                     ) {
                       return SharedAxisTransition(
                         fillColor: Colors.transparent,
-                        child: child,
                         animation: animation,
                         secondaryAnimation: secondaryAnimation,
                         transitionType: SharedAxisTransitionType.vertical,
+                        child: child,
                       );
                     },
-                    child: _signUpMoveAnimation.value > 0.7
+                    child: signUpMoveAnimation.value > 0.7
                         ? InkWell(
                             key: ValueKey('Sign Up button'),
                             onTap: onNextClick,
+
+                            splashColor: Colors.transparent,
+                            highlightColor: Colors.transparent,
                             child: Padding(
-                              padding: EdgeInsets.only(left: 16.0, right: 16.0),
+                              
+                              padding: EdgeInsets.symmetric(horizontal: 16.0,),
+
+                              
                               child: Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    'Sign Up',
+                                    'Get started',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: _getAnimatedIconColor(
+                                          animationController.value,
+                                          iconColors),
                                       fontSize: 18,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                  Icon(Icons.arrow_forward_rounded,
-                                      color: Colors.white),
+                                  Icon(
+                                    Icons.arrow_forward_rounded,
+                                    color: _getAnimatedIconColor(
+                                        animationController.value, iconColors),
+                                  ),
                                 ],
+                                
                               ),
+                              
                             ),
+                            
                           )
+                          
                         : InkWell(
                             key: ValueKey('next button'),
                             onTap: onNextClick,
+                            splashColor: Colors.transparent,
+                            highlightColor: Colors.transparent,
                             child: Padding(
                               padding: EdgeInsets.all(16.0),
-                              child: Icon(Icons.arrow_forward_ios_rounded,
-                                  color: Colors.white),
+                              child: Icon(
+                                Icons.arrow_forward_ios_rounded,
+                                color: _getAnimatedIconColor(
+                                    animationController.value, iconColors),
+                              ),
                             ),
                           ),
                   ),
@@ -132,29 +157,11 @@ class CenterNextButton extends StatelessWidget {
           ),
           Padding(
             padding: const EdgeInsets.only(top: 8),
-            child: SlideTransition(
-              position: _loginTextMoveAnimation,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'Already have an account? ',
-                    style: TextStyle(
-                      color: Colors.grey,
-                      fontSize: 14,
-                      fontWeight: FontWeight.normal,
-                    ),
-                  ),
-                  Text(
-                    'Login',
-                    style: TextStyle(
-                      color: Color(0xff132137),
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SizedBox(height: 70),
+              ],
             ),
           ),
         ],
@@ -162,18 +169,16 @@ class CenterNextButton extends StatelessWidget {
     );
   }
 
-  Widget _pageView() {
-    int _selectedIndex = 0;
+  int _getPageIndex() {
+    final value = animationController.value;
+    if (value >= 0.75) return 3;
+    if (value >= 0.5) return 2;
+    if (value >= 0.25) return 1;
+    return 0;
+  }
 
-    if (animationController.value >= 0.7) {
-      _selectedIndex = 3;
-    } else if (animationController.value >= 0.5) {
-      _selectedIndex = 2;
-    } else if (animationController.value >= 0.3) {
-      _selectedIndex = 1;
-    } else if (animationController.value >= 0.1) {
-      _selectedIndex = 0;
-    }
+  Widget _pageView() {
+    int selectedIndex = _getPageIndex();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -187,7 +192,7 @@ class CenterNextButton extends StatelessWidget {
                 duration: Duration(milliseconds: 480),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(32),
-                  color: _selectedIndex == i
+                  color: selectedIndex == i
                       ? Color(0xff132137)
                       : Color(0xffE3E4E4),
                 ),
@@ -198,5 +203,49 @@ class CenterNextButton extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _getAnimatedColor(double value) {
+    final colors = [
+      Color(0xffFFB9B3), // Page 0 - soft pink
+      Color(0xffD2C4DD), // Transition - soft lavender-gray
+      Color(0xff96D2EC), // Page 1 - light blue
+      Color(0xff0A7AEF), // Page 2 - strong blue
+      Color(0xffF54971), // Page 3 - red-pink
+    ];
+
+    if (value < 0.25) {
+      return ColorTween(begin: colors[0], end: colors[1])
+          .transform(value / 0.25)!;
+    } else if (value < 0.5) {
+      return ColorTween(begin: colors[1], end: colors[2])
+          .transform((value - 0.25) / 0.25)!;
+    } else if (value < 0.75) {
+      return ColorTween(begin: colors[2], end: colors[3])
+          .transform((value - 0.5) / 0.25)!;
+    } else if (value <= 1.0) {
+      return ColorTween(begin: colors[3], end: colors[4])
+          .transform((value - 0.75) / 0.25)!;
+    } else {
+      return colors[4];
+    }
+  }
+
+  Color _getAnimatedIconColor(double value, List<Color> colors) {
+    if (value < 0.25) {
+      return ColorTween(begin: colors[0], end: colors[1])
+          .transform(value / 0.25)!;
+    } else if (value < 0.5) {
+      return ColorTween(begin: colors[1], end: colors[2])
+          .transform((value - 0.25) / 0.25)!;
+    } else if (value < 0.75) {
+      return ColorTween(begin: colors[2], end: colors[3])
+          .transform((value - 0.5) / 0.25)!;
+    } else if (value <= 1.0) {
+      return ColorTween(begin: colors[3], end: colors[4])
+          .transform((value - 0.75) / 0.25)!;
+    } else {
+      return colors[4];
+    }
   }
 }

@@ -1,22 +1,24 @@
-import 'package:best_flutter_ui_templates/introduction_animation/components/care_view.dart';
-import 'package:best_flutter_ui_templates/introduction_animation/components/center_next_button.dart';
-import 'package:best_flutter_ui_templates/introduction_animation/components/mood_diary_vew.dart';
-import 'package:best_flutter_ui_templates/introduction_animation/components/relax_view.dart';
-import 'package:best_flutter_ui_templates/introduction_animation/components/splash_view.dart';
-import 'package:best_flutter_ui_templates/introduction_animation/components/top_back_skip_view.dart';
-import 'package:best_flutter_ui_templates/introduction_animation/components/welcome_view.dart';
+import 'package:projecho/introduction_animation/components/care_view.dart';
+import 'package:projecho/introduction_animation/components/center_next_button.dart';
+import 'package:projecho/introduction_animation/components/mood_diary_vew.dart';
+import 'package:projecho/introduction_animation/components/relax_view.dart';
+import 'package:projecho/introduction_animation/components/splash_view.dart';
+import 'package:projecho/introduction_animation/components/top_back_skip_view.dart';
+import 'package:projecho/introduction_animation/components/welcome_view.dart';
 import 'package:flutter/material.dart';
+import 'package:projecho/introduction_animation/userlogin/inputnum.dart'; // <-- Update this path if needed
 
-class IntroductionAnimationScreen extends StatefulWidget {
-  const IntroductionAnimationScreen({Key? key}) : super(key: key);
+
+class MyOnboardingScreen extends StatefulWidget {
+  const MyOnboardingScreen({super.key});
 
   @override
-  _IntroductionAnimationScreenState createState() =>
-      _IntroductionAnimationScreenState();
+  _MyOnboardingScreenState createState() =>
+      _MyOnboardingScreenState();
 }
 
-class _IntroductionAnimationScreenState
-    extends State<IntroductionAnimationScreen> with TickerProviderStateMixin {
+class _MyOnboardingScreenState
+    extends State<MyOnboardingScreen> with TickerProviderStateMixin {
   AnimationController? _animationController;
 
   @override
@@ -37,7 +39,7 @@ class _IntroductionAnimationScreenState
   Widget build(BuildContext context) {
     print(_animationController?.value);
     return Scaffold(
-      backgroundColor: Color(0xffF7EBE1),
+      backgroundColor: Color(0xFFEAF1F9),
       body: ClipRect(
         child: Stack(
           children: [
@@ -50,7 +52,7 @@ class _IntroductionAnimationScreenState
             CareView(
               animationController: _animationController!,
             ),
-            MoodDiaryVew(
+            MoodDiaryView(
               animationController: _animationController!,
             ),
             WelcomeView(
@@ -112,6 +114,12 @@ class _IntroductionAnimationScreenState
   }
 
   void _signUpClick() {
-    Navigator.pop(context);
-  }
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (context) => EnterNumberPage(),
+    ),
+  );
+}
+
 }
