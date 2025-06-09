@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:projecho/introduction_animation/user register/birthdate.dart';
 
 class UserTypeScreen extends StatelessWidget {
   const UserTypeScreen({super.key});
@@ -9,7 +10,10 @@ class UserTypeScreen extends StatelessWidget {
   print('Selected: $userType');
   
   // Example: navigate to the BirthdateScreen
-  Navigator.pushNamed(context, '/birthdate'); // This navigates to the BirthdateScreen
+  Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => BirthdateScreen()),
+      ); // This navigates to the BirthdateScreen
 }
 
 
