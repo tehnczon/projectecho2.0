@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:projecho/introduction_animation/user register/auth.dart';
+import 'package:projecho/introduction_animation/user register/region.dart';
 
 class GenderSelectionScreen extends StatelessWidget {
   const GenderSelectionScreen({super.key});
@@ -13,7 +13,12 @@ class GenderSelectionScreen extends StatelessWidget {
     Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => PasswordScreen(),
+          builder: (context) => RegionPicker(
+            onRegionSelected: (region) {
+              // Handle region selection here
+              print('Selected region: $region');
+            },
+          ),
         ),
       ); // Replace with your next screen
   }

@@ -9,7 +9,7 @@ import 'package:projecho/introduction_animation/userlogin/inputnum.dart';
 
 import 'package:projecho/screens/doctorProfile.dart';
 import 'package:projecho/mainPage.dart';
-import 'package:projecho/screens/myAppointments.dart';
+import 'package:projecho/screens/Insights.dart';
 import 'package:projecho/screens/userProfile.dart';
 import 'package:projecho/introduction_animation/user register/gender.dart';
 

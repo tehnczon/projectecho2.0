@@ -19,7 +19,7 @@ class _MyAppointmentsState extends State<MyAppointments> {
           alignment: Alignment.center,
           padding: EdgeInsets.symmetric(vertical: 10),
           child: Text(
-            'My Appointments',
+            'Statistic Insights',
             style: GoogleFonts.lato(
               color: Colors.black,
               fontWeight: FontWeight.bold,

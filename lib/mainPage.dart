@@ -1,6 +1,6 @@
 import 'dart:ui';
 import 'package:projecho/screens/homePage.dart';
-import 'package:projecho/screens/myAppointments.dart';
+import 'package:projecho/screens/Insights.dart';
 import 'package:projecho/screens/userProfile.dart';
 import 'package:projecho/screens/doctorsList.dart';
 import 'package:flutter/material.dart';
@@ -80,8 +80,8 @@ class _MainPageState extends State<MainPage> {
                     text: 'Search',
                   ),
                   GButton(
-                    icon: _selectedIndex == 2 ? Icons.event_note : Icons.event_note_outlined,
-                    text: 'Schedule',
+                    icon: _selectedIndex == 2 ? Icons.insert_chart : Icons.insert_chart_outlined,
+                    text: 'Insights',
                   ),
                   GButton(
                     icon: _selectedIndex == 3 ? Icons.person : Icons.person_outline,

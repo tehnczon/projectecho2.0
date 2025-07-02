@@ -1,11 +1,11 @@
-import 'dart:ui';
-import 'package:flutter/painting.dart';
-import 'package:projecho/model/cardModel.dart';
-import 'package:projecho/carouselSlider.dart';
-// import 'package:projecho/screens/exploreList.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/painting.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
+import 'package:projecho/model/cardModel.dart';
+import 'package:projecho/carouselSlider.dart';
+import 'package:projecho/screens/profilingform.dart';
+import 'package:projecho/model/cardcontent/center.dart'; // <-- Import CenterScreen here
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,19 +24,20 @@ class _HomePageState extends State<HomePage> {
     super.dispose();
   }
 
+  String _getGreetingMessage() {
+    final hour = DateTime.now().hour;
+    if (hour >= 5 && hour < 12) {
+      return 'Good Morning';
+    } else if (hour >= 12 && hour <= 17) {
+      return 'Good Afternoon';
+    } else {
+      return 'Good Evening';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    String message;
-    DateTime now = DateTime.now();
-    int hour = now.hour;
-
-    if (hour >= 5 && hour < 12) {
-      message = 'Good Morning';
-    } else if (hour >= 12 && hour <= 17) {
-      message = 'Good Afternoon';
-    } else {
-      message = 'Good Evening';
-    }
+    final message = _getGreetingMessage();
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -47,7 +48,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.white,
         elevation: 0,
         title: Container(
-          padding: EdgeInsets.only(top: 5),
+          padding: const EdgeInsets.only(top: 5),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -62,34 +63,33 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
               ),
-              SizedBox(width: 55),
+              const SizedBox(width: 55),
               IconButton(
                 splashRadius: 20,
-                icon: Icon(Icons.notifications_active),
+                icon: const Icon(Icons.notifications_active),
                 onPressed: () {},
               ),
             ],
           ),
         ),
-        iconTheme: IconThemeData(color: Colors.black),
+        iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: SafeArea(
         child: NotificationListener<OverscrollIndicatorNotification>(
-          onNotification: (OverscrollIndicatorNotification overscroll) {
-  overscroll.disallowIndicator();
-  return true;
-},
-
+          onNotification: (overscroll) {
+            overscroll.disallowIndicator();
+            return true;
+          },
           child: ListView(
-            physics: ClampingScrollPhysics(),
+            physics: const ClampingScrollPhysics(),
             shrinkWrap: true,
             children: <Widget>[
               Column(
                 children: [
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
                   Container(
                     alignment: Alignment.centerLeft,
-                    padding: EdgeInsets.only(left: 20, bottom: 10),
+                    padding: const EdgeInsets.only(left: 20, bottom: 10),
                     child: Text(
                       "Hello User",
                       style: GoogleFonts.lato(
@@ -98,61 +98,34 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
-                  Container(
-                    alignment: Alignment.centerLeft,
-                    padding: EdgeInsets.only(left: 20, bottom: 25),
-                    child: Text(
-                      "Let's Find Your\nDoctor",
-                      style: GoogleFonts.lato(
-                        fontSize: 35,
-                        fontWeight: FontWeight.bold,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 20, right: 12, bottom: 25),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          height: 60,
+                          width: 60,
+                        ),
                       ),
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.fromLTRB(20, 0, 20, 25),
-                    child: TextFormField(
-                      textInputAction: TextInputAction.search,
-                      controller: _doctorName,
-                      decoration: InputDecoration(
-                        contentPadding: EdgeInsets.only(left: 20, top: 10, bottom: 10),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(15.0)),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: Colors.grey[200],
-                        hintText: 'Search doctor',
-                        hintStyle: GoogleFonts.lato(
-                          color: Colors.black26,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w800,
-                        ),
-                        suffixIcon: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.blue[900]?.withValues(alpha: 0.9),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: IconButton(
-                            iconSize: 20,
-                            splashRadius: 20,
-                            color: Colors.white,
-                            icon: Icon(AntDesign.search1),
-                            onPressed: () {},
+                      Expanded(
+                        child: Container(
+                          alignment: Alignment.centerLeft,
+                          padding: const EdgeInsets.only(bottom: 25),
+                          child: Text(
+                            "Your Health\nHub",
+                            style: GoogleFonts.lato(
+                              fontSize: 35,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                       ),
-                      style: GoogleFonts.lato(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                      ),
-                      onFieldSubmitted: (String value) {
-                        // No backend search
-                      },
-                    ),
+                    ],
                   ),
                   Container(
-                    padding: EdgeInsets.only(left: 23, bottom: 10),
+                    padding: const EdgeInsets.only(left: 23, bottom: 10),
                     alignment: Alignment.centerLeft,
                     child: Text(
                       "We care for you",
@@ -168,10 +141,10 @@ class _HomePageState extends State<HomePage> {
                     child: Carouselslider(),
                   ),
                   Container(
-                    padding: EdgeInsets.only(left: 20),
+                    padding: const EdgeInsets.only(left: 20),
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "Specialists",
+                      "For you",
                       style: GoogleFonts.lato(
                         color: Colors.blue[800],
                         fontWeight: FontWeight.bold,
@@ -181,15 +154,15 @@ class _HomePageState extends State<HomePage> {
                   ),
                   Container(
                     height: 150,
-                    padding: EdgeInsets.only(top: 14),
+                    padding: const EdgeInsets.only(top: 14),
                     child: ListView.builder(
-                      physics: ClampingScrollPhysics(),
+                      physics: const ClampingScrollPhysics(),
                       scrollDirection: Axis.horizontal,
-                      padding: EdgeInsets.symmetric(horizontal: 20.0),
+                      padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       itemCount: cards.length,
                       itemBuilder: (context, index) {
                         return Container(
-                          margin: EdgeInsets.only(right: 14),
+                          margin: const EdgeInsets.only(right: 14),
                           height: 150,
                           width: 140,
                           decoration: BoxDecoration(
@@ -200,12 +173,27 @@ class _HomePageState extends State<HomePage> {
                                 color: Colors.grey[400]!,
                                 blurRadius: 4.0,
                                 spreadRadius: 0.0,
-                                offset: Offset(3, 3),
+                                offset: const Offset(3, 3),
                               ),
                             ],
                           ),
                           child: TextButton(
                             onPressed: () {
+                              if (cards[index].doctor == "find near center") {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const CenterScreen()),
+                                );
+                                } else if (cards[index].doctor == "profiling") {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const PLHIVProfilingForm()), // or whatever your class is named
+    );
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Clicked: ${cards[index].doctor}')),
+                                );
+                              }
                             },
                             style: TextButton.styleFrom(
                               backgroundColor: Color(cards[index].cardBackground),
@@ -216,7 +204,7 @@ class _HomePageState extends State<HomePage> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                SizedBox(height: 16),
+                                const SizedBox(height: 16),
                                 CircleAvatar(
                                   backgroundColor: Colors.white,
                                   radius: 29,
@@ -226,7 +214,7 @@ class _HomePageState extends State<HomePage> {
                                     color: Color(cards[index].cardBackground),
                                   ),
                                 ),
-                                SizedBox(height: 10),
+                                const SizedBox(height: 10),
                                 Text(
                                   cards[index].doctor,
                                   style: GoogleFonts.lato(
@@ -242,9 +230,9 @@ class _HomePageState extends State<HomePage> {
                       },
                     ),
                   ),
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
                   Container(
-                    padding: EdgeInsets.only(left: 20),
+                    padding: const EdgeInsets.only(left: 20),
                     alignment: Alignment.centerLeft,
                     child: Text(
                       "Top Rated",
@@ -255,9 +243,9 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 15),
+                    padding: const EdgeInsets.symmetric(horizontal: 15),
                     height: 100,
                     alignment: Alignment.center,
                     child: Text(
@@ -268,7 +256,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                 ],
               ),
             ],

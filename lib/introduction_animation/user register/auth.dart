@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:projecho/introduction_animation/user register/welcome.dart';
 
 class PasswordScreen extends StatefulWidget {
-  const PasswordScreen({super.key});
+  final String selectedRegion;
+
+  const PasswordScreen({super.key, required this.selectedRegion});
 
   @override
   State<PasswordScreen> createState() => _PasswordScreenState();
@@ -47,6 +49,8 @@ class _PasswordScreenState extends State<PasswordScreen> {
       _showSnackBar('Password must be at least 8 characters and include an uppercase letter, a number, and a symbol');
     } else {
       debugPrint('Password set successfully: $password');
+      debugPrint('Selected Region: ${widget.selectedRegion}');
+
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
           transitionDuration: const Duration(milliseconds: 600),
@@ -61,17 +65,29 @@ class _PasswordScreenState extends State<PasswordScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Create Password'),
-        backgroundColor: Colors.lightBlueAccent,
-      ),
-      body: Padding(
+Widget build(BuildContext context) {
+  return Scaffold(
+    resizeToAvoidBottomInset: true,
+    appBar: AppBar(
+      title: const Text('Create Password'),
+      backgroundColor: Colors.lightBlueAccent,
+    ),
+    body: SafeArea(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              "Selected Region:",
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[700]),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.selectedRegion,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
             const Text(
               "Create a password",
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
@@ -84,13 +100,9 @@ class _PasswordScreenState extends State<PasswordScreen> {
                 hintText: "Password",
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 suffixIcon: IconButton(
-                  icon: Icon(
-                    _showPassword ? Icons.visibility : Icons.visibility_off,
-                  ),
+                  icon: Icon(_showPassword ? Icons.visibility : Icons.visibility_off),
                   onPressed: () {
-                    setState(() {
-                      _showPassword = !_showPassword;
-                    });
+                    setState(() => _showPassword = !_showPassword);
                   },
                 ),
               ),
@@ -103,13 +115,9 @@ class _PasswordScreenState extends State<PasswordScreen> {
                 hintText: "Confirm Password",
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 suffixIcon: IconButton(
-                  icon: Icon(
-                    _showConfirmPassword ? Icons.visibility : Icons.visibility_off,
-                  ),
+                  icon: Icon(_showConfirmPassword ? Icons.visibility : Icons.visibility_off),
                   onPressed: () {
-                    setState(() {
-                      _showConfirmPassword = !_showConfirmPassword;
-                    });
+                    setState(() => _showConfirmPassword = !_showConfirmPassword);
                   },
                 ),
               ),
@@ -132,9 +140,12 @@ class _PasswordScreenState extends State<PasswordScreen> {
                 ),
               ),
             ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 }

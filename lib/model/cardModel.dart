@@ -11,9 +11,9 @@ class CardModel {
 }
 
 List<CardModel> cards = [
-  CardModel("Cardiologist", 0xFFec407a, AntDesign.heart),
-  CardModel("Dentist", 0xFF5c6bc0, MaterialCommunityIcons.tooth),
-  CardModel("Eye Specialist", 0xFFfbc02d, TablerIcons.eye),
-  CardModel("Orthopaedic", 0xFF1565C0, Icons.wheelchair_pickup_sharp),
-  CardModel("Paediatrician", 0xFF2E7D32, FontAwesome5Solid.baby),
+  CardModel("find near center", 0xFFec407a, AntDesign.enviroment),
+  CardModel("volunteers", 0xFF5c6bc0, MaterialCommunityIcons.hand_heart),
+  CardModel("profiling", 0xFF00bcd4, TablerIcons.user_search),
+  // CardModel("Orthopaedic", 0xFF1565C0, Icons.wheelchair_pickup_sharp),
+  // CardModel("Paediatrician", 0xFF2E7D32, FontAwesome5Solid.baby),
 ];

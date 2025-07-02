@@ -1,8 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
-import 'package:projecho/mainPage.dart';
 import 'package:projecho/introduction_animation/user register/enteruname.dart';
+import 'package:projecho/introduction_animation/userlogin/inputpassword.dart';
+
 
 class OTPScreen extends StatefulWidget {
   final String phoneNumber;
@@ -51,7 +52,7 @@ class _OTPScreenState extends State<OTPScreen> {
     if (widget.phoneNumber == '+639070230398') {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => MainPage()),
+        MaterialPageRoute(builder: (context) => PasswordInput()),
       );
     } else {
       Navigator.pushReplacement(
