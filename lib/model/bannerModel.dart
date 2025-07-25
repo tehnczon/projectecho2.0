@@ -1,26 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:projecho/screens/doctorProfile.dart'; // Replace with your actual destination
+import 'package:projecho/screens/article_screen.dart'; // Replace with your actual destination
 
 class BannerModel {
   String text;
   List<Color> cardBackground;
   String image;
+  Widget destination;
 
-  BannerModel(this.text, this.cardBackground, this.image);
+  BannerModel(this.text, this.cardBackground, this.image, this.destination);
 }
 
 List<BannerModel> bannerCards = [
   BannerModel(
-      "wellness",
-      [
-        Color(0xffa1d4ed),
-        Color(0xffc0eaff),
-      ],
-      "assets/414-bg.png"),
+    "wellness",
+    [Color.fromARGB(255, 255, 215, 129), Color.fromARGB(255, 245, 198, 161)],
+    "assets/wellness_bg.png",
+    DoctorProfile(doctor: "Dr. John Doe"), // ✅ Sample doctor name
+  ),
   BannerModel(
-      "articles",
-      [
-        Color(0xffb6d4fa),
-        Color(0xffcfe3fc),
-      ],
-      "assets/19834-bg.png"),
+    "articles",
+    [Color.fromARGB(255, 241, 172, 207), Color.fromARGB(255, 252, 207, 232)],
+    "assets/article.png",
+    ArticleScreen(), // ✅ No issue here
+  ),
 ];
+

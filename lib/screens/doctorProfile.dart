@@ -6,8 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 class DoctorProfile extends StatefulWidget {
   final String doctor;
 
-  const DoctorProfile({super.key, required this.doctor});
-  @override
+  const DoctorProfile({required this.doctor, super.key});  @override
   _DoctorProfileState createState() => _DoctorProfileState();
 }
 

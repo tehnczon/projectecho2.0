@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/painting.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:projecho/model/cardModel.dart';
 import 'package:projecho/carouselSlider.dart';
 import 'package:projecho/screens/profilingform.dart';
-import 'package:projecho/model/cardcontent/center.dart'; // <-- Import CenterScreen here
+import 'package:projecho/model/cardcontent/center.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,13 +15,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-  final TextEditingController _doctorName = TextEditingController();
 
-  @override
-  void dispose() {
-    _doctorName.dispose();
-    super.dispose();
-  }
+  
 
   String _getGreetingMessage() {
     final hour = DateTime.now().hour;
@@ -86,42 +80,42 @@ class _HomePageState extends State<HomePage> {
             children: <Widget>[
               Column(
                 children: [
-                  const SizedBox(height: 30),
-                  Container(
-                    alignment: Alignment.centerLeft,
-                    padding: const EdgeInsets.only(left: 20, bottom: 10),
-                    child: Text(
-                      "Hello User",
-                      style: GoogleFonts.lato(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
+                  const SizedBox(height: 40),
+                  // Container(
+                  //   alignment: Alignment.centerLeft,
+                  //   padding: const EdgeInsets.only(left: 20, bottom: 10),
+                  //   child: Text(
+                  //     "Hello User",
+                  //     style: GoogleFonts.lato(
+                  //       fontSize: 18,
+                  //       fontWeight: FontWeight.w500,
+                  //     ),
+                  //   ),
+                  // ),
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Padding(
-                        padding: const EdgeInsets.only(left: 20, right: 12, bottom: 25),
+                        padding: const EdgeInsets.only(left: 20, right: 12),
                         child: Image.asset(
-                          'assets/images/logo.png',
-                          height: 60,
-                          width: 60,
+                          'assets/projecho.png',
+                          height: 110,
+                          width: 200,
                         ),
                       ),
-                      Expanded(
-                        child: Container(
-                          alignment: Alignment.centerLeft,
-                          padding: const EdgeInsets.only(bottom: 25),
-                          child: Text(
-                            "Your Health\nHub",
-                            style: GoogleFonts.lato(
-                              fontSize: 35,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
+                      // Expanded(
+                      //   child: Container(
+                      //     alignment: Alignment.centerLeft,
+                      //     padding: const EdgeInsets.only(bottom: 25),
+                      //     child: Text(
+                      //       "Your Health\nHub",
+                      //       style: GoogleFonts.lato(
+                      //         fontSize: 35,
+                      //         fontWeight: FontWeight.bold,
+                      //       ),
+                      //     ),
+                      //   ),
+                      // ),
                     ],
                   ),
                   Container(
@@ -168,14 +162,6 @@ class _HomePageState extends State<HomePage> {
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(20),
                             color: Color(cards[index].cardBackground),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.grey[400]!,
-                                blurRadius: 4.0,
-                                spreadRadius: 0.0,
-                                offset: const Offset(3, 3),
-                              ),
-                            ],
                           ),
                           child: TextButton(
                             onPressed: () {
@@ -184,11 +170,11 @@ class _HomePageState extends State<HomePage> {
                                   context,
                                   MaterialPageRoute(builder: (context) => const CenterScreen()),
                                 );
-                                } else if (cards[index].doctor == "profiling") {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const PLHIVProfilingForm()), // or whatever your class is named
-    );
+                              } else if (cards[index].doctor == "profiling") {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (context) => const PLHIVProfilingForm()),
+                                );
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Clicked: ${cards[index].doctor}')),
@@ -230,12 +216,13 @@ class _HomePageState extends State<HomePage> {
                       },
                     ),
                   ),
+
                   const SizedBox(height: 30),
                   Container(
                     padding: const EdgeInsets.only(left: 20),
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      "Top Rated",
+                      "Recommended",
                       style: GoogleFonts.lato(
                         color: Colors.blue[800],
                         fontWeight: FontWeight.bold,
@@ -256,7 +243,10 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+
+                  const SizedBox(height: 10),
+                 
+                  const SizedBox(height: 30),
                 ],
               ),
             ],
