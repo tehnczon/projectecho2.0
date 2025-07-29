@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projecho/login/signup/location.dart';
-import 'package:projecho/model/registration_data.dart'; 
+import 'package:projecho/model/registration_data.dart';
 
 class UICScreen extends StatefulWidget {
   final RegistrationData registrationData;
@@ -42,7 +42,11 @@ class _UICScreenState extends State<UICScreen> with TickerProviderStateMixin {
       context: context,
       initialDate: initial,
       firstDate: DateTime(1950),
-      lastDate: DateTime(DateTime.now().year - 13, DateTime.now().month, DateTime.now().day), // age limit
+      lastDate: DateTime(
+        DateTime.now().year - 13,
+        DateTime.now().month,
+        DateTime.now().day,
+      ), // age limit
     );
     if (picked != null) {
       setState(() => _selectedDate = picked);
@@ -54,7 +58,10 @@ class _UICScreenState extends State<UICScreen> with TickerProviderStateMixin {
     String father = _fatherController.text.trim();
     String birthOrderStr = _birthOrderController.text.trim();
 
-    if (mother.isEmpty || father.isEmpty || birthOrderStr.isEmpty || _selectedDate == null) {
+    if (mother.isEmpty ||
+        father.isEmpty ||
+        birthOrderStr.isEmpty ||
+        _selectedDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please complete all fields.")),
       );
@@ -63,19 +70,29 @@ class _UICScreenState extends State<UICScreen> with TickerProviderStateMixin {
 
     // Age verification
     final now = DateTime.now();
-    final age = now.year - _selectedDate!.year - ((now.month < _selectedDate!.month || (now.month == _selectedDate!.month && now.day < _selectedDate!.day)) ? 1 : 0);
+    final age =
+        now.year -
+        _selectedDate!.year -
+        ((now.month < _selectedDate!.month ||
+                (now.month == _selectedDate!.month &&
+                    now.day < _selectedDate!.day))
+            ? 1
+            : 0);
     if (age < 13) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("You must be at least 13 years old to continue.")),
+        const SnackBar(
+          content: Text("You must be at least 13 years old to continue."),
+        ),
       );
       return;
     }
 
     // Birth Order fallback
     int? birthOrder = int.tryParse(birthOrderStr);
-    String birthOrderCode = (birthOrder == null || birthOrder <= 0)
-        ? "99"
-        : birthOrder.toString().padLeft(2, '0');
+    String birthOrderCode =
+        (birthOrder == null || birthOrder <= 0)
+            ? "99"
+            : birthOrder.toString().padLeft(2, '0');
 
     // Initial fallback helper
     String extractInitials(String name) {
@@ -90,21 +107,28 @@ class _UICScreenState extends State<UICScreen> with TickerProviderStateMixin {
     }
 
     // Generate parent codes
-    String motherCode = mother.length >= 2 ? mother.substring(0, 2).toUpperCase() : extractInitials(mother);
-    String fatherCode = father.length >= 2 ? father.substring(0, 2).toUpperCase() : extractInitials(father);
+    String motherCode =
+        mother.length >= 2
+            ? mother.substring(0, 2).toUpperCase()
+            : extractInitials(mother);
+    String fatherCode =
+        father.length >= 2
+            ? father.substring(0, 2).toUpperCase()
+            : extractInitials(father);
 
     // Birthdate code
-    String birthDateCode = _selectedDate != null
-        ? "${_selectedDate!.month.toString().padLeft(2, '0')}${_selectedDate!.day.toString().padLeft(2, '0')}${_selectedDate!.year}"
-        : "99999999";
+    String birthDateCode =
+        _selectedDate != null
+            ? "${_selectedDate!.month.toString().padLeft(2, '0')}${_selectedDate!.day.toString().padLeft(2, '0')}${_selectedDate!.year}"
+            : "99999999";
 
     // Final UIC
     String uicCode = "$motherCode$fatherCode$birthOrderCode$birthDateCode";
 
     // Save to registration data
-    widget.registrationData.motherFirstName = mother;
-    widget.registrationData.fatherFirstName = father;
-    widget.registrationData.birthOrder = birthOrder ?? 99;
+    // widget.registrationData.motherFirstName = mother;
+    // widget.registrationData.fatherFirstName = father;
+    // widget.registrationData.birthOrder = birthOrder ?? 99;
     widget.registrationData.birthDate = _selectedDate;
     widget.registrationData.generatedUIC = uicCode;
 
@@ -112,7 +136,8 @@ class _UICScreenState extends State<UICScreen> with TickerProviderStateMixin {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => LocationScreen(registrationData: widget.registrationData),
+        builder:
+            (_) => LocationScreen(registrationData: widget.registrationData),
       ),
     );
   }
@@ -144,29 +169,44 @@ class _UICScreenState extends State<UICScreen> with TickerProviderStateMixin {
                   Text(
                     "This will help us keep your records secure and make your future visits smoother.\n"
                     "Your UIC is confidential and used only for your privacy and protection.",
-                    style: TextStyle(fontSize: 14, color: Colors.grey, fontStyle: FontStyle.italic),
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 16),
             _buildTextField("Mother's First Name", _motherController),
-            
+
             const SizedBox(height: 12),
             _buildTextField("Father's First Name", _fatherController),
-                        const SizedBox(height: 4),
+            const SizedBox(height: 4),
 
             const Text(
               "This information is used only to generate your UIC and will not be stored.",
-              style: TextStyle(fontSize: 10, color: Colors.grey, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
             ),
             const SizedBox(height: 18),
-            _buildTextField("Birth Order (e.g. 1, 2, 3)", _birthOrderController,
-                keyboardType: TextInputType.number),
+            _buildTextField(
+              "Birth Order (e.g. 1, 2, 3)",
+              _birthOrderController,
+              keyboardType: TextInputType.number,
+            ),
             const SizedBox(height: 4),
             const Text(
               "If unknown, enter 99. This field is used only for UIC generation.",
-              style: TextStyle(fontSize: 10, color: Colors.grey, fontStyle: FontStyle.italic),
+              style: TextStyle(
+                fontSize: 10,
+                color: Colors.grey,
+                fontStyle: FontStyle.italic,
+              ),
             ),
             const SizedBox(height: 8),
             Container(height: 1, color: Colors.grey.shade400),
@@ -176,7 +216,9 @@ class _UICScreenState extends State<UICScreen> with TickerProviderStateMixin {
               child: InputDecorator(
                 decoration: InputDecoration(
                   labelText: "Birthdate",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: Text(
                   _selectedDate == null
@@ -201,28 +243,40 @@ class _UICScreenState extends State<UICScreen> with TickerProviderStateMixin {
                 onPressed: _handleNext,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.lightBlueAccent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                 ),
                 child: const Text(
                   "Next",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
                 ),
               ),
-            )
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTextField(String label, TextEditingController controller,
-      {TextInputType keyboardType = TextInputType.text}) {
+  Widget _buildTextField(
+    String label,
+    TextEditingController controller, {
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return TextField(
       controller: controller,
       keyboardType: keyboardType,
       decoration: InputDecoration(
         labelText: label,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:projecho/model/registration_data.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:projecho/plhiv form/profilingOnbrding_2.dart';
+import 'package:projecho/plhiv_form/mainplhivform.dart';
 
 class ProfOnboard1Screen extends StatefulWidget {
   final RegistrationData registrationData;
@@ -24,7 +24,8 @@ class _ProfOnboard1ScreenState extends State<ProfOnboard1Screen> {
         MaterialPageRoute(
           builder:
               (_) =>
-                  ProfOnboard2Screen(registrationData: widget.registrationData),
+                  PLHIVStepperScreen(registrationData: widget.registrationData),
+          //
         ),
       );
     }

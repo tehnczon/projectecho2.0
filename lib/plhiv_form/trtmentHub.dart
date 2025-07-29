@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/model/registration_data.dart';
-import 'package:projecho/plhiv%20form/profilingOnbrding_1.dart';
+import 'package:projecho/plhiv_form/profilingOnbrding_1.dart';
 // import 'package:projecho/next_screen.dart'; // TODO: Replace with actual next screen
 
 class TreatmentHubScreen extends StatefulWidget {

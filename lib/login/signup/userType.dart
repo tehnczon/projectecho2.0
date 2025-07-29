@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/model/registration_data.dart';
-import 'package:projecho/plhiv%20form/yeardiag.dart';
+import 'package:projecho/plhiv_form/yeardiag.dart';
 import 'package:projecho/login/signup/wlcmPrjecho.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserTypeScreen extends StatefulWidget {
   final RegistrationData registrationData;
@@ -14,29 +15,44 @@ class UserTypeScreen extends StatefulWidget {
 }
 
 class _UserTypeScreenState extends State<UserTypeScreen> {
-  void _handleSelection(String selectedUserType) {
+  void _handleSelection(String selectedUserType) async {
     setState(() {
       widget.registrationData.userType = selectedUserType;
     });
 
-    Future.delayed(200.ms, () {
-      if (selectedUserType == 'PLHIV') {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>  YearDiagPage(registrationData: widget.registrationData),
-          ),
-        );
-      } else {
+    await Future.delayed(200.ms);
+
+    if (selectedUserType == 'PLHIV') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => YearDiagPage(registrationData: widget.registrationData),
+        ),
+      );
+    } else {
+      // Save data for Info Seeker to Firestore
+      try {
+        await FirebaseFirestore.instance
+            .collection('researchers') // You can rename this if needed
+            .doc(widget.registrationData.phoneNumber) // or use .add() if no ID
+            .set(widget.registrationData.toJson());
+
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(
-            builder: (_) => const WelcomeScreen(),
-          ),
+          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
           (route) => false,
         );
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Profile saved successfully.")),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Error saving profile: $e")));
       }
-    });
+    }
   }
 
   @override
@@ -58,9 +74,9 @@ class _UserTypeScreenState extends State<UserTypeScreen> {
             children: [
               // Title
               const Text(
-                "Let's get to know you! Please select your role:",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              )
+                    "Let's get to know you! Please select your role:",
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  )
                   .animate()
                   .fade(duration: 500.ms)
                   .slideY(begin: 0.3)
@@ -88,36 +104,42 @@ class _UserTypeScreenState extends State<UserTypeScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 16),
                   child: SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: () => _handleSelection(type),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.lightBlueAccent,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Flexible(
-                            child: Text(
-                              type == 'PLHIV'
-                                  ? "Person Living with HIV (PLHIV)"
-                                  : "Health Information Seeker",
-                              style: const TextStyle(
-                                color: Colors.white,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          onPressed: () => _handleSelection(type),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.lightBlueAccent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
                             ),
                           ),
-                          const Icon(Icons.arrow_forward_ios,
-                              size: 16, color: Colors.white),
-                        ],
-                      ),
-                    ),
-                  ).animate(delay: (300 + index * 150).ms).fadeIn().slideY(begin: 0.2),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  type == 'PLHIV'
+                                      ? "Person Living with HIV (PLHIV)"
+                                      : "Health Information Seeker",
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.arrow_forward_ios,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      .animate(delay: (300 + index * 150).ms)
+                      .fadeIn()
+                      .slideY(begin: 0.2),
                 );
               }),
 

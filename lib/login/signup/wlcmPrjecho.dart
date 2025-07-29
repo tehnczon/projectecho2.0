@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class WelcomeScreen extends StatefulWidget {
-   const WelcomeScreen({super.key});
+  const WelcomeScreen({super.key});
 
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
@@ -17,18 +17,17 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   @override
   @override
-void initState() {
-  super.initState();
-  _controller = AnimationController(
-    vsync: this,
-    duration: const Duration(milliseconds: 400),
-  );
-  _fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(_controller);
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _fadeAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(_controller);
 
-  // Auto-navigate after 3 seconds
-  Future.delayed(const Duration(seconds: 2), _navigate);
-}
-
+    // Auto-navigate after 3 seconds
+    Future.delayed(const Duration(seconds: 2), _navigate);
+  }
 
   void _navigate() async {
     if (_isNavigating) return;

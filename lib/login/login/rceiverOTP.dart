@@ -1,15 +1,19 @@
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:projecho/login/signup/terms_and_condition.dart';
-import 'package:projecho/model/registration_data.dart'; 
-
+import 'package:projecho/model/registration_data.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phoneNumber;
   final String verificationId;
 
-  const OTPScreen({super.key, required this.phoneNumber, required this.verificationId});
+  const OTPScreen({
+    super.key,
+    required this.phoneNumber,
+    required this.verificationId,
+  });
 
   @override
   _OTPScreenState createState() => _OTPScreenState();
@@ -20,50 +24,63 @@ class _OTPScreenState extends State<OTPScreen> {
   bool _isLoading = false;
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
-void _verifyOTP() async {
-  if (currentOTP.length != 6) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Please enter a valid 6-digit OTP')),
-    );
-    return;
-  }
-
-  setState(() {
-    _isLoading = true;
-  });
-
-  try {
-    final credential = PhoneAuthProvider.credential(
-      verificationId: widget.verificationId,
-      smsCode: currentOTP,
-    );
-    await _auth.signInWithCredential(credential);
-
-    setState(() {
-      _isLoading = false;
-    });
-
-    final registrationData = RegistrationData(phoneNumber: widget.phoneNumber);
-
-    // Navigate to username step after successful verification
-    Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => TermsAndConditionsPage(registrationData: registrationData),
-        ),
+  void _verifyOTP() async {
+    if (currentOTP.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter a valid 6-digit OTP')),
       );
-  } on FirebaseAuthException catch (e) {
+      return;
+    }
+
     setState(() {
-      _isLoading = false;
+      _isLoading = true;
     });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Error verifying OTP: ${e.message}')),
-    );
+
+    try {
+      final credential = PhoneAuthProvider.credential(
+        verificationId: widget.verificationId,
+        smsCode: currentOTP,
+      );
+      await _auth.signInWithCredential(credential);
+
+      final firestore = FirebaseFirestore.instance;
+      final String phone = widget.phoneNumber;
+
+      // 🔍 Check both collections
+      final plhivDoc =
+          await firestore.collection('plhiv_profiles').doc(phone).get();
+      final researcherDoc =
+          await firestore.collection('researchers').doc(phone).get();
+
+      setState(() {
+        _isLoading = false;
+      });
+
+      if (plhivDoc.exists || researcherDoc.exists) {
+        // ✅ Already registered → Go to Home or Dashboard
+        Navigator.pushReplacementNamed(context, '/home');
+      } else {
+        // 🆕 New user → Go to Terms & Conditions
+        final registrationData = RegistrationData(phoneNumber: phone);
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder:
+                (context) =>
+                    TermsAndConditionsPage(registrationData: registrationData),
+          ),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error verifying OTP: ${e.message}')),
+      );
+    }
   }
-}
-
- 
-
 
   @override
   Widget build(BuildContext context) {
@@ -124,21 +141,28 @@ void _verifyOTP() async {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   backgroundColor: Colors.lightBlueAccent,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+                child:
+                    _isLoading
+                        ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                        : const Text(
+                          'Verify',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                      )
-                    : const Text(
-                        'Verify',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                      ),
               ),
             ),
             const SizedBox(height: 16),

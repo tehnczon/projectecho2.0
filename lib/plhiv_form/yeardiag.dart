@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/model/registration_data.dart';
-import 'package:projecho/plhiv%20form/confirmatorycode.dart';
-
+import 'package:projecho/plhiv_form/confirmatorycode.dart';
 
 class YearDiagPage extends StatefulWidget {
   final RegistrationData registrationData;
 
   const YearDiagPage({super.key, required this.registrationData});
-
 
   @override
   State<YearDiagPage> createState() => _YearDiagPageState();
@@ -23,22 +21,24 @@ class _YearDiagPageState extends State<YearDiagPage> {
   }
 
   void _onSubmit() {
-  if (selectedYear != null) {
-    widget.registrationData.yearDiagnosed = selectedYear;
+    if (selectedYear != null) {
+      widget.registrationData.yearDiagnosed = selectedYear;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ConfirmatoryCodeScreen(registrationData: widget.registrationData),
-      ),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Please select your year of diagnosis")),
-    );
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (_) => ConfirmatoryCodeScreen(
+                registrationData: widget.registrationData,
+              ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select your year of diagnosis")),
+      );
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -84,28 +84,33 @@ class _YearDiagPageState extends State<YearDiagPage> {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: ElevatedButton(
-                      onPressed: () {
-                        setState(() {
-                          selectedYear = year;
-                        });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            isSelected ? Colors.blueAccent : Colors.grey[200],
-                        foregroundColor:
-                            isSelected ? Colors.white : Colors.black87,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Text(
-                          "$year",
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ),
-                    ).animate(delay: (100 * index).ms).fade(duration: 400.ms).slideY(begin: 0.1),
+                          onPressed: () {
+                            setState(() {
+                              selectedYear = year;
+                            });
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                isSelected
+                                    ? Colors.blueAccent
+                                    : Colors.grey[200],
+                            foregroundColor:
+                                isSelected ? Colors.white : Colors.black87,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            child: Text(
+                              "$year",
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+                        )
+                        .animate(delay: (100 * index).ms)
+                        .fade(duration: 400.ms)
+                        .slideY(begin: 0.1),
                   );
                 },
               ),
@@ -124,7 +129,10 @@ class _YearDiagPageState extends State<YearDiagPage> {
                     borderRadius: BorderRadius.circular(24),
                   ),
                 ),
-                child: const Text("Continue", style: TextStyle(color: Colors.white)),
+                child: const Text(
+                  "Continue",
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
             ).animate().fade().slideY(begin: 0.1),
 
