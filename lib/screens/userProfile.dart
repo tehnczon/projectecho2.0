@@ -77,24 +77,22 @@ class _UserProfileState extends State<UserProfile> {
       final bool isDeviceSupported = await auth.isDeviceSupported();
 
       if (!canCheckBiometrics || !isDeviceSupported) {
-        // Fallback to showing a dialog if biometrics not available
-        _showPinDialog();
-        return;
-      }
-
-      final List<BiometricType> availableBiometrics =
-          await auth.getAvailableBiometrics();
-
-      if (availableBiometrics.isEmpty) {
-        _showPinDialog();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Device security not available. Please enable screen lock in your device settings.',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
         return;
       }
 
       final bool authenticated = await auth.authenticate(
-        localizedReason: 'Authenticate to view sensitive information',
+        localizedReason: 'Authenticate to view sensitive health information',
         options: const AuthenticationOptions(
           stickyAuth: true,
-          biometricOnly: false,
+          biometricOnly: false, // This allows PIN/Pattern/Password as fallback
         ),
       );
 
