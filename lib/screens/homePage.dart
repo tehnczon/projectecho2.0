@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:projecho/model/cardModel.dart';
 import 'package:projecho/carouselSlider.dart';
 import 'package:projecho/screens/profilingform.dart';
-import 'package:projecho/model/cardcontent/center.dart';
+import 'package:projecho/screens/map/nearest_sites_map.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,8 +15,6 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
-  
 
   String _getGreetingMessage() {
     final hour = DateTime.now().hour;
@@ -168,21 +166,32 @@ class _HomePageState extends State<HomePage> {
                               if (cards[index].doctor == "find near center") {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (context) => const CenterScreen()),
+                                  MaterialPageRoute(
+                                    builder: (context) => MapScreen(),
+                                  ),
                                 );
                               } else if (cards[index].doctor == "profiling") {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(builder: (context) => const PLHIVProfilingForm()),
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => const PLHIVProfilingForm(),
+                                  ),
                                 );
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Clicked: ${cards[index].doctor}')),
+                                  SnackBar(
+                                    content: Text(
+                                      'Clicked: ${cards[index].doctor}',
+                                    ),
+                                  ),
                                 );
                               }
                             },
                             style: TextButton.styleFrom(
-                              backgroundColor: Color(cards[index].cardBackground),
+                              backgroundColor: Color(
+                                cards[index].cardBackground,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(20),
                               ),
@@ -237,15 +246,12 @@ class _HomePageState extends State<HomePage> {
                     alignment: Alignment.center,
                     child: Text(
                       "No data available.",
-                      style: GoogleFonts.lato(
-                        color: Colors.grey,
-                        fontSize: 16,
-                      ),
+                      style: GoogleFonts.lato(color: Colors.grey, fontSize: 16),
                     ),
                   ),
 
                   const SizedBox(height: 10),
-                 
+
                   const SizedBox(height: 30),
                 ],
               ),
