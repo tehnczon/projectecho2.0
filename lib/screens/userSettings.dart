@@ -1,68 +1,91 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-// import 'package:health_and_doctor_appointment/firestore-data/userDetails.dart';
+import 'package:local_auth/local_auth.dart';
 
-class UserSettings extends StatefulWidget {
-  const UserSettings({super.key});
+class BiometricAuthPage extends StatefulWidget {
+  const BiometricAuthPage({super.key});
 
   @override
-  _UserSettingsState createState() => _UserSettingsState();
+  State<BiometricAuthPage> createState() => _BiometricAuthPageState();
 }
 
-class _UserSettingsState extends State<UserSettings> {
+class _BiometricAuthPageState extends State<BiometricAuthPage> {
+  final LocalAuthentication auth = LocalAuthentication();
+  bool canCheckBiometrics = false;
+  bool isDeviceSupported = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkBiometricSupport();
+  }
+
+  Future<void> _checkBiometricSupport() async {
+    final bool canCheck = await auth.canCheckBiometrics;
+    final bool isSupported = await auth.isDeviceSupported();
+
+    setState(() {
+      canCheckBiometrics = canCheck;
+      isDeviceSupported = isSupported;
+    });
+
+    debugPrint('canCheckBiometrics: $canCheck');
+    debugPrint('isDeviceSupported: $isSupported');
+  }
+
+  Future<void> _authenticate() async {
+    try {
+      if (!canCheckBiometrics || !isDeviceSupported) {
+        _showError('Biometric authentication not available.');
+        return;
+      }
+
+      final bool authenticated = await auth.authenticate(
+        localizedReason: 'Authenticate using Face ID',
+        options: const AuthenticationOptions(
+          biometricOnly: true,
+          stickyAuth: true,
+        ),
+      );
+
+      if (authenticated) {
+        if (!mounted) return;
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AuthSuccessPage()),
+        );
+      } else {
+        _showError('Authentication failed.');
+      }
+    } catch (e) {
+      _showError('Error: $e');
+    }
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        elevation: 2,
-        backgroundColor: Colors.white,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 10),
-          child: IconButton(
-            splashRadius: 25,
-            icon: Icon(
-              Icons.arrow_back_ios,
-              color: Colors.indigo,
-            ),
-            onPressed: () => Navigator.of(context).pop(),
-          ),
+      appBar: AppBar(title: const Text('Face ID Login')),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: _authenticate,
+          child: const Text('Authenticate with Face ID'),
         ),
-        title: Text(
-          'User Settings',
-          style: GoogleFonts.lato(
-              color: Colors.indigo, fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-      ),
-      body: Column(
-        children: [
-          // UserDetails(),
-          Container(
-            margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-            padding: EdgeInsets.symmetric(horizontal: 14),
-            height: MediaQuery.of(context).size.height / 14,
-            width: MediaQuery.of(context).size.width,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              color: Colors.blueGrey[50],
-            ),
-            child: TextButton(
-              onPressed: () {
-                Navigator.of(context).pushNamedAndRemoveUntil(
-                    '/login', (Route<dynamic> route) => false);
-              },
-              // style: TextButton.styleFrom(primary: Colors.grey),
-              child: Text(
-                'Sign out',
-                style: GoogleFonts.lato(
-                  color: Colors.black,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
+  }
+}
+
+class AuthSuccessPage extends StatelessWidget {
+  const AuthSuccessPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(body: Center(child: Text('✅ Authenticated!')));
   }
 }

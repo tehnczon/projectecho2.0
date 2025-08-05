@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:flutter_vector_icons/flutter_vector_icons.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:projecho/screens/userSettings.dart';
 import 'package:projecho/login/login/inputNum.dart';
@@ -113,7 +112,7 @@ class _UserProfileState extends State<UserProfile> {
     }
   }
 
-  void _showPinDialog() {
+  void showPinDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -223,7 +222,7 @@ class _UserProfileState extends State<UserProfile> {
                     Navigator.pop(context);
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const UserSettings()),
+                      MaterialPageRoute(builder: (_) => BiometricAuthPage()),
                     );
                   },
                 ),
@@ -751,7 +750,7 @@ class _UserProfileState extends State<UserProfile> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const UserSettings()),
+                        MaterialPageRoute(builder: (_) => BiometricAuthPage()),
                       );
                     },
                   ),
