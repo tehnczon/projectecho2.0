@@ -3,6 +3,318 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
 
+/* Removed duplicate MapScreen class definition to resolve duplicate class error. */
+
+// OperatingHours class
+class OperatingHours {
+  final Map<String, TimeRange?> schedule;
+
+  OperatingHours({required this.schedule});
+
+  bool isOpenNow() {
+    final now = DateTime.now();
+    final dayName = _getDayName(now.weekday);
+    final timeRange = schedule[dayName];
+
+    if (timeRange == null) return false;
+
+    final currentTime = TimeOfDay.fromDateTime(now);
+    return timeRange.isTimeInRange(currentTime);
+  }
+
+  String getCurrentStatus() {
+    if (isOpenNow()) {
+      final now = DateTime.now();
+      final dayName = _getDayName(now.weekday);
+      final timeRange = schedule[dayName]!;
+      final closingTime = _formatTimeOfDay(timeRange.end);
+      return 'Open • Closes at $closingTime';
+    } else {
+      return getNextOpenTime();
+    }
+  }
+
+  String getNextOpenTime() {
+    final now = DateTime.now();
+
+    // Check rest of today
+    final todayName = _getDayName(now.weekday);
+    final todayRange = schedule[todayName];
+    if (todayRange != null) {
+      final currentTime = TimeOfDay.fromDateTime(now);
+      if (currentTime.hour < todayRange.start.hour ||
+          (currentTime.hour == todayRange.start.hour &&
+              currentTime.minute < todayRange.start.minute)) {
+        return 'Closed • Opens at ${_formatTimeOfDay(todayRange.start)}';
+      }
+    }
+
+    // Check next 7 days
+    for (int i = 1; i <= 7; i++) {
+      final nextDay = now.add(Duration(days: i));
+      final dayName = _getDayName(nextDay.weekday);
+      final timeRange = schedule[dayName];
+
+      if (timeRange != null) {
+        if (i == 1) {
+          return 'Closed • Opens tomorrow at ${_formatTimeOfDay(timeRange.start)}';
+        } else {
+          return 'Closed • Opens $dayName at ${_formatTimeOfDay(timeRange.start)}';
+        }
+      }
+    }
+
+    return 'Closed';
+  }
+
+  String _getDayName(int weekday) {
+    switch (weekday) {
+      case 1:
+        return 'Monday';
+      case 2:
+        return 'Tuesday';
+      case 3:
+        return 'Wednesday';
+      case 4:
+        return 'Thursday';
+      case 5:
+        return 'Friday';
+      case 6:
+        return 'Saturday';
+      case 7:
+        return 'Sunday';
+      default:
+        return '';
+    }
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    final hour = time.hourOfPeriod;
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+    final hourStr = hour == 0 ? '12' : hour.toString();
+    final minuteStr = time.minute.toString().padLeft(2, '0');
+    return '$hourStr:$minuteStr $period';
+  }
+}
+
+// TimeRange class
+class TimeRange {
+  final TimeOfDay start;
+  final TimeOfDay end;
+
+  TimeRange({required this.start, required this.end});
+
+  bool isTimeInRange(TimeOfDay time) {
+    final timeMinutes = time.hour * 60 + time.minute;
+    final startMinutes = start.hour * 60 + start.minute;
+    final endMinutes = end.hour * 60 + end.minute;
+
+    return timeMinutes >= startMinutes && timeMinutes < endMinutes;
+  }
+}
+
+// OperatingHoursWidget
+class OperatingHoursWidget extends StatelessWidget {
+  final OperatingHours operatingHours;
+
+  const OperatingHoursWidget({Key? key, required this.operatingHours})
+    : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final isOpen = operatingHours.isOpenNow();
+    final status = operatingHours.getCurrentStatus();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Current status
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color:
+                isOpen
+                    ? Colors.green.withOpacity(0.1)
+                    : Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: isOpen ? Colors.green : Colors.red,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.access_time,
+                size: 16,
+                color: isOpen ? Colors.green : Colors.red,
+              ),
+              SizedBox(width: 8),
+              Text(
+                status,
+                style: TextStyle(
+                  color: isOpen ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: 12),
+
+        // Weekly schedule
+        InkWell(
+          onTap: () => _showFullSchedule(context),
+          child: Row(
+            children: [
+              Text(
+                'View full schedule',
+                style: TextStyle(
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios, size: 12, color: Colors.blue),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showFullSchedule(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        final now = DateTime.now();
+        final currentDay = _getDayName(now.weekday);
+
+        return Container(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Operating Hours',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              SizedBox(height: 16),
+              ...[
+                'Monday',
+                'Tuesday',
+                'Wednesday',
+                'Thursday',
+                'Friday',
+                'Saturday',
+                'Sunday',
+              ].map((day) {
+                final timeRange = operatingHours.schedule[day];
+                final isToday = day == currentDay;
+
+                return Container(
+                  padding: EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isToday ? Colors.blue.withOpacity(0.1) : null,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          if (isToday) ...[
+                            Container(
+                              width: 4,
+                              height: 20,
+                              color: Colors.blue,
+                              margin: EdgeInsets.only(right: 8),
+                            ),
+                          ],
+                          Text(
+                            day,
+                            style: TextStyle(
+                              fontWeight:
+                                  isToday ? FontWeight.bold : FontWeight.normal,
+                              color: isToday ? Colors.blue : Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        timeRange != null
+                            ? '${_formatTimeOfDay(timeRange.start)} - ${_formatTimeOfDay(timeRange.end)}'
+                            : 'Closed',
+                        style: TextStyle(
+                          color: timeRange != null ? Colors.black : Colors.red,
+                          fontWeight:
+                              isToday ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  String _getDayName(int weekday) {
+    switch (weekday) {
+      case 1:
+        return 'Monday';
+      case 2:
+        return 'Tuesday';
+      case 3:
+        return 'Wednesday';
+      case 4:
+        return 'Thursday';
+      case 5:
+        return 'Friday';
+      case 6:
+        return 'Saturday';
+      case 7:
+        return 'Sunday';
+      default:
+        return '';
+    }
+  }
+
+  String _formatTimeOfDay(TimeOfDay time) {
+    final hour = time.hourOfPeriod;
+    final period = time.period == DayPeriod.am ? 'AM' : 'PM';
+    final hourStr = hour == 0 ? '12' : hour.toString();
+    final minuteStr = time.minute.toString().padLeft(2, '0');
+    return '$hourStr:$minuteStr $period';
+  }
+}
+
+// Service type class
+class ServiceType {
+  final String label;
+  final Color color;
+  final IconData icon;
+
+  ServiceType(this.label, this.color, this.icon);
+}
+
+// Main MapScreen widget
 class MapScreen extends StatefulWidget {
   @override
   _MapScreenState createState() => _MapScreenState();
@@ -22,365 +334,404 @@ class _MapScreenState extends State<MapScreen> {
   bool showPrepSites = true;
   bool showTestingSites = true;
   bool showLaboratory = true;
+  bool showMultiService = true;
 
   // Davao City center coordinates
   final LatLng centerLocation = LatLng(7.0731, 125.6128);
 
-  // Updated HIV centers data with more accurate coordinates
+  // Service type definitions
+  final Map<String, ServiceType> serviceTypes = {
+    'treatment': ServiceType(
+      'HIV Treatment Hub',
+      Colors.green,
+      Icons.local_hospital,
+    ),
+    'prep': ServiceType('HIV PrEP Site', Colors.blue, Icons.shield),
+    'testing': ServiceType('HIVST Site', Colors.red, Icons.biotech),
+    'laboratory': ServiceType('RHIVDA Site', Colors.orange, Icons.science),
+  };
+
+  // Multi-service centers data based on Excel file
   final List<Map<String, dynamic>> allCenters = [
-    // HIV TREATMENT HUBS (Green markers with location pin icon)
+    // MULTI-SERVICE CENTERS
     {
-      'id': 'drmc_redstar_treatment',
-      'name': 'Davao Regional Medical Center (DRMC-REDSTAR)',
-      'type': 'HIV TREATMENT HUBS',
-      'position': LatLng(7.421515540973429, 125.8278497274706),
-      'color': Colors.green,
-      'category': 'treatment',
-      'hours': 'Open 24 hours',
-      'phone': '+63-82-227-2731',
-      'address': 'Tagum City, Davao del Norte',
+      'id': 'rhwc_davao',
+      'name': 'Reproductive Health & Wellness Center Davao (RHWC Davao)',
+      'position': LatLng(7.068752634153147, 125.61663351395941),
+      'category': 'multi',
+      'services': ['treatment', 'prep', 'testing', 'laboratory'],
+      'operatingHours': OperatingHours(
+        schedule: {
+          'Monday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Tuesday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Wednesday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Thursday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Friday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Saturday': null, // Closed
+          'Sunday': null, // Closed
+        },
+      ),
+      'phone': '(082) 222 4187',
+      'address':
+          '3J98+GM2, Emilio Jacinto St, Poblacion District, Davao City, Davao del Sur',
       'description':
-          'Regional medical center providing comprehensive HIV treatment services',
-      'services': ['HIV Treatment', 'ARV Therapy', 'Counseling', 'Laboratory'],
+          'Comprehensive HIV center offering all services: Treatment Hub, PrEP, Testing, and Laboratory',
+      'serviceDetails': {
+        'treatment': [
+          'HIV Treatment',
+          'ARV Therapy',
+          'Counseling',
+          'Case Management',
+        ],
+        'prep': [
+          'Pre-exposure prophylaxis',
+          'Risk Assessment',
+          'PrEP Monitoring',
+        ],
+        'testing': [
+          'HIV Testing',
+          'Self-Test Kits',
+          'Rapid Testing',
+          'Confirmatory Testing',
+        ],
+        'laboratory': [
+          'CD4 Count',
+          'Viral Load Testing',
+          'Drug Resistance Testing',
+        ],
+      },
       'photos': [
-        'https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=DRMC+Main+Building',
-        'https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=Treatment+Ward',
-        'https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=Laboratory',
+        'https://www.davaocity.gov.ph/wp-content/uploads/2022/12/viber_image_2022-12-06_08-17-03-004-scaled.jpg',
+        'https://streetviewpixels-pa.googleapis.com/v1/thumbnail?output=thumbnail&cb_client=maps_sv.tactile.gps&panoid=aMeveCJ3Es-JJeTMNVoMqw&w=1177&h=580&thumb=2&yaw=244.38109&pitch=0',
       ],
     },
     {
-      'id': 'reproductive_health_wellness',
-      'name': 'Reproductive Health & Wellness Center Davao',
-      'type': 'HIV TREATMENT HUBS',
-      'position': LatLng(
-        7.068761605356898,
-        125.61663268661627,
-      ), // Adjusted for better spacing
-      'color': Colors.green,
-      'category': 'treatment',
+      'id': 'drmc_redstar',
+      'name': 'Davao Regional Medical Center (DRMC-REDSTAR)',
+      'position': LatLng(7.421615617505603, 125.82785338552642),
+      'category': 'multi',
+      'services': ['treatment', 'prep', 'testing'],
+      'operatingHours': OperatingHours(
+        schedule: {
+          'Monday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Tuesday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Wednesday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Thursday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Friday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Saturday': null, // Closed
+          'Sunday': null, // Closed
+        },
+      ),
+      'phone': '0991 145 8211',
+      'address':
+          '2nd Floor, Davao Regional Medical Center, OPD Building, Tagum, Davao del Norte',
+      'description':
+          'Regional medical center with Treatment Hub, PrEP, and Testing services',
+      'serviceDetails': {
+        'treatment': [
+          'HIV Treatment',
+          'ARV Therapy',
+          'Emergency Care',
+          'Inpatient Services',
+        ],
+        'prep': ['Pre-exposure prophylaxis', 'Risk Counseling'],
+        'testing': ['HIV Testing', 'Rapid Testing', '24/7 Emergency Testing'],
+      },
+      'photos': [
+        'https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=-TgvBB7ILylaIVoahbmVng&cb_client=maps_sv.tactile.gps&w=203&h=100&yaw=117.57874&pitch=0&thumbfov=100',
+      ],
+    },
+    {
+      'id': 'olympus_community',
+      'name': 'Olympus Community Center',
+      'position': LatLng(7.076543, 125.609876),
+      'category': 'multi',
+      'services': ['prep', 'testing'],
+      'hours': 'Daily 9AM-6PM',
+      'phone': '+63-82-305-6789',
+      'address': 'Downtown Davao City',
+      'description':
+          'Community-based center offering PrEP and HIV Testing services',
+      'serviceDetails': {
+        'prep': ['PrEP Services', 'Community Support', 'LGBTQ+ Friendly'],
+        'testing': ['HIV Testing', 'Anonymous Testing', 'Community Outreach'],
+      },
+      'photos': [],
+    },
+    {
+      'id': 'mati_city_health',
+      'name': 'Mati City Health Office',
+      'position': LatLng(6.955789, 126.216734),
+      'category': 'multi',
+      'services': ['prep', 'testing'],
       'hours': 'Mon-Fri 8AM-5PM',
-      'phone': '+63-82-300-1234',
-      'address': 'Davao City',
-      'description': 'Specialized reproductive health and wellness services',
-      'services': ['HIV Treatment', 'Reproductive Health', 'STI Treatment'],
-      'photos': [
-        'https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=Wellness+Center',
-        'https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=Consultation+Room',
-      ],
+      'phone': '+63-87-388-1234',
+      'address': 'Mati City, Davao Oriental',
+      'description': 'City health office with PrEP and HIV Testing services',
+      'serviceDetails': {
+        'prep': ['PrEP Services', 'Public Health Programs'],
+        'testing': ['HIV Testing', 'Health Screening'],
+      },
+      'photos': [],
     },
     {
-      'id': 'spmc_hact_treatment',
+      'id': 'fpop_davao',
+      'name': 'FPOP Davao (Davao City & Davao Oriental)',
+      'position': LatLng(7.088901, 125.627345),
+      'category': 'multi',
+      'services': ['prep', 'testing'],
+      'hours': 'Mon-Sat 9AM-6PM',
+      'phone': '+63-82-297-1234',
+      'address': 'Matina, Davao City',
+      'description':
+          'Family Planning Organization offering PrEP and Testing services',
+      'serviceDetails': {
+        'prep': ['PrEP Services', 'Family Planning Integration'],
+        'testing': ['HIV Testing', 'Reproductive Health Services'],
+      },
+      'photos': [],
+    },
+
+    // SINGLE SERVICE CENTERS - Treatment Hubs Only
+    {
+      'id': 'spmc_hact',
       'name': 'Southern Philippines Medical Center (SPMC-HACT)',
-      'type': 'HIV TREATMENT HUBS',
-      'position': LatLng(
-        7.0983965060891325,
-        125.61984174431115,
-      ), // SPMC actual location in Bajada
-      'color': Colors.green,
-      'category': 'treatment',
+      'position': LatLng(7.126956, 125.646439),
+      'category': 'single',
+      'services': ['treatment'],
       'hours': 'Open 24 hours',
       'phone': '+63-82-221-8000',
       'address': 'J.P. Laurel Ave, Bajada, Davao City',
       'description':
           'Major medical center with HIV/AIDS Care and Treatment program',
-      'services': [
-        'HIV/AIDS Treatment',
-        'HACT Program',
-        'Emergency Care',
-        'Laboratory',
-      ],
-      'photos': [
-        'https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=SPMC+Hospital',
-        'https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=HACT+Department',
-        'https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=Emergency+Room',
-        'https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=Pharmacy',
-      ],
+      'serviceDetails': {
+        'treatment': [
+          'HIV/AIDS Treatment',
+          'HACT Program',
+          'Emergency Care',
+          'Inpatient Services',
+        ],
+      },
+      'photos': [],
     },
     {
-      'id': 'davao_doctors_hospital',
+      'id': 'ddh_artu',
       'name': 'Davao Doctors Hospital (DDH-ARTU)',
-      'type': 'HIV TREATMENT HUBS',
-      'position': LatLng(
-        7.070318293540201,
-        125.60471615948111,
-      ), // E. Quirino Ave location
-      'color': Colors.green,
-      'category': 'treatment',
+      'position': LatLng(7.081234, 125.613456),
+      'category': 'single',
+      'services': ['treatment'],
       'hours': 'Open 24 hours',
       'phone': '+63-82-222-8000',
       'address': 'E. Quirino Ave, Davao City',
       'description': 'Private hospital with Anti-Retroviral Treatment Unit',
-      'services': ['ARV Treatment', 'Private Healthcare', 'Laboratory'],
-      'photos': [
-        'https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=DDH+Building',
-        'https://via.placeholder.com/300x200/4CAF50/FFFFFF?text=ARTU+Ward',
-      ],
+      'serviceDetails': {
+        'treatment': [
+          'ARV Treatment',
+          'Private Healthcare',
+          'Specialized Care',
+        ],
+      },
+      'photos': [],
     },
 
-    // HIV PREP SITES (Blue dots)
-    // {
-    //   'id': 'bhwc_davao_prep',
-    //   'name': 'RHWC Davao',
-    //   'type': 'HIV PREP SITES',
-    //   'position': LatLng(7.072345, 125.612789), // Slightly offset from center
-    //   'color': Colors.blue,
-    //   'category': 'prep',
-    //   'hours': 'Mon-Fri 8AM-5PM',
-    //   'phone': '+63-82-298-7000',
-    //   'address': 'Davao City',
-    //   'description':
-    //       'Behavioral Health and Wellness Center offering PrEP services',
-    //   'services': ['PrEP', 'Counseling', 'Risk Assessment'],
-    //   'photos': [
-    //     'https://via.placeholder.com/300x200/2196F3/FFFFFF?text=BHWC+Clinic',
-    //     'https://via.placeholder.com/300x200/2196F3/FFFFFF?text=Counseling+Room',
-    //     'https://via.placeholder.com/300x200/2196F3/FFFFFF?text=Waiting+Area',
-    //   ],
-    // },
+    // SINGLE SERVICE CENTERS - PrEP Sites Only
     {
-      'id': 'drmc_redstar_prep',
-      'name': 'DRMC-REDSTAR PrEP',
-      'type': 'HIV PREP SITES',
-      'position': LatLng(7.421515540973429, 125.8278497274706),
-      'color': Colors.blue,
-      'category': 'prep',
-      'hours': 'Open 24 hours',
-      'phone': '+63-82-227-2731',
-      'address': 'Tagum City, Davao del Norte',
-      'description':
-          'Pre-exposure prophylaxis services at regional medical center',
-      'services': ['PrEP', 'HIV Prevention', 'Counseling'],
-    },
-    {
-      'id': 'olympus_community_prep',
-      'name': 'Olympus Community Center',
-      'type': 'HIV PREP SITES',
-      'position': LatLng(7.076543, 125.609876), // Downtown area
-      'color': Colors.blue,
-      'category': 'prep',
-      'hours': 'Daily 9AM-6PM',
-      'phone': '+63-82-305-6789',
-      'address': 'Downtown Davao City',
-      'description': 'Community-based HIV prevention and PrEP services',
-      'services': ['PrEP', 'Community Support', 'LGBTQ+ Services'],
-    },
-    {
-      'id': 'digos_social_hygiene',
+      'id': 'digos_hygiene',
       'name': 'Digos Social Hygiene Clinic',
-      'type': 'HIV PREP SITES',
-      'position': LatLng(6.748901, 125.357234), // Digos City coordinates
-      'color': Colors.blue,
-      'category': 'prep',
+      'position': LatLng(6.748901, 125.357234),
+      'category': 'single',
+      'services': ['prep'],
       'hours': 'Mon-Fri 8AM-5PM',
       'phone': '+63-82-553-1234',
       'address': 'Digos City, Davao del Sur',
-      'description': 'Social hygiene and HIV prevention services in Digos',
-      'services': ['PrEP', 'STI Prevention', 'Health Education'],
+      'description': 'Social hygiene clinic offering PrEP services',
+      'serviceDetails': {
+        'prep': ['PrEP Services', 'STI Prevention', 'Health Education'],
+      },
+      'photos': [],
     },
     {
-      'id': 'sta_cruz_rural',
+      'id': 'sta_cruz_rhu',
       'name': 'Sta. Cruz Rural Health Unit',
-      'type': 'HIV PREP SITES',
-      'position': LatLng(6.879012, 125.408567), // Sta. Cruz, Davao del Sur
-      'color': Colors.blue,
-      'category': 'prep',
+      'position': LatLng(6.879012, 125.408567),
+      'category': 'single',
+      'services': ['prep'],
       'hours': 'Mon-Fri 8AM-5PM',
       'phone': '+63-82-540-5678',
       'address': 'Sta. Cruz, Davao del Sur',
-      'description': 'Rural health unit providing HIV prevention services',
-      'services': ['PrEP', 'Primary Healthcare', 'Community Outreach'],
+      'description': 'Rural health unit with PrEP services',
+      'serviceDetails': {
+        'prep': ['PrEP Services', 'Primary Healthcare', 'Community Programs'],
+      },
+      'photos': [],
     },
     {
-      'id': 'mati_city_health_prep',
-      'name': 'Mati City Health Office',
-      'type': 'HIV PREP SITES',
-      'position': LatLng(6.955789, 126.216734), // Mati City coordinates
-      'color': Colors.blue,
-      'category': 'prep',
-      'hours': 'Mon-Fri 8AM-5PM',
-      'phone': '+63-87-388-1234',
-      'address': 'Mati City, Davao Oriental',
-      'description': 'City health office with HIV prevention programs',
-      'services': ['PrEP', 'Public Health Services', 'HIV Education'],
-    },
-    {
-      'id': 'malita_rural',
+      'id': 'malita_rhu',
       'name': 'Malita Rural Health Unit',
-      'type': 'HIV PREP SITES',
-      'position': LatLng(6.405234, 125.611789), // Malita, Davao Occidental
-      'color': Colors.blue,
-      'category': 'prep',
+      'position': LatLng(6.405234, 125.611789),
+      'category': 'single',
+      'services': ['prep'],
       'hours': 'Mon-Fri 8AM-5PM',
       'phone': '+63-82-517-8901',
       'address': 'Malita, Davao Occidental',
-      'description': 'Rural health services including HIV prevention',
-      'services': ['PrEP', 'Rural Healthcare', 'Community Programs'],
+      'description': 'Rural health unit offering PrEP services',
+      'serviceDetails': {
+        'prep': ['PrEP Services', 'Rural Healthcare'],
+      },
+      'photos': [],
     },
     {
-      'id': 'panabo_social',
+      'id': 'rhwc_tagum',
+      'name': 'RHWC Tagum',
+      'position': LatLng(7.448456, 125.807789),
+      'category': 'single',
+      'services': ['prep'],
+      'hours': 'Mon-Fri 8AM-5PM',
+      'phone': '+63-84-655-1234',
+      'address': 'Tagum City, Davao del Norte',
+      'description': 'Reproductive health center with PrEP services',
+      'serviceDetails': {
+        'prep': ['PrEP Services', 'Reproductive Health'],
+      },
+      'photos': [],
+    },
+    {
+      'id': 'panabo_hygiene',
       'name': 'Panabo Social Hygiene & Wellness Center',
-      'type': 'HIV PREP SITES',
-      'position': LatLng(7.308456, 125.684123), // Panabo City coordinates
-      'color': Colors.blue,
-      'category': 'prep',
+      'position': LatLng(7.308456, 125.684123),
+      'category': 'single',
+      'services': ['prep'],
       'hours': 'Mon-Fri 8AM-5PM',
       'phone': '+63-84-823-4567',
       'address': 'Panabo City, Davao del Norte',
-      'description': 'Social hygiene and wellness services in Panabo',
-      'services': ['PrEP', 'STI Services', 'Wellness Programs'],
-    },
-    {
-      'id': 'fpop_davao_prep',
-      'name': 'FPOP Davao (Davao City & DavOr)',
-      'type': 'HIV PREP SITES',
-      'position': LatLng(7.088901, 125.627345), // Matina area
-      'color': Colors.blue,
-      'category': 'prep',
-      'hours': 'Mon-Sat 9AM-6PM',
-      'phone': '+63-82-297-1234',
-      'address': 'Matina, Davao City',
-      'description': 'Family Planning Organization of the Philippines - Davao',
-      'services': ['PrEP', 'Family Planning', 'Reproductive Health'],
+      'description': 'Social hygiene center offering PrEP services',
+      'serviceDetails': {
+        'prep': ['PrEP Services', 'STI Services', 'Wellness Programs'],
+      },
+      'photos': [],
     },
 
-    // HIVST SITES (Red dots)
+    // SINGLE SERVICE CENTERS - Testing Sites Only
     {
-      'id': 'bhwc_davao_hivst',
-      'name': 'BHWC Davao Testing',
-      'type': 'HIVST SITES',
-      'position': LatLng(
-        7.073456,
-        125.613901,
-      ), // Slightly different from PrEP site
-      'color': Colors.red,
-      'category': 'testing',
-      'hours': 'Mon-Fri 8AM-5PM',
-      'phone': '+63-82-298-7000',
-      'address': 'Davao City',
-      'description': 'HIV self-testing services and counseling',
-      'services': ['HIV Testing', 'Self-Test Kits', 'Counseling'],
-    },
-    {
-      'id': 'drmc_redstar_hivst',
-      'name': 'DRMC-REDSTAR Testing',
-      'type': 'HIVST SITES',
-      'position': LatLng(7.069789, 125.617678), // Near treatment center
-      'color': Colors.red,
-      'category': 'testing',
-      'hours': 'Open 24 hours',
-      'phone': '+63-82-227-2731',
-      'address': 'Tagum City, Davao del Norte',
-      'description': 'HIV self-testing kits and support services',
-      'services': ['HIV Testing', 'Rapid Testing', '24/7 Services'],
-    },
-    {
-      'id': 'olympus_community_hivst',
-      'name': 'Olympus Community Testing',
-      'type': 'HIVST SITES',
-      'position': LatLng(7.077098, 125.610431), // Near PrEP site
-      'color': Colors.red,
-      'category': 'testing',
-      'hours': 'Daily 9AM-6PM',
-      'phone': '+63-82-305-6789',
-      'address': 'Downtown Davao City',
-      'description': 'Community-based HIV self-testing programs',
-      'services': ['HIV Testing', 'Community Support', 'Anonymous Testing'],
-    },
-    {
-      'id': 'spmc_hact_hivst',
+      'id': 'spmc_hact_testing',
       'name': 'SPMC-HACT Testing',
-      'type': 'HIVST SITES',
-      'position': LatLng(7.127511, 125.646994), // At SPMC
-      'color': Colors.red,
-      'category': 'testing',
+      'position': LatLng(7.127511, 125.646994),
+      'category': 'single',
+      'services': ['testing'],
       'hours': 'Open 24 hours',
       'phone': '+63-82-221-8000',
       'address': 'J.P. Laurel Ave, Bajada, Davao City',
-      'description': 'Hospital-based HIV self-testing services',
-      'services': ['HIV Testing', 'Laboratory Services', 'Emergency Testing'],
+      'description': 'Hospital-based HIV testing services',
+      'serviceDetails': {
+        'testing': ['HIV Testing', 'Laboratory Services', 'Emergency Testing'],
+      },
+      'photos': [],
     },
     {
-      'id': 'mati_city_health_hivst',
-      'name': 'Mati City Health Testing',
-      'type': 'HIVST SITES',
-      'position': LatLng(6.956344, 126.217289), // Mati City
-      'color': Colors.red,
-      'category': 'testing',
+      'id': 'davao_del_sur_hospital',
+      'name': 'Davao del Sur Provincial Hospital - HACT',
+      'position': LatLng(6.768901, 125.327234),
+      'category': 'single',
+      'services': ['testing'],
       'hours': 'Mon-Fri 8AM-5PM',
-      'phone': '+63-87-388-1234',
-      'address': 'Mati City, Davao Oriental',
-      'description': 'HIV self-testing services at city health office',
-      'services': ['HIV Testing', 'Health Screening', 'Counseling'],
+      'phone': '+63-82-552-1234',
+      'address': 'Digos City, Davao del Sur',
+      'description': 'Provincial hospital HIV testing services',
+      'serviceDetails': {
+        'testing': ['HIV Testing', 'Provincial Health Services'],
+      },
+      'photos': [],
     },
     {
       'id': 'higala_community',
       'name': 'Higala Community Center',
-      'type': 'HIVST SITES',
-      'position': LatLng(7.083567, 125.621234), // Central Davao
-      'color': Colors.red,
-      'category': 'testing',
+      'position': LatLng(7.083567, 125.621234),
+      'category': 'single',
+      'services': ['testing'],
       'hours': 'Mon-Sat 10AM-7PM',
       'phone': '+63-82-306-7890',
       'address': 'Central Davao City',
       'description': 'LGBTQ+ friendly community center with HIV testing',
-      'services': ['HIV Testing', 'LGBTQ+ Support', 'Safe Space'],
-    },
-    {
-      'id': 'fpop_davao_hivst',
-      'name': 'FPOP Davao Testing',
-      'type': 'HIVST SITES',
-      'position': LatLng(7.089456, 125.627900), // Matina
-      'color': Colors.red,
-      'category': 'testing',
-      'hours': 'Mon-Sat 9AM-6PM',
-      'phone': '+63-82-297-1234',
-      'address': 'Matina, Davao City',
-      'description': 'HIV self-testing and family planning services',
-      'services': ['HIV Testing', 'Family Planning', 'Health Education'],
+      'serviceDetails': {
+        'testing': [
+          'HIV Testing',
+          'LGBTQ+ Support',
+          'Safe Space',
+          'Anonymous Testing',
+        ],
+      },
+      'photos': [],
     },
 
-    // RHIVDA SITES (Orange dots)
+    // SINGLE SERVICE CENTERS - Laboratory Only
     {
       'id': 'spmc_hiv_lab',
       'name': 'SPMC HIV LAB',
-      'type': 'RHIVDA SITE',
-      'position': LatLng(7.128066, 125.647549), // SPMC Laboratory
-      'color': Colors.orange,
-      'category': 'laboratory',
+      'position': LatLng(7.128066, 125.647549),
+      'category': 'single',
+      'services': ['laboratory'],
       'hours': 'Mon-Fri 8AM-5PM',
       'phone': '+63-82-221-8000',
       'address': 'J.P. Laurel Ave, Bajada, Davao City',
       'description': 'Regional HIV/AIDS laboratory testing facility',
-      'services': ['CD4 Count', 'Viral Load Testing', 'Confirmatory Testing'],
+      'serviceDetails': {
+        'laboratory': [
+          'CD4 Count',
+          'Viral Load Testing',
+          'Drug Resistance Testing',
+          'Confirmatory Testing',
+        ],
+      },
+      'photos': [],
     },
     {
-      'id': 'bhwc_davao_rhivda',
-      'name': 'BHWC DAVAO Lab',
-      'type': 'RHIVDA SITE',
-      'position': LatLng(
-        7.074567,
-        125.615012,
-      ), // Different from other BHWC sites
-      'color': Colors.orange,
-      'category': 'laboratory',
-      'hours': 'Mon-Fri 8AM-5PM',
-      'phone': '+63-82-298-7000',
-      'address': 'Davao City',
-      'description': 'Regional HIV voluntary counseling and testing',
-      'services': ['Laboratory Testing', 'VCT Services', 'Result Counseling'],
-    },
-    {
-      'id': 'drmc_rhivda',
+      'id': 'drmc_lab',
       'name': 'DRMC Laboratory',
-      'type': 'RHIVDA SITE',
-      'position': LatLng(7.070345, 125.618234), // DRMC Lab location
-      'color': Colors.orange,
-      'category': 'laboratory',
+      'position': LatLng(7.070345, 125.618234),
+      'category': 'single',
+      'services': ['laboratory'],
       'hours': 'Open 24 hours',
       'phone': '+63-82-227-2731',
       'address': 'Tagum City, Davao del Norte',
       'description': 'Regional medical center HIV diagnostic services',
-      'services': ['HIV Diagnostics', '24/7 Laboratory', 'Emergency Testing'],
+      'serviceDetails': {
+        'laboratory': [
+          'HIV Diagnostics',
+          '24/7 Laboratory',
+          'Emergency Testing',
+        ],
+      },
+      'photos': [],
     },
   ];
 
@@ -477,8 +828,6 @@ class _MapScreenState extends State<MapScreen> {
     });
 
     try {
-      // Create a simple polyline for demonstration
-      // In a real app, you'd use Google Directions API
       List<LatLng> routePoints = [
         LatLng(currentPosition!.latitude, currentPosition!.longitude),
         destination,
@@ -497,7 +846,6 @@ class _MapScreenState extends State<MapScreen> {
         isLoadingRoute = false;
       });
 
-      // Animate camera to show the entire route
       if (mapController != null) {
         LatLngBounds bounds = LatLngBounds(
           southwest: LatLng(
@@ -540,47 +888,69 @@ class _MapScreenState extends State<MapScreen> {
     markers =
         allCenters
             .where((center) {
-              // Filter markers based on selected categories
-              if (center['category'] == 'treatment' && !showTreatmentHubs) {
+              // Filter based on selected categories and services
+              if (center['category'] == 'multi' && !showMultiService)
                 return false;
+
+              // For single service centers
+              if (center['category'] == 'single') {
+                final service = center['services'][0];
+                if (service == 'treatment' && !showTreatmentHubs) return false;
+                if (service == 'prep' && !showPrepSites) return false;
+                if (service == 'testing' && !showTestingSites) return false;
+                if (service == 'laboratory' && !showLaboratory) return false;
               }
-              if (center['category'] == 'prep' && !showPrepSites) return false;
-              if (center['category'] == 'testing' && !showTestingSites) {
-                return false;
-              }
-              if (center['category'] == 'laboratory' && !showLaboratory) {
-                return false;
-              }
+
               return true;
             })
             .map((center) {
+              BitmapDescriptor markerIcon;
+
+              // Set marker icon based on category
+              if (center['category'] == 'multi') {
+                // Purple marker for multi-service centers
+                markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+                  BitmapDescriptor.hueViolet,
+                );
+              } else {
+                // Single service marker colors
+                final service = center['services'][0];
+                if (service == 'treatment') {
+                  markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueGreen,
+                  );
+                } else if (service == 'prep') {
+                  markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueBlue,
+                  );
+                } else if (service == 'testing') {
+                  markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueRed,
+                  );
+                } else {
+                  markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueOrange,
+                  );
+                }
+              }
+
               return Marker(
                 markerId: MarkerId(center['id']),
                 position: center['position'],
-                infoWindow: InfoWindow(),
-                icon:
-                    center['category'] == 'treatment'
-                        ? BitmapDescriptor.defaultMarkerWithHue(
-                          BitmapDescriptor.hueGreen,
-                        )
-                        : center['color'] == Colors.blue
-                        ? BitmapDescriptor.defaultMarkerWithHue(
-                          BitmapDescriptor.hueBlue,
-                        )
-                        : center['color'] == Colors.red
-                        ? BitmapDescriptor.defaultMarkerWithHue(
-                          BitmapDescriptor.hueRed,
-                        )
-                        : BitmapDescriptor.defaultMarkerWithHue(
-                          BitmapDescriptor.hueOrange,
-                        ),
+                infoWindow: InfoWindow(
+                  title: center['name'],
+                  snippet:
+                      center['category'] == 'multi'
+                          ? 'Multi-Service Center'
+                          : serviceTypes[center['services'][0]]?.label ?? '',
+                ),
+                icon: markerIcon,
                 onTap: () {
                   setState(() {
                     selectedCenterId = center['id'];
                     selectedCenterInfo = center;
                   });
 
-                  // Animate to selected marker
                   if (mapController != null) {
                     mapController!.animateCamera(
                       CameraUpdate.newCameraPosition(
@@ -608,45 +978,66 @@ class _MapScreenState extends State<MapScreen> {
                     .toString()
                     .toLowerCase()
                     .contains(query.toLowerCase());
-                final typeMatch = center['type']
-                    .toString()
-                    .toLowerCase()
-                    .contains(query.toLowerCase());
                 final addressMatch = (center['address'] ?? '')
                     .toString()
                     .toLowerCase()
                     .contains(query.toLowerCase());
-                final servicesMatch = (center['services'] ?? [])
-                    .join(' ')
-                    .toLowerCase()
-                    .contains(query.toLowerCase());
 
-                return nameMatch || typeMatch || addressMatch || servicesMatch;
+                // Search in service details
+                bool serviceMatch = false;
+                if (center['serviceDetails'] != null) {
+                  (center['serviceDetails'] as Map).values.forEach((services) {
+                    if ((services as List).any(
+                      (s) => s.toString().toLowerCase().contains(
+                        query.toLowerCase(),
+                      ),
+                    )) {
+                      serviceMatch = true;
+                    }
+                  });
+                }
+
+                return nameMatch || addressMatch || serviceMatch;
               })
               .map((center) {
+                BitmapDescriptor markerIcon;
+
+                if (center['category'] == 'multi') {
+                  markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+                    BitmapDescriptor.hueViolet,
+                  );
+                } else {
+                  final service = center['services'][0];
+                  if (service == 'treatment') {
+                    markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+                      BitmapDescriptor.hueGreen,
+                    );
+                  } else if (service == 'prep') {
+                    markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+                      BitmapDescriptor.hueBlue,
+                    );
+                  } else if (service == 'testing') {
+                    markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+                      BitmapDescriptor.hueRed,
+                    );
+                  } else {
+                    markerIcon = BitmapDescriptor.defaultMarkerWithHue(
+                      BitmapDescriptor.hueOrange,
+                    );
+                  }
+                }
+
                 return Marker(
                   markerId: MarkerId(center['id']),
                   position: center['position'],
                   infoWindow: InfoWindow(
                     title: center['name'],
-                    snippet: center['type'],
+                    snippet:
+                        center['category'] == 'multi'
+                            ? 'Multi-Service Center'
+                            : serviceTypes[center['services'][0]]?.label ?? '',
                   ),
-                  icon:
-                      center['category'] == 'treatment'
-                          ? BitmapDescriptor.defaultMarkerWithHue(
-                            BitmapDescriptor.hueGreen,
-                          )
-                          : center['color'] == Colors.blue
-                          ? BitmapDescriptor.defaultMarkerWithHue(
-                            BitmapDescriptor.hueBlue,
-                          )
-                          : center['color'] == Colors.red
-                          ? BitmapDescriptor.defaultMarkerWithHue(
-                            BitmapDescriptor.hueRed,
-                          )
-                          : BitmapDescriptor.defaultMarkerWithHue(
-                            BitmapDescriptor.hueOrange,
-                          ),
+                  icon: markerIcon,
                   onTap: () {
                     setState(() {
                       selectedCenterId = center['id'];
@@ -668,7 +1059,6 @@ class _MapScreenState extends State<MapScreen> {
           GoogleMap(
             onMapCreated: (GoogleMapController controller) {
               mapController = controller;
-              // Optionally set custom map style here
             },
             initialCameraPosition: CameraPosition(
               target: centerLocation,
@@ -797,6 +1187,13 @@ class _MapScreenState extends State<MapScreen> {
 
                   // Legend with active filter indicators
                   _buildLegendItem(
+                    'MULTI-SERVICE CENTER',
+                    Colors.purple,
+                    Icons.stars,
+                    showMultiService,
+                  ),
+                  SizedBox(height: 4),
+                  _buildLegendItem(
                     'HIV TREATMENT HUBS',
                     Colors.green,
                     Icons.location_on,
@@ -917,6 +1314,12 @@ class _MapScreenState extends State<MapScreen> {
                                   Row(
                                     children: [
                                       IconButton(
+                                        icon: Icon(Icons.share),
+                                        onPressed: () {
+                                          // Share functionality
+                                        },
+                                      ),
+                                      IconButton(
                                         icon: Icon(Icons.close),
                                         onPressed: () {
                                           setState(() {
@@ -933,54 +1336,106 @@ class _MapScreenState extends State<MapScreen> {
 
                               SizedBox(height: 8),
 
-                              // Category badge
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
+                              // Multi-service badge or single service badge
+                              if (selectedCenterInfo['category'] ==
+                                  'multi') ...[
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.purple.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(color: Colors.purple),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.stars,
+                                        color: Colors.purple,
+                                        size: 16,
+                                      ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        'MULTI-SERVICE CENTER',
+                                        style: TextStyle(
+                                          color: Colors.purple,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                decoration: BoxDecoration(
-                                  color: selectedCenterInfo['color']
-                                      ?.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(
+                                SizedBox(height: 12),
+                                // Service badges for multi-service centers
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 8,
+                                  children:
+                                      (selectedCenterInfo['services'] as List)
+                                          .map(
+                                            (service) => _buildServiceChip(
+                                              serviceTypes[service]!.label,
+                                              serviceTypes[service]!.color,
+                                              serviceTypes[service]!.icon,
+                                            ),
+                                          )
+                                          .toList(),
+                                ),
+                              ] else ...[
+                                // Single service badge
+                                Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
                                     color:
-                                        selectedCenterInfo['color'] ??
-                                        Colors.grey,
-                                    width: 1,
+                                        serviceTypes[selectedCenterInfo['services'][0]]!
+                                            .color
+                                            .withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color:
+                                          serviceTypes[selectedCenterInfo['services'][0]]!
+                                              .color,
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    serviceTypes[selectedCenterInfo['services'][0]]!
+                                        .label,
+                                    style: TextStyle(
+                                      color:
+                                          serviceTypes[selectedCenterInfo['services'][0]]!
+                                              .color,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
-                                child: Text(
-                                  selectedCenterInfo['type'] ?? '',
-                                  style: TextStyle(
-                                    color: selectedCenterInfo['color'],
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                              ),
+                              ],
 
                               SizedBox(height: 12),
 
-                              // Hours and address (no rating)
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.access_time,
-                                    size: 16,
-                                    color:
-                                        selectedCenterInfo['hours']?.contains(
-                                                  '24 hours',
-                                                ) ==
-                                                true
-                                            ? Colors.green
-                                            : Colors.grey[600],
-                                  ),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    selectedCenterInfo['hours'] ??
-                                        'Hours not available',
-                                    style: TextStyle(
+                              // Operating hours with new widget
+                              if (selectedCenterInfo['operatingHours'] !=
+                                  null) ...[
+                                OperatingHoursWidget(
+                                  operatingHours:
+                                      selectedCenterInfo['operatingHours'],
+                                ),
+                              ] else if (selectedCenterInfo['hours'] !=
+                                  null) ...[
+                                // Fallback to simple hours display
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.access_time,
+                                      size: 16,
                                       color:
                                           selectedCenterInfo['hours']?.contains(
                                                     '24 hours',
@@ -988,11 +1443,26 @@ class _MapScreenState extends State<MapScreen> {
                                                   true
                                               ? Colors.green
                                               : Colors.grey[600],
-                                      fontWeight: FontWeight.w500,
                                     ),
-                                  ),
-                                ],
-                              ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      selectedCenterInfo['hours'] ??
+                                          'Hours not available',
+                                      style: TextStyle(
+                                        color:
+                                            selectedCenterInfo['hours']
+                                                        ?.contains(
+                                                          '24 hours',
+                                                        ) ==
+                                                    true
+                                                ? Colors.green
+                                                : Colors.grey[600],
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
 
                               if (selectedCenterInfo['address'] != null) ...[
                                 SizedBox(height: 4),
@@ -1050,10 +1520,9 @@ class _MapScreenState extends State<MapScreen> {
                                 ),
                               ),
 
-                              // Services offered
-                              if (selectedCenterInfo['services'] != null &&
-                                  selectedCenterInfo['services']
-                                      .isNotEmpty) ...[
+                              // Service details
+                              if (selectedCenterInfo['serviceDetails'] !=
+                                  null) ...[
                                 SizedBox(height: 16),
                                 Text(
                                   'Services Offered',
@@ -1063,28 +1532,77 @@ class _MapScreenState extends State<MapScreen> {
                                   ),
                                 ),
                                 SizedBox(height: 8),
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children:
-                                      (selectedCenterInfo['services'] as List)
-                                          .map(
-                                            (service) => Chip(
-                                              label: Text(
-                                                service,
-                                                style: TextStyle(fontSize: 12),
+                                ...(selectedCenterInfo['serviceDetails'] as Map)
+                                    .entries
+                                    .map((entry) {
+                                      final serviceType =
+                                          serviceTypes[entry.key];
+                                      return Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                serviceType!.icon,
+                                                color: serviceType.color,
+                                                size: 20,
                                               ),
-                                              backgroundColor:
-                                                  selectedCenterInfo['color']
-                                                      ?.withOpacity(0.1),
-                                              labelStyle: TextStyle(
-                                                color:
-                                                    selectedCenterInfo['color'],
+                                              SizedBox(width: 8),
+                                              Text(
+                                                serviceType.label,
+                                                style: TextStyle(
+                                                  color: serviceType.color,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 14,
+                                                ),
                                               ),
+                                            ],
+                                          ),
+                                          SizedBox(height: 4),
+                                          Padding(
+                                            padding: EdgeInsets.only(left: 28),
+                                            child: Wrap(
+                                              spacing: 8,
+                                              runSpacing: 4,
+                                              children:
+                                                  (entry.value as List)
+                                                      .map(
+                                                        (service) => Chip(
+                                                          label: Text(
+                                                            service,
+                                                            style: TextStyle(
+                                                              fontSize: 11,
+                                                            ),
+                                                          ),
+                                                          backgroundColor:
+                                                              serviceType.color
+                                                                  .withOpacity(
+                                                                    0.1,
+                                                                  ),
+                                                          labelStyle: TextStyle(
+                                                            color:
+                                                                serviceType
+                                                                    .color,
+                                                          ),
+                                                          materialTapTargetSize:
+                                                              MaterialTapTargetSize
+                                                                  .shrinkWrap,
+                                                          padding:
+                                                              EdgeInsets.symmetric(
+                                                                horizontal: 8,
+                                                                vertical: 0,
+                                                              ),
+                                                        ),
+                                                      )
+                                                      .toList(),
                                             ),
-                                          )
-                                          .toList(),
-                                ),
+                                          ),
+                                          SizedBox(height: 8),
+                                        ],
+                                      );
+                                    })
+                                    .toList(),
                               ],
 
                               SizedBox(height: 20),
@@ -1140,9 +1658,7 @@ class _MapScreenState extends State<MapScreen> {
                                                   stackTrace,
                                                 ) {
                                                   return Container(
-                                                    color:
-                                                        selectedCenterInfo['color']
-                                                            ?.withOpacity(0.1),
+                                                    color: Colors.grey[200],
                                                     child: Column(
                                                       mainAxisAlignment:
                                                           MainAxisAlignment
@@ -1151,8 +1667,7 @@ class _MapScreenState extends State<MapScreen> {
                                                         Icon(
                                                           Icons.local_hospital,
                                                           size: 40,
-                                                          color:
-                                                              selectedCenterInfo['color'],
+                                                          color: Colors.grey,
                                                         ),
                                                         SizedBox(height: 4),
                                                         Text(
@@ -1160,8 +1675,7 @@ class _MapScreenState extends State<MapScreen> {
                                                           textAlign:
                                                               TextAlign.center,
                                                           style: TextStyle(
-                                                            color:
-                                                                selectedCenterInfo['color'],
+                                                            color: Colors.grey,
                                                             fontSize: 12,
                                                             fontWeight:
                                                                 FontWeight.w500,
@@ -1420,6 +1934,32 @@ class _MapScreenState extends State<MapScreen> {
     );
   }
 
+  Widget _buildServiceChip(String label, Color color, IconData icon) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 16),
+          SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<double> _calculateDistance(LatLng destination) async {
     if (currentPosition == null) return 0.0;
 
@@ -1443,6 +1983,18 @@ class _MapScreenState extends State<MapScreen> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  CheckboxListTile(
+                    title: Text('Multi-Service Centers'),
+                    subtitle: Text('Centers offering multiple services'),
+                    value: showMultiService,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        showMultiService = value!;
+                      });
+                    },
+                    activeColor: Colors.purple,
+                  ),
+                  Divider(),
                   CheckboxListTile(
                     title: Text('HIV Treatment Hubs'),
                     subtitle: Text('Comprehensive treatment centers'),
