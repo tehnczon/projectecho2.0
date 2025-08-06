@@ -1,8 +1,9 @@
 import 'package:projecho/screens/homePage.dart';
-import 'package:projecho/screens/Insights.dart';
+import 'package:projecho/screens/Insights.dart'; // Update this import
 import 'package:projecho/screens/userProfile.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart'; // Add this import
 import 'dart:ui'; // for ImageFilter.blur
 
 class MainPage extends StatefulWidget {
@@ -16,7 +17,22 @@ class _MainPageState extends State<MainPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [HomePage(), Insights(), UserProfile()];
+  // Update the pages list to properly include the dashboard with Provider
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      HomePage(),
+      // Wrap PLHIVDashboard with ChangeNotifierProvider
+      ChangeNotifierProvider(
+        create: (_) => AnalyticsProvider(),
+        child: PLHIVDashboard(),
+      ),
+      UserProfile(),
+    ];
+  }
 
   void _onItemTapped(int index) {
     setState(() {
@@ -71,9 +87,11 @@ class _MainPageState extends State<MainPage> {
                     label: 'Home',
                   ),
                   BottomNavigationBarItem(
-                    icon: Icon(Icons.insights_outlined),
-                    activeIcon: Icon(Icons.insights),
-                    label: 'Insights',
+                    icon: Icon(
+                      Icons.analytics_outlined,
+                    ), // Changed to analytics icon
+                    activeIcon: Icon(Icons.analytics),
+                    label: 'Analytics', // Changed label to Analytics
                   ),
                   BottomNavigationBarItem(
                     icon: Icon(Icons.person_outline),

@@ -6,6 +6,7 @@ import 'package:local_auth/local_auth.dart';
 import 'package:projecho/screens/userSettings.dart';
 import 'package:projecho/login/login/inputNum.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
+import 'package:intl/intl.dart';
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -339,6 +340,29 @@ class _UserProfileState extends State<UserProfile> {
     return '$barangay, $city';
   }
 
+  String _formatBirthDate(dynamic rawDate) {
+    if (rawDate == null) return "Not provided";
+
+    // If from Firestore, it's a Timestamp object
+    if (rawDate is Timestamp) {
+      DateTime date = rawDate.toDate();
+      return DateFormat('MMMM d, y').format(date); // e.g., January 1, 2000
+    }
+
+    // If already a DateTime
+    if (rawDate is DateTime) {
+      return DateFormat('MMMM d, y').format(rawDate);
+    }
+
+    // If string (ISO8601), parse it
+    try {
+      DateTime date = DateTime.parse(rawDate.toString());
+      return DateFormat('MMMM d, y').format(date);
+    } catch (_) {
+      return "Invalid date";
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -426,28 +450,28 @@ class _UserProfileState extends State<UserProfile> {
                   ),
                   const SizedBox(height: 20),
                   // Edit profile button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        // Navigate to edit profile
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.indigo,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        'Edit Profile',
-                        style: GoogleFonts.lato(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                  ),
+                  // SizedBox(
+                  //   width: double.infinity,
+                  //   child: ElevatedButton(
+                  //     onPressed: () {
+                  //       // Navigate to edit profile
+                  //     },
+                  //     style: ElevatedButton.styleFrom(
+                  //       backgroundColor: Colors.indigo,
+                  //       padding: const EdgeInsets.symmetric(vertical: 12),
+                  //       shape: RoundedRectangleBorder(
+                  //         borderRadius: BorderRadius.circular(8),
+                  //       ),
+                  //     ),
+                  //     child: Text(
+                  //       'Edit Profile',
+                  //       style: GoogleFonts.lato(
+                  //         fontSize: 16,
+                  //         fontWeight: FontWeight.w600,
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
                 ],
               ),
             ),
@@ -496,7 +520,10 @@ class _UserProfileState extends State<UserProfile> {
                         "Gender Identity",
                         userData!['genderIdentity'],
                       ),
-                      profileItem("Birth Date", userData!['birthDate']),
+                      profileItem(
+                        "Birth Date",
+                        _formatBirthDate(userData!['birthDate']),
+                      ),
                       profileItem("User Type", userData!['userType']),
                     ] else ...[
                       const Center(child: CircularProgressIndicator()),
