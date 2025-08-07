@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:ui';
 
 /* Removed duplicate MapScreen class definition to resolve duplicate class error. */
 
@@ -1435,493 +1436,620 @@ class _MapScreenState extends State<MapScreen> {
           // Bottom Sheet with Place Details
           if (selectedCenterInfo.isNotEmpty)
             DraggableScrollableSheet(
-              initialChildSize: 0.35,
+              initialChildSize: 0.4,
               minChildSize: 0.25,
-              maxChildSize: 0.8,
+              maxChildSize: 0.95,
+              snap: true,
+              snapSizes: [0.25, 0.4, 0.95],
               builder: (context, scrollController) {
                 return Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).scaffoldBackgroundColor,
                     borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(20),
+                      top: Radius.circular(24),
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: Offset(0, -2),
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 20,
+                        offset: Offset(0, -4),
+                        spreadRadius: 0,
                       ),
                     ],
                   ),
-                  child: SingleChildScrollView(
-                    controller: scrollController,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Handle bar
-                        Center(
-                          child: Container(
-                            margin: EdgeInsets.symmetric(vertical: 8),
-                            width: 40,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[300],
-                              borderRadius: BorderRadius.circular(2),
+                  child: Stack(
+                    children: [
+                      // Main content
+                      SingleChildScrollView(
+                        controller: scrollController,
+                        physics: BouncingScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Modern handle bar
+                            Center(
+                              child: Container(
+                                margin: EdgeInsets.only(top: 12, bottom: 8),
+                                width: 48,
+                                height: 5,
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(100),
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
 
-                        Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Place name and actions
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      selectedCenterInfo['name'] ?? '',
-                                      style: TextStyle(
-                                        fontSize: 20,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  Row(
-                                    children: [
-                                      IconButton(
-                                        icon: Icon(Icons.share),
-                                        onPressed: () {
-                                          // Share functionality
-                                        },
-                                      ),
-                                      IconButton(
-                                        icon: Icon(Icons.close),
-                                        onPressed: () {
-                                          setState(() {
-                                            selectedCenterId = null;
-                                            selectedCenterInfo = {};
-                                            polylines.clear();
-                                          });
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-
-                              SizedBox(height: 8),
-
-                              // Multi-service badge or single service badge
-                              if (selectedCenterInfo['category'] ==
-                                  'multi') ...[
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.purple.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.purple),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.stars,
-                                        color: Colors.purple,
-                                        size: 16,
-                                      ),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        'MULTI-SERVICE CENTER',
-                                        style: TextStyle(
-                                          color: Colors.purple,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(height: 12),
-                                // Service badges for multi-service centers
-                                Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children:
-                                      (selectedCenterInfo['services'] as List)
-                                          .map(
-                                            (service) => _buildServiceChip(
-                                              serviceTypes[service]!.label,
-                                              serviceTypes[service]!.color,
-                                              serviceTypes[service]!.icon,
-                                            ),
-                                          )
-                                          .toList(),
-                                ),
-                              ] else ...[
-                                // Single service badge
-                                Container(
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        serviceTypes[selectedCenterInfo['services'][0]]!
-                                            .color
-                                            .withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color:
-                                          serviceTypes[selectedCenterInfo['services'][0]]!
-                                              .color,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    serviceTypes[selectedCenterInfo['services'][0]]!
-                                        .label,
-                                    style: TextStyle(
-                                      color:
-                                          serviceTypes[selectedCenterInfo['services'][0]]!
-                                              .color,
-                                      fontWeight: FontWeight.w500,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ),
-                              ],
-
-                              SizedBox(height: 12),
-
-                              // Operating hours with new widget
-                              if (selectedCenterInfo['operatingHours'] !=
-                                  null) ...[
-                                OperatingHoursWidget(
-                                  operatingHours:
-                                      selectedCenterInfo['operatingHours'],
-                                ),
-                              ] else if (selectedCenterInfo['hours'] !=
-                                  null) ...[
-                                // Fallback to simple hours display
-                                Row(
+                            // Header section with hero image
+                            if (selectedCenterInfo['photos'] != null &&
+                                selectedCenterInfo['photos'].isNotEmpty)
+                              Container(
+                                height: 200,
+                                child: Stack(
                                   children: [
-                                    Icon(
-                                      Icons.access_time,
-                                      size: 16,
-                                      color:
-                                          selectedCenterInfo['hours']?.contains(
-                                                    '24 hours',
-                                                  ) ==
-                                                  true
-                                              ? Colors.green
-                                              : Colors.grey[600],
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      selectedCenterInfo['hours'] ??
-                                          'Hours not available',
-                                      style: TextStyle(
-                                        color:
-                                            selectedCenterInfo['hours']
-                                                        ?.contains(
-                                                          '24 hours',
-                                                        ) ==
-                                                    true
-                                                ? Colors.green
-                                                : Colors.grey[600],
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-
-                              if (selectedCenterInfo['address'] != null) ...[
-                                SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.location_on,
-                                      size: 16,
-                                      color: Colors.grey[600],
-                                    ),
-                                    SizedBox(width: 4),
-                                    Expanded(
-                                      child: Text(
-                                        selectedCenterInfo['address'],
-                                        style: TextStyle(
-                                          color: Colors.grey[600],
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-
-                              if (selectedCenterInfo['phone'] != null) ...[
-                                SizedBox(height: 4),
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.phone,
-                                      size: 16,
-                                      color: Colors.grey[600],
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      selectedCenterInfo['phone'],
-                                      style: TextStyle(
-                                        color: Colors.blue,
-                                        fontSize: 14,
-                                        decoration: TextDecoration.underline,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ],
-
-                              SizedBox(height: 8),
-
-                              // Description
-                              Text(
-                                selectedCenterInfo['description'] ?? '',
-                                style: TextStyle(
-                                  color: Colors.grey[700],
-                                  fontSize: 14,
-                                ),
-                              ),
-
-                              // Service details
-                              if (selectedCenterInfo['serviceDetails'] !=
-                                  null) ...[
-                                SizedBox(height: 16),
-                                Text(
-                                  'Services Offered',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                ...(selectedCenterInfo['serviceDetails'] as Map)
-                                    .entries
-                                    .map((entry) {
-                                      final serviceType =
-                                          serviceTypes[entry.key];
-                                      return Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                serviceType!.icon,
-                                                color: serviceType.color,
-                                                size: 20,
+                                    PageView.builder(
+                                      itemCount:
+                                          selectedCenterInfo['photos'].length,
+                                      itemBuilder: (context, index) {
+                                        return Container(
+                                          decoration: BoxDecoration(
+                                            image: DecorationImage(
+                                              image: NetworkImage(
+                                                selectedCenterInfo['photos'][index],
                                               ),
-                                              SizedBox(width: 8),
-                                              Text(
-                                                serviceType.label,
-                                                style: TextStyle(
-                                                  color: serviceType.color,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontSize: 14,
-                                                ),
+                                              fit: BoxFit.cover,
+                                              onError: (error, stackTrace) {},
+                                            ),
+                                          ),
+                                          child: Container(
+                                            decoration: BoxDecoration(
+                                              gradient: LinearGradient(
+                                                begin: Alignment.topCenter,
+                                                end: Alignment.bottomCenter,
+                                                colors: [
+                                                  Colors.transparent,
+                                                  Colors.black.withOpacity(0.3),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                    // Close button overlay
+                                    Positioned(
+                                      top: 16,
+                                      right: 16,
+                                      child: Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.white.withOpacity(0.9),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
+                                          child: BackdropFilter(
+                                            filter: ImageFilter.blur(
+                                              sigmaX: 10,
+                                              sigmaY: 10,
+                                            ),
+                                            child: IconButton(
+                                              icon: Icon(Icons.close, size: 20),
+                                              onPressed: () {
+                                                setState(() {
+                                                  selectedCenterId = null;
+                                                  selectedCenterInfo = {};
+                                                  polylines.clear();
+                                                });
+                                              },
+                                              padding: EdgeInsets.all(8),
+                                              constraints: BoxConstraints(),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                            Padding(
+                              padding: EdgeInsets.fromLTRB(20, 16, 20, 20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Title and share button
+                                  Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              selectedCenterInfo['name'] ?? '',
+                                              style: TextStyle(
+                                                fontSize: 24,
+                                                fontWeight: FontWeight.w700,
+                                                letterSpacing: -0.5,
+                                                height: 1.2,
+                                              ),
+                                            ),
+                                            if (selectedCenterInfo['address'] !=
+                                                null) ...[
+                                              SizedBox(height: 8),
+                                              Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.location_on_rounded,
+                                                    size: 18,
+                                                    color: Colors.grey[600],
+                                                  ),
+                                                  SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      selectedCenterInfo['address'],
+                                                      style: TextStyle(
+                                                        color: Colors.grey[600],
+                                                        fontSize: 14,
+                                                        height: 1.4,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
                                             ],
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: Colors.grey[100],
+                                          borderRadius: BorderRadius.circular(
+                                            12,
                                           ),
-                                          SizedBox(height: 4),
-                                          Padding(
-                                            padding: EdgeInsets.only(left: 28),
-                                            child: Wrap(
+                                        ),
+                                        child: IconButton(
+                                          icon: Icon(
+                                            Icons.share_rounded,
+                                            size: 20,
+                                          ),
+                                          onPressed: () {
+                                            // Share functionality
+                                          },
+                                          padding: EdgeInsets.all(8),
+                                          constraints: BoxConstraints(),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+
+                                  SizedBox(height: 20),
+
+                                  // Service badges with modern design
+                                  if (selectedCenterInfo['category'] ==
+                                      'multi') ...[
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 16,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            Colors.purple.withOpacity(0.1),
+                                            Colors.purple.withOpacity(0.05),
+                                          ],
+                                        ),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: Colors.purple.withOpacity(0.3),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all(4),
+                                            decoration: BoxDecoration(
+                                              color: Colors.purple.withOpacity(
+                                                0.2,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Icon(
+                                              Icons.auto_awesome,
+                                              color: Colors.purple,
+                                              size: 16,
+                                            ),
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            'MULTI-SERVICE CENTER',
+                                            style: TextStyle(
+                                              color: Colors.purple[700],
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 13,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    SizedBox(height: 12),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children:
+                                          (selectedCenterInfo['services']
+                                                  as List)
+                                              .map(
+                                                (service) => Container(
+                                                  padding: EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 8,
+                                                  ),
+                                                  decoration: BoxDecoration(
+                                                    color:
+                                                        serviceTypes[service]!
+                                                            .color
+                                                            .withOpacity(0.08),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                    border: Border.all(
+                                                      color:
+                                                          serviceTypes[service]!
+                                                              .color
+                                                              .withOpacity(0.2),
+                                                      width: 1,
+                                                    ),
+                                                  ),
+                                                  child: Row(
+                                                    mainAxisSize:
+                                                        MainAxisSize.min,
+                                                    children: [
+                                                      Icon(
+                                                        serviceTypes[service]!
+                                                            .icon,
+                                                        size: 16,
+                                                        color:
+                                                            serviceTypes[service]!
+                                                                .color,
+                                                      ),
+                                                      SizedBox(width: 6),
+                                                      Text(
+                                                        serviceTypes[service]!
+                                                            .label,
+                                                        style: TextStyle(
+                                                          color:
+                                                              serviceTypes[service]!
+                                                                  .color,
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          fontSize: 13,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              )
+                                              .toList(),
+                                    ),
+                                  ] else ...[
+                                    Container(
+                                      padding: EdgeInsets.symmetric(
+                                        horizontal: 14,
+                                        vertical: 10,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            serviceTypes[selectedCenterInfo['services'][0]]!
+                                                .color
+                                                .withOpacity(0.08),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color:
+                                              serviceTypes[selectedCenterInfo['services'][0]]!
+                                                  .color
+                                                  .withOpacity(0.2),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            serviceTypes[selectedCenterInfo['services'][0]]!
+                                                .icon,
+                                            size: 18,
+                                            color:
+                                                serviceTypes[selectedCenterInfo['services'][0]]!
+                                                    .color,
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text(
+                                            serviceTypes[selectedCenterInfo['services'][0]]!
+                                                .label,
+                                            style: TextStyle(
+                                              color:
+                                                  serviceTypes[selectedCenterInfo['services'][0]]!
+                                                      .color,
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+
+                                  SizedBox(height: 20),
+
+                                  // Quick info cards
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildInfoCard(
+                                          icon:
+                                              Icons.access_time_filled_rounded,
+                                          title: 'Hours',
+                                          value:
+                                              selectedCenterInfo['hours'] ??
+                                              'Not available',
+                                          color:
+                                              selectedCenterInfo['hours']
+                                                          ?.contains(
+                                                            '24 hours',
+                                                          ) ==
+                                                      true
+                                                  ? Colors.green
+                                                  : Colors.blue,
+                                        ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      if (currentPosition != null)
+                                        Expanded(
+                                          child: FutureBuilder<double>(
+                                            future: _calculateDistance(
+                                              selectedCenterInfo['position'],
+                                            ),
+                                            builder: (context, snapshot) {
+                                              return _buildInfoCard(
+                                                icon: Icons.navigation_rounded,
+                                                title: 'Distance',
+                                                value:
+                                                    snapshot.hasData
+                                                        ? '${snapshot.data!.toStringAsFixed(1)} km'
+                                                        : 'Calculating...',
+                                                color: Colors.orange,
+                                              );
+                                            },
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+
+                                  if (selectedCenterInfo['phone'] != null) ...[
+                                    SizedBox(height: 12),
+                                    Container(
+                                      padding: EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.withOpacity(0.05),
+                                        borderRadius: BorderRadius.circular(16),
+                                        border: Border.all(
+                                          color: Colors.blue.withOpacity(0.1),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        children: [
+                                          Container(
+                                            padding: EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: Colors.blue.withOpacity(
+                                                0.1,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                            ),
+                                            child: Icon(
+                                              Icons.phone_rounded,
+                                              size: 20,
+                                              color: Colors.blue,
+                                            ),
+                                          ),
+                                          SizedBox(width: 12),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Contact',
+                                                  style: TextStyle(
+                                                    color: Colors.grey[600],
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                SizedBox(height: 2),
+                                                Text(
+                                                  selectedCenterInfo['phone'],
+                                                  style: TextStyle(
+                                                    color: Colors.blue,
+                                                    fontSize: 15,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          IconButton(
+                                            icon: Icon(
+                                              Icons.call_rounded,
+                                              color: Colors.blue,
+                                            ),
+                                            onPressed: _makePhoneCall,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+
+                                  // Description
+                                  if (selectedCenterInfo['description'] !=
+                                      null) ...[
+                                    SizedBox(height: 24),
+                                    Text(
+                                      'About',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: -0.3,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8),
+                                    Text(
+                                      selectedCenterInfo['description'],
+                                      style: TextStyle(
+                                        color: Colors.grey[700],
+                                        fontSize: 15,
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ],
+
+                                  // Service details with modern cards
+                                  if (selectedCenterInfo['serviceDetails'] !=
+                                      null) ...[
+                                    SizedBox(height: 24),
+                                    Text(
+                                      'Services Available',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                        letterSpacing: -0.3,
+                                      ),
+                                    ),
+                                    SizedBox(height: 16),
+                                    ...(selectedCenterInfo['serviceDetails'] as Map).entries.map((
+                                      entry,
+                                    ) {
+                                      final serviceType =
+                                          serviceTypes[entry.key];
+                                      return Container(
+                                        margin: EdgeInsets.only(bottom: 16),
+                                        padding: EdgeInsets.all(16),
+                                        decoration: BoxDecoration(
+                                          color: serviceType!.color.withOpacity(
+                                            0.05,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            16,
+                                          ),
+                                          border: Border.all(
+                                            color: serviceType.color
+                                                .withOpacity(0.1),
+                                            width: 1,
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Container(
+                                                  padding: EdgeInsets.all(8),
+                                                  decoration: BoxDecoration(
+                                                    color: serviceType.color
+                                                        .withOpacity(0.15),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
+                                                  ),
+                                                  child: Icon(
+                                                    serviceType.icon,
+                                                    color: serviceType.color,
+                                                    size: 20,
+                                                  ),
+                                                ),
+                                                SizedBox(width: 12),
+                                                Text(
+                                                  serviceType.label,
+                                                  style: TextStyle(
+                                                    color: serviceType.color,
+                                                    fontWeight: FontWeight.w600,
+                                                    fontSize: 16,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                            SizedBox(height: 12),
+                                            Wrap(
                                               spacing: 8,
-                                              runSpacing: 4,
+                                              runSpacing: 8,
                                               children:
                                                   (entry.value as List)
                                                       .map(
-                                                        (service) => Chip(
-                                                          label: Text(
-                                                            service,
-                                                            style: TextStyle(
-                                                              fontSize: 11,
-                                                            ),
-                                                          ),
-                                                          backgroundColor:
-                                                              serviceType.color
-                                                                  .withOpacity(
-                                                                    0.1,
-                                                                  ),
-                                                          labelStyle: TextStyle(
-                                                            color:
-                                                                serviceType
-                                                                    .color,
-                                                          ),
-                                                          materialTapTargetSize:
-                                                              MaterialTapTargetSize
-                                                                  .shrinkWrap,
+                                                        (service) => Container(
                                                           padding:
                                                               EdgeInsets.symmetric(
-                                                                horizontal: 8,
-                                                                vertical: 0,
+                                                                horizontal: 12,
+                                                                vertical: 6,
                                                               ),
+                                                          decoration: BoxDecoration(
+                                                            color: Colors.white,
+                                                            borderRadius:
+                                                                BorderRadius.circular(
+                                                                  20,
+                                                                ),
+                                                            border: Border.all(
+                                                              color: serviceType
+                                                                  .color
+                                                                  .withOpacity(
+                                                                    0.2,
+                                                                  ),
+                                                              width: 1,
+                                                            ),
+                                                          ),
+                                                          child: Text(
+                                                            service,
+                                                            style: TextStyle(
+                                                              fontSize: 13,
+                                                              color:
+                                                                  serviceType
+                                                                      .color,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                            ),
+                                                          ),
                                                         ),
                                                       )
                                                       .toList(),
                                             ),
-                                          ),
-                                          SizedBox(height: 8),
-                                        ],
-                                      );
-                                    })
-                                    .toList(),
-                              ],
-
-                              SizedBox(height: 20),
-
-                              // Photos section
-                              if (selectedCenterInfo['photos'] != null &&
-                                  selectedCenterInfo['photos'].isNotEmpty) ...[
-                                Text(
-                                  'Photos',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 8),
-                                Container(
-                                  height: 120,
-                                  child: ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount:
-                                        selectedCenterInfo['photos'].length,
-                                    itemBuilder: (context, index) {
-                                      return Container(
-                                        width: 160,
-                                        margin: EdgeInsets.only(right: 8),
-                                        decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: Colors.black.withOpacity(
-                                                0.1,
-                                              ),
-                                              blurRadius: 4,
-                                              offset: Offset(0, 2),
-                                            ),
                                           ],
                                         ),
-                                        child: ClipRRect(
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                          child: Stack(
-                                            fit: StackFit.expand,
-                                            children: [
-                                              Image.network(
-                                                selectedCenterInfo['photos'][index],
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (
-                                                  context,
-                                                  error,
-                                                  stackTrace,
-                                                ) {
-                                                  return Container(
-                                                    color: Colors.grey[200],
-                                                    child: Column(
-                                                      mainAxisAlignment:
-                                                          MainAxisAlignment
-                                                              .center,
-                                                      children: [
-                                                        Icon(
-                                                          Icons.local_hospital,
-                                                          size: 40,
-                                                          color: Colors.grey,
-                                                        ),
-                                                        SizedBox(height: 4),
-                                                        Text(
-                                                          'Medical\nFacility',
-                                                          textAlign:
-                                                              TextAlign.center,
-                                                          style: TextStyle(
-                                                            color: Colors.grey,
-                                                            fontSize: 12,
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  );
-                                                },
-                                                loadingBuilder: (
-                                                  context,
-                                                  child,
-                                                  loadingProgress,
-                                                ) {
-                                                  if (loadingProgress == null)
-                                                    return child;
-                                                  return Container(
-                                                    color: Colors.grey[200],
-                                                    child: Center(
-                                                      child:
-                                                          CircularProgressIndicator(),
-                                                    ),
-                                                  );
-                                                },
-                                              ),
-                                              Positioned(
-                                                top: 8,
-                                                right: 8,
-                                                child: Container(
-                                                  padding: EdgeInsets.symmetric(
-                                                    horizontal: 6,
-                                                    vertical: 2,
-                                                  ),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.black
-                                                        .withOpacity(0.6),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          4,
-                                                        ),
-                                                  ),
-                                                  child: Text(
-                                                    '${index + 1}/${selectedCenterInfo['photos'].length}',
-                                                    style: TextStyle(
-                                                      color: Colors.white,
-                                                      fontSize: 10,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
                                       );
-                                    },
-                                  ),
-                                ),
-                                SizedBox(height: 20),
-                              ],
+                                    }).toList(),
+                                  ],
 
-                              // Action buttons
-                              Column(
-                                children: [
+                                  // Modern action buttons
+                                  SizedBox(height: 24),
                                   Row(
                                     children: [
                                       Expanded(
-                                        child: ElevatedButton.icon(
+                                        child: _buildActionButton(
                                           onPressed:
                                               isLoadingRoute
                                                   ? null
@@ -1930,157 +2058,188 @@ class _MapScreenState extends State<MapScreen> {
                                                       selectedCenterInfo['position'],
                                                     );
                                                   },
-                                          icon:
-                                              isLoadingRoute
-                                                  ? SizedBox(
-                                                    width: 16,
-                                                    height: 16,
-                                                    child: CircularProgressIndicator(
-                                                      strokeWidth: 2,
-                                                      valueColor:
-                                                          AlwaysStoppedAnimation<
-                                                            Color
-                                                          >(Colors.white),
-                                                    ),
-                                                  )
-                                                  : Icon(Icons.directions),
-                                          label: Text('Directions'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.blue,
-                                            foregroundColor: Colors.white,
-                                            padding: EdgeInsets.symmetric(
-                                              vertical: 12,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(25),
-                                            ),
-                                          ),
+                                          icon: Icons.directions_rounded,
+                                          label: 'Get Directions',
+                                          color: Colors.blue,
+                                          isLoading: isLoadingRoute,
                                         ),
                                       ),
-                                      SizedBox(width: 8),
+                                      SizedBox(width: 12),
                                       Expanded(
-                                        child: ElevatedButton.icon(
+                                        child: _buildActionButton(
                                           onPressed: () async {
                                             await _showRouteOnMap(
                                               selectedCenterInfo['position'],
                                             );
                                           },
-                                          icon: Icon(Icons.route),
-                                          label: Text('Show Route'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.teal,
-                                            foregroundColor: Colors.white,
-                                            padding: EdgeInsets.symmetric(
-                                              vertical: 12,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(25),
-                                            ),
-                                          ),
+                                          icon: Icons.map_rounded,
+                                          label: 'Show Route',
+                                          color: Colors.teal,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  SizedBox(height: 8),
+                                  SizedBox(height: 12),
                                   Row(
                                     children: [
                                       Expanded(
-                                        child: ElevatedButton.icon(
-                                          onPressed: () {
-                                            _makePhoneCall();
-                                          },
-                                          icon: Icon(Icons.phone),
-                                          label: Text('Call'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.green,
-                                            foregroundColor: Colors.white,
-                                            padding: EdgeInsets.symmetric(
-                                              vertical: 12,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(25),
-                                            ),
-                                          ),
+                                        child: _buildActionButton(
+                                          onPressed: _makePhoneCall,
+                                          icon: Icons.phone_in_talk_rounded,
+                                          label: 'Call Now',
+                                          color: Colors.green,
                                         ),
                                       ),
-                                      SizedBox(width: 8),
+                                      SizedBox(width: 12),
                                       Expanded(
-                                        child: ElevatedButton.icon(
-                                          onPressed: () {
-                                            _bookmarkLocation();
-                                          },
-                                          icon: Icon(Icons.bookmark_border),
-                                          label: Text('Save'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: Colors.orange,
-                                            foregroundColor: Colors.white,
-                                            padding: EdgeInsets.symmetric(
-                                              vertical: 12,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(25),
-                                            ),
-                                          ),
+                                        child: _buildActionButton(
+                                          onPressed: _bookmarkLocation,
+                                          icon: Icons.bookmark_add_rounded,
+                                          label: 'Save Place',
+                                          color: Colors.orange,
                                         ),
                                       ),
                                     ],
                                   ),
+
+                                  // Bottom padding for safe area
+                                  SizedBox(height: 20),
                                 ],
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
 
-                              // Distance information if available
-                              if (currentPosition != null) ...[
-                                SizedBox(height: 16),
-                                FutureBuilder<double>(
-                                  future: _calculateDistance(
-                                    selectedCenterInfo['position'],
-                                  ),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.hasData) {
-                                      return Container(
-                                        padding: EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(
-                                            8,
-                                          ),
-                                        ),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              Icons.straighten,
-                                              size: 16,
-                                              color: Colors.blue,
-                                            ),
-                                            SizedBox(width: 8),
-                                            Text(
-                                              'Distance: ${snapshot.data!.toStringAsFixed(1)} km from your location',
-                                              style: TextStyle(
-                                                color: Colors.blue[700],
-                                                fontWeight: FontWeight.w500,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                      );
-                                    }
-                                    return SizedBox.shrink();
-                                  },
+                      // Operating hours floating widget (if available)
+                      if (selectedCenterInfo['operatingHours'] != null)
+                        Positioned(
+                          top: 50,
+                          right: 20,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.95),
+                              borderRadius: BorderRadius.circular(20),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.1),
+                                  blurRadius: 10,
+                                  offset: Offset(0, 2),
                                 ),
                               ],
-                            ],
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Open Now',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ],
-                    ),
+                    ],
                   ),
                 );
               },
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.1), width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, size: 16, color: color),
+              ),
+              SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildServiceChip(String label, Color color, IconData icon) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
         ],
       ),
     );
@@ -2106,32 +2265,6 @@ class _MapScreenState extends State<MapScreen> {
               fontWeight: FontWeight.w500,
               color: Colors.grey[800],
               decoration: isActive ? null : TextDecoration.lineThrough,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildServiceChip(String label, Color color, IconData icon) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: 16),
-          SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w500,
-              fontSize: 12,
             ),
           ),
         ],
@@ -2241,6 +2374,39 @@ class _MapScreenState extends State<MapScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildActionButton({
+    required VoidCallback? onPressed,
+    required IconData icon,
+    required String label,
+    required Color color,
+    bool isLoading = false,
+  }) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon:
+          isLoading
+              ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(color),
+                ),
+              )
+              : Icon(icon, color: Colors.white, size: 18),
+      label: Text(
+        label,
+        style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+      ),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: color,
+        padding: EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        elevation: 0,
+      ),
     );
   }
 }
