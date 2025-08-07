@@ -798,7 +798,7 @@ class _MapScreenState extends State<MapScreen> {
           'Sunday': null, // Closed
         },
       ),
-      'phone': ['0951 410 8208', 'dsph.hact@gmail.com'],
+      'phone': '0951 410 8208',
       'address':
           'DSPH HACT National Hospital Lapu Lapu St. Digos City Davao del Sur , Digos, Philippines',
       'description': 'Provincial hospital HIV testing services',
@@ -1299,108 +1299,6 @@ class _MapScreenState extends State<MapScreen> {
                     vertical: 12,
                   ),
                 ),
-              ),
-            ),
-          ),
-
-          // HIV Program Header & Legend
-          Positioned(
-            top: 120,
-            left: 16,
-            child: Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Row(
-                    children: [
-                      Container(
-                        width: 30,
-                        height: 30,
-                        decoration: BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Icon(
-                          Icons.medical_services,
-                          color: Colors.white,
-                          size: 16,
-                        ),
-                      ),
-                      SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'HIV PROGRAM',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.red,
-                            ),
-                          ),
-                          Text(
-                            'Davao Region',
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontStyle: FontStyle.italic,
-                              color: Colors.red[300],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 12),
-
-                  // Legend with active filter indicators
-                  _buildLegendItem(
-                    'MULTI-SERVICE CENTER',
-                    Colors.purple,
-                    Icons.stars,
-                    showMultiService,
-                  ),
-                  SizedBox(height: 4),
-                  _buildLegendItem(
-                    'HIV TREATMENT HUBS',
-                    Colors.green,
-                    Icons.location_on,
-                    showTreatmentHubs,
-                  ),
-                  SizedBox(height: 4),
-                  _buildLegendItem(
-                    'HIV PREP SITES',
-                    Colors.blue,
-                    Icons.circle,
-                    showPrepSites,
-                  ),
-                  SizedBox(height: 4),
-                  _buildLegendItem(
-                    'HIVST SITES',
-                    Colors.red,
-                    Icons.circle,
-                    showTestingSites,
-                  ),
-                  SizedBox(height: 4),
-                  _buildLegendItem(
-                    'RHIVDA SITE',
-                    Colors.orange,
-                    Icons.circle,
-                    showLaboratory,
-                  ),
-                ],
               ),
             ),
           ),
@@ -2238,33 +2136,6 @@ class _MapScreenState extends State<MapScreen> {
               color: color,
               fontWeight: FontWeight.w500,
               fontSize: 13,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLegendItem(
-    String label,
-    Color color,
-    IconData icon,
-    bool isActive,
-  ) {
-    return Opacity(
-      opacity: isActive ? 1.0 : 0.5,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: color, size: icon == Icons.location_on ? 14 : 10),
-          SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 9,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[800],
-              decoration: isActive ? null : TextDecoration.lineThrough,
             ),
           ),
         ],
