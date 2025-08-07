@@ -364,23 +364,23 @@ class _MapScreenState extends State<MapScreen> {
         schedule: {
           'Monday': TimeRange(
             start: TimeOfDay(hour: 8, minute: 0),
-            end: TimeOfDay(hour: 17, minute: 0),
+            end: TimeOfDay(hour: 15, minute: 0),
           ),
           'Tuesday': TimeRange(
             start: TimeOfDay(hour: 8, minute: 0),
-            end: TimeOfDay(hour: 17, minute: 0),
+            end: TimeOfDay(hour: 15, minute: 0),
           ),
           'Wednesday': TimeRange(
             start: TimeOfDay(hour: 8, minute: 0),
-            end: TimeOfDay(hour: 17, minute: 0),
+            end: TimeOfDay(hour: 15, minute: 0),
           ),
           'Thursday': TimeRange(
             start: TimeOfDay(hour: 8, minute: 0),
-            end: TimeOfDay(hour: 17, minute: 0),
+            end: TimeOfDay(hour: 15, minute: 0),
           ),
           'Friday': TimeRange(
             start: TimeOfDay(hour: 8, minute: 0),
-            end: TimeOfDay(hour: 17, minute: 0),
+            end: TimeOfDay(hour: 15, minute: 0),
           ),
           'Saturday': null, // Closed
           'Sunday': null, // Closed
@@ -472,66 +472,126 @@ class _MapScreenState extends State<MapScreen> {
       ],
     },
     {
-      'id': 'olympus_community',
-      'name': 'Olympus Community Center',
-      'position': LatLng(7.076543, 125.609876),
+      'id': 'Jefferyi_By_LoveYourself',
+      'name': 'Jefferyi By LoveYourself',
+      'position': LatLng(7.082876566740306, 125.61383319025228),
       'category': 'multi',
       'services': ['prep', 'testing'],
-      'hours': 'Daily 9AM-6PM',
-      'phone': '+63-82-305-6789',
-      'address': 'Downtown Davao City',
+      'operatingHours': OperatingHours(
+        schedule: {
+          'Monday': null,
+          'Tuesday': null,
+          'Wednesday': TimeRange(
+            start: TimeOfDay(hour: 12, minute: 0),
+            end: TimeOfDay(hour: 18, minute: 0),
+          ),
+          'Thursday': TimeRange(
+            start: TimeOfDay(hour: 12, minute: 0),
+            end: TimeOfDay(hour: 18, minute: 0),
+          ),
+          'Friday': TimeRange(
+            start: TimeOfDay(hour: 12, minute: 0),
+            end: TimeOfDay(hour: 18, minute: 0),
+          ),
+          'Saturday': TimeRange(
+            start: TimeOfDay(hour: 12, minute: 0),
+            end: TimeOfDay(hour: 18, minute: 0),
+          ),
+          'Sunday': TimeRange(
+            start: TimeOfDay(hour: 12, minute: 0),
+            end: TimeOfDay(hour: 18, minute: 0),
+          ),
+        },
+      ),
+      'phone': '0918 919 2399',
+      'address': 'Loyola St, Poblacion District, Davao City, Davao del Sur',
       'description':
-          'Community-based center offering PrEP and HIV Testing services',
+          'Free HIV Testing, Anti-Retroviral Treatment, PrEP, PEP and other related services.',
       'serviceDetails': {
         'prep': ['PrEP Services', 'Community Support', 'LGBTQ+ Friendly'],
         'testing': ['HIV Testing', 'Anonymous Testing', 'Community Outreach'],
       },
-      'photos': [],
+      'photos': [
+        'https://lh3.googleusercontent.com/gps-cs-s/AC9h4np3-lyQvkwkY8D700Ph-C8Cyu8TxXnRhap55qP2IJoyOZvetD3ulhzhh2C6SsyjxTLagtpe8TskLyN-mRApceLb33xSf3zOAoR9jJAUhlZDqQS-lO6bB-soXZ3fhK0KN9sA_yT6=w203-h152-k-no',
+        'https://lh3.googleusercontent.com/gps-cs-s/AC9h4nqtJe2p06DwLb3O609cNXWiB-eiydDyWUNMfW1za7y4sVYSwTXA9lb6E0M5bYUAKcFyk7J9QQ50JrQFb8oraBd0flfeHXxqxwF4Y80NiqqZibxfa5_3h1rnvySSqf98gBKqG7e9=w203-h152-k-no',
+      ],
     },
     {
       'id': 'mati_city_health',
       'name': 'Mati City Health Office',
-      'position': LatLng(6.955789, 126.216734),
+      'position': LatLng(6.958550539870867, 126.20859197426022),
       'category': 'multi',
       'services': ['prep', 'testing'],
-      'hours': 'Mon-Fri 8AM-5PM',
-      'phone': '+63-87-388-1234',
-      'address': 'Mati City, Davao Oriental',
+      'operatingHours': OperatingHours(
+        schedule: {
+          'Monday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Tuesday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Wednesday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Thursday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Friday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 17, minute: 0),
+          ),
+          'Saturday': null, // Closed
+          'Sunday': null, // Closed
+        },
+      ),
+      'phone': '0981 339 1408',
+      'address': 'Madang Barangay Central, Mati, Philippines',
       'description': 'City health office with PrEP and HIV Testing services',
       'serviceDetails': {
         'prep': ['PrEP Services', 'Public Health Programs'],
         'testing': ['HIV Testing', 'Health Screening'],
       },
-      'photos': [],
+      'photos': [
+        'https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=0XSyAXyu0Kqjv12yf9njIA&cb_client=search.gws-prod.gps&w=408&h=240&yaw=298.89655&pitch=0&thumbfov=100',
+        'https://scontent.fdvo8-1.fna.fbcdn.net/v/t39.30808-6/482033591_2527759504233323_4325949883873195887_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=Jk2hFVYXEtsQ7kNvwFqtnAT&_nc_oc=Adm7ZWrwocfo9Qtl0fFJKg4BoHhEc8uISGWbZhu8pNoFUp2lzSHcwU92waf6HCAcSC0&_nc_zt=23&_nc_ht=scontent.fdvo8-1.fna&_nc_gid=CBv73EJo6HydwPUyUs2rqQ&oh=00_AfX8VdCDqispk8nAZT1GXcuzEIcnBoTuden6DFiZEGQphg&oe=689A7157',
+      ],
     },
     {
       'id': 'fpop_davao',
-      'name': 'FPOP Davao (Davao City & Davao Oriental)',
-      'position': LatLng(7.088901, 125.627345),
+      'name': 'FPOP Davao ',
+      'position': LatLng(7.075297514436193, 125.61246618683586),
       'category': 'multi',
       'services': ['prep', 'testing'],
       'hours': 'Mon-Sat 9AM-6PM',
-      'phone': '+63-82-297-1234',
-      'address': 'Matina, Davao City',
+      'phone': '0975 635 9974',
+      'address':
+          'COPE building, Door 7 J.P. Laurel Ave, Poblacion District, Davao City, Davao del Sur',
       'description':
           'Family Planning Organization offering PrEP and Testing services',
       'serviceDetails': {
         'prep': ['PrEP Services', 'Family Planning Integration'],
         'testing': ['HIV Testing', 'Reproductive Health Services'],
       },
-      'photos': [],
+      'photos': [
+        'https://lh3.googleusercontent.com/gps-cs-s/AC9h4nq2VvO7mvXaaKCnrG-dy-bn3oW_ZFC6k85LcpkZHv6oKH8E-l7U9GPXdTA_5cpaSFTDkCIWidrx0DcXqDUzSjQHC0Fedro1qX7_SeYLlXACMUrF4SC2XOkohfq-o59XtXO55Yl1iQ=w408-h306-k-no',
+        'https://lh3.googleusercontent.com/gps-cs-s/AC9h4noAN7YXKgwfNygcocBKg6gw8_lPL3RqouWdy-aZCq2oWSIi_6R3JPVDNPdhvxcUFJP8obTsbpRwol52hq03QnHjRPAILF-2mumkqC-JACYxLGcob0fkeo6W_0o80jI0xTuJG9GT4PkNHPB5=s1231-k-no',
+      ],
     },
 
     // SINGLE SERVICE CENTERS - Treatment Hubs Only
     {
       'id': 'spmc_hact',
       'name': 'Southern Philippines Medical Center (SPMC-HACT)',
-      'position': LatLng(7.126956, 125.646439),
+      'position': LatLng(7.09855368510992, 125.61971888002385),
       'category': 'single',
-      'services': ['treatment'],
+      'services': ['treatment', 'prep', 'laboratory'],
       'hours': 'Open 24 hours',
-      'phone': '+63-82-221-8000',
-      'address': 'J.P. Laurel Ave, Bajada, Davao City',
+      'phone': '0955 514 5191',
+      'address': '2nd Fl SPMC Main Building Dumanlas Street Davao City.',
       'description':
           'Major medical center with HIV/AIDS Care and Treatment program',
       'serviceDetails': {
@@ -542,88 +602,150 @@ class _MapScreenState extends State<MapScreen> {
           'Inpatient Services',
         ],
       },
-      'photos': [],
-    },
-    {
-      'id': 'ddh_artu',
-      'name': 'Davao Doctors Hospital (DDH-ARTU)',
-      'position': LatLng(7.081234, 125.613456),
-      'category': 'single',
-      'services': ['treatment'],
-      'hours': 'Open 24 hours',
-      'phone': '+63-82-222-8000',
-      'address': 'E. Quirino Ave, Davao City',
-      'description': 'Private hospital with Anti-Retroviral Treatment Unit',
-      'serviceDetails': {
-        'treatment': [
-          'ARV Treatment',
-          'Private Healthcare',
-          'Specialized Care',
-        ],
-      },
-      'photos': [],
+      'photos': [
+        'https://lh3.googleusercontent.com/gps-cs-s/AC9h4no1j9b8BficpSUr2Hu6fZnWiXUlNYM4I15p1C_YhLrGNpPKUQsNuO_E7dDaU6CBQE-OCPbojO_GIpvanDSltDQRgXSfKdjZ-HxwOkRaXO1xNJcmbdV6Uwf5gohapMg7-jp7ZemQ=w408-h281-k-no',
+        'https://lh3.googleusercontent.com/gps-cs-s/AC9h4npvlZ-Zt96S-t6W16CPVirR5pj_xzXsEXANJtz5QZEo9vucIdEfcg_Ly3MWWFUX-o9RtPSULrWa-QsJ6V4E5UBq_MBErDKNz1Ggi_t4yG8fMGqOaIws9Ob8S_tcEPrV4i-eEgxTww=w203-h270-k-no',
+      ],
     },
 
-    // SINGLE SERVICE CENTERS - PrEP Sites Only
     {
-      'id': 'digos_hygiene',
-      'name': 'Digos Social Hygiene Clinic',
-      'position': LatLng(6.748901, 125.357234),
-      'category': 'single',
-      'services': ['prep'],
-      'hours': 'Mon-Fri 8AM-5PM',
-      'phone': '+63-82-553-1234',
-      'address': 'Digos City, Davao del Sur',
-      'description': 'Social hygiene clinic offering PrEP services',
+      'id': 'digos_rhwc',
+      'name': 'Reproductive Health & Wellness Center Digos',
+      'position': LatLng(6.744915434218531, 125.3640776224826),
+      'category': 'multi',
+      'services': ['treatment', 'prep', 'testing'],
+      'operatingHours': OperatingHours(
+        schedule: {
+          'Monday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 14, minute: 0),
+          ),
+          'Tuesday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 14, minute: 0),
+          ),
+          'Wednesday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 14, minute: 0),
+          ),
+          'Thursday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 14, minute: 0),
+          ),
+          'Friday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 14, minute: 0),
+          ),
+          'Saturday': null, // Closed
+          'Sunday': null, // Closed
+        },
+      ),
+      'phone': '0909 733 9297',
+      'address':
+          'lapu lapu bataan street barangay zone 3, brgy digos city, Digos, Philippines',
+      'description':
+          'Comprehensive HIV center offering all services: Treatment Hub, PrEP, and Testing',
       'serviceDetails': {
-        'prep': ['PrEP Services', 'STI Prevention', 'Health Education'],
+        'treatment': [
+          'HIV Treatment',
+          'ARV Therapy',
+          'Counseling',
+          'Case Management',
+        ],
+        'prep': [
+          'Pre-exposure prophylaxis',
+          'Risk Assessment',
+          'PrEP Monitoring',
+        ],
+        'testing': [
+          'HIV Testing',
+          'Self-Test Kits',
+          'Rapid Testing',
+          'Confirmatory Testing',
+        ],
+        'laboratory': [
+          'CD4 Count',
+          'Viral Load Testing',
+          'Drug Resistance Testing',
+        ],
       },
-      'photos': [],
+      'photos': [
+        'https://scontent.fdvo5-1.fna.fbcdn.net/v/t39.30808-6/481670986_952325677061679_7041732160477496237_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=6ee11a&_nc_ohc=rfRzQA_Nd6kQ7kNvwHxT5uc&_nc_oc=AdlqVmF8msUHxgBlrICZ2l6YL__5aTS1FYF3GeG9OAVD6eUZRPOZ0FqrcXl_bBnv8fE&_nc_zt=23&_nc_ht=scontent.fdvo5-1.fna&_nc_gid=Lk5RZWC0jvJ8P76DEim_Yw&oh=00_AfUJ3kDgSAB1ddW53IPnSB5q6FOsJW8H44nIeU7RxXabNQ&oe=6899E7EF',
+        'https://scontent.fdvo5-1.fna.fbcdn.net/v/t39.30808-6/499928536_1007040124923567_3593286081340667861_n.jpg?_nc_cat=111&ccb=1-7&_nc_sid=833d8c&_nc_ohc=gHDduykdNh4Q7kNvwHpOeC9&_nc_oc=AdlJrswBlKoJjgtAUrsuAM990zmUuzbF5lho0zNuNilRN_P8zcVIab8SdvNadQ5WFfk&_nc_zt=23&_nc_ht=scontent.fdvo5-1.fna&_nc_gid=ctfOQDPqQKTidV_DpBO8tg&oh=00_AfVR8IgDEXd_uJz7ZeI4H1Z9Qxs8KIAdrJqtGnIyeLB2iA&oe=6899E57Ar',
+      ],
     },
     {
       'id': 'sta_cruz_rhu',
       'name': 'Sta. Cruz Rural Health Unit',
-      'position': LatLng(6.879012, 125.408567),
+      'position': LatLng(6.834084731444258, 125.41464803344893),
       'category': 'single',
       'services': ['prep'],
       'hours': 'Mon-Fri 8AM-5PM',
-      'phone': '+63-82-540-5678',
+      'phone': '0948 297 8080',
       'address': 'Sta. Cruz, Davao del Sur',
       'description': 'Rural health unit with PrEP services',
       'serviceDetails': {
         'prep': ['PrEP Services', 'Primary Healthcare', 'Community Programs'],
       },
-      'photos': [],
+      // 'photos': [],
     },
     {
       'id': 'malita_rhu',
       'name': 'Malita Rural Health Unit',
-      'position': LatLng(6.405234, 125.611789),
+      'position': LatLng(6.41472095790284, 125.61080510541582),
       'category': 'single',
       'services': ['prep'],
-      'hours': 'Mon-Fri 8AM-5PM',
-      'phone': '+63-82-517-8901',
+      'hours': 'open 24 hours',
+      'phone': '0920 988 8883',
       'address': 'Malita, Davao Occidental',
       'description': 'Rural health unit offering PrEP services',
       'serviceDetails': {
         'prep': ['PrEP Services', 'Rural Healthcare'],
       },
-      'photos': [],
+      // 'photos': [],
     },
     {
       'id': 'rhwc_tagum',
       'name': 'RHWC Tagum',
-      'position': LatLng(7.448456, 125.807789),
+      'position': LatLng(7.447544329254662, 125.79509492197683),
       'category': 'single',
       'services': ['prep'],
-      'hours': 'Mon-Fri 8AM-5PM',
-      'phone': '+63-84-655-1234',
+      'operatingHours': OperatingHours(
+        schedule: {
+          'Monday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 16, minute: 0),
+          ),
+          'Tuesday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 16, minute: 0),
+          ),
+          'Wednesday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 16, minute: 0),
+          ),
+          'Thursday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 16, minute: 0),
+          ),
+          'Friday': TimeRange(
+            start: TimeOfDay(hour: 8, minute: 0),
+            end: TimeOfDay(hour: 16, minute: 0),
+          ),
+          'Saturday': null, // Closed
+          'Sunday': null, // Closed
+        },
+      ),
+      'phone': 'stihivaids.lgutagum@gmail.com',
       'address': 'Tagum City, Davao del Norte',
       'description': 'Reproductive health center with PrEP services',
       'serviceDetails': {
         'prep': ['PrEP Services', 'Reproductive Health'],
       },
-      'photos': [],
+      'photos': [
+        'https://lh3.googleusercontent.com/gps-cs-s/AC9h4nq6Gy6_xB0SaWmpFT33AM9NLailQVyQ__4bTV-97NpLGnn7sgcO0whYnz9T4cM-xbCguWuyzcXC6wT8nMpTIN4Z_F-N5OQwZWdIU4BRMucywA3h8NiOKMGqY6SHd5CjfxW_gnID=s1360-w1360-h1020',
+        'https://scontent.fdvo8-1.fna.fbcdn.net/v/t39.30808-6/498338553_1021037056832263_2660683057686831311_n.jpg?_nc_cat=102&ccb=1-7&_nc_sid=833d8c&_nc_ohc=b6_FggnROP8Q7kNvwGu4ysb&_nc_oc=AdlkprVjlg3c3AeObON2VAMr0hcen_FbMvnpiVKRLQCVdVRvg2cLUHOr5HK54AGzMy4&_nc_zt=23&_nc_ht=scontent.fdvo8-1.fna&_nc_gid=h6STEcRcKHg1dCazUDG-eQ&oh=00_AfURKeD4yxSeMAipPaNOQ4KClWYCftC9VZxLOvpeFdLQfg&oe=689A8B3A',
+      ],
     },
     {
       'id': 'panabo_hygiene',
@@ -631,9 +753,10 @@ class _MapScreenState extends State<MapScreen> {
       'position': LatLng(7.308456, 125.684123),
       'category': 'single',
       'services': ['prep'],
-      'hours': 'Mon-Fri 8AM-5PM',
-      'phone': '+63-84-823-4567',
-      'address': 'Panabo City, Davao del Norte',
+      'hours': 'Open 24 hours',
+      'phone': '0848221300',
+      'address':
+          'Quezon St. City Health Office Compound Brgy. New Pandan, Panabo, Philippines',
       'description': 'Social hygiene center offering PrEP services',
       'serviceDetails': {
         'prep': ['PrEP Services', 'STI Services', 'Wellness Programs'],
@@ -643,44 +766,90 @@ class _MapScreenState extends State<MapScreen> {
 
     // SINGLE SERVICE CENTERS - Testing Sites Only
     {
-      'id': 'spmc_hact_testing',
-      'name': 'SPMC-HACT Testing',
-      'position': LatLng(7.127511, 125.646994),
-      'category': 'single',
-      'services': ['testing'],
-      'hours': 'Open 24 hours',
-      'phone': '+63-82-221-8000',
-      'address': 'J.P. Laurel Ave, Bajada, Davao City',
-      'description': 'Hospital-based HIV testing services',
-      'serviceDetails': {
-        'testing': ['HIV Testing', 'Laboratory Services', 'Emergency Testing'],
-      },
-      'photos': [],
-    },
-    {
       'id': 'davao_del_sur_hospital',
       'name': 'Davao del Sur Provincial Hospital - HACT',
-      'position': LatLng(6.768901, 125.327234),
+      'position': LatLng(6.74373642086624, 125.36124415303766),
       'category': 'single',
       'services': ['testing'],
-      'hours': 'Mon-Fri 8AM-5PM',
-      'phone': '+63-82-552-1234',
-      'address': 'Digos City, Davao del Sur',
+      'operatingHours': OperatingHours(
+        schedule: {
+          'Monday': TimeRange(
+            start: TimeOfDay(hour: 6, minute: 0),
+            end: TimeOfDay(hour: 16, minute: 0),
+          ),
+          'Tuesday': TimeRange(
+            start: TimeOfDay(hour: 9, minute: 0),
+            end: TimeOfDay(hour: 16, minute: 0),
+          ),
+          'Wednesday': TimeRange(
+            start: TimeOfDay(hour: 9, minute: 0),
+            end: TimeOfDay(hour: 16, minute: 0),
+          ),
+          'Thursday': TimeRange(
+            start: TimeOfDay(hour: 9, minute: 0),
+            end: TimeOfDay(hour: 16, minute: 0),
+          ),
+          'Friday': TimeRange(
+            start: TimeOfDay(hour: 9, minute: 0),
+            end: TimeOfDay(hour: 16, minute: 0),
+          ),
+          'Saturday': null, // Closed
+          'Sunday': null, // Closed
+        },
+      ),
+      'phone': ['0951 410 8208', 'dsph.hact@gmail.com'],
+      'address':
+          'DSPH HACT National Hospital Lapu Lapu St. Digos City Davao del Sur , Digos, Philippines',
       'description': 'Provincial hospital HIV testing services',
       'serviceDetails': {
         'testing': ['HIV Testing', 'Provincial Health Services'],
       },
-      'photos': [],
+      'photos': [
+        'https://scontent.fdvo5-1.fna.fbcdn.net/v/t39.30808-6/469967503_122095147544661639_6801285847419155984_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=XukXUx14BN0Q7kNvwHTpHCi&_nc_oc=AdlwbNd9MrFLLR5UMAR1P6HefSEn_RTv91Vp0Kn6koVxIt_4wYo9pvV-xJzQXm2TMzw&_nc_zt=23&_nc_ht=scontent.fdvo5-1.fna&_nc_gid=dKrXXIUIkTqeBWx3hJyObA&oh=00_AfXM8cMcCN-jM1Yoi9nXjqoACNhlZ4YPtlDziK2_o2Kvhw&oe=689A91BF',
+        'https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=7tc-mg_cRmM8l2lbdcrDig&cb_client=search.gws-prod.gps&w=408&h=240&yaw=0.22927986&pitch=0&thumbfov=100',
+      ],
     },
     {
       'id': 'higala_community',
       'name': 'Higala Community Center',
-      'position': LatLng(7.083567, 125.621234),
+      'position': LatLng(7.082852946701398, 125.61379204505347),
       'category': 'single',
       'services': ['testing'],
-      'hours': 'Mon-Sat 10AM-7PM',
-      'phone': '+63-82-306-7890',
-      'address': 'Central Davao City',
+      'operatingHours': OperatingHours(
+        schedule: {
+          'Monday': TimeRange(
+            start: TimeOfDay(hour: 15, minute: 0),
+            end: TimeOfDay(hour: 22, minute: 0),
+          ),
+          'Tuesday': TimeRange(
+            start: TimeOfDay(hour: 15, minute: 0),
+            end: TimeOfDay(hour: 22, minute: 0),
+          ),
+          'Wednesday': TimeRange(
+            start: TimeOfDay(hour: 15, minute: 0),
+            end: TimeOfDay(hour: 22, minute: 0),
+          ),
+          'Thursday': TimeRange(
+            start: TimeOfDay(hour: 15, minute: 0),
+            end: TimeOfDay(hour: 22, minute: 0),
+          ),
+          'Friday': TimeRange(
+            start: TimeOfDay(hour: 15, minute: 0),
+            end: TimeOfDay(hour: 22, minute: 0),
+          ),
+          'Saturday': TimeRange(
+            start: TimeOfDay(hour: 15, minute: 0),
+            end: TimeOfDay(hour: 22, minute: 0),
+          ),
+          'Sunday': TimeRange(
+            start: TimeOfDay(hour: 15, minute: 0),
+            end: TimeOfDay(hour: 22, minute: 0),
+          ),
+        },
+      ),
+      'phone': '0948 632 0144',
+      'address':
+          'Door 4 Don Pedro, Carriedo Bldg., Loyola St., Bo Obrero Brgy. 13-B , Davao City, Philippines',
       'description': 'LGBTQ+ friendly community center with HIV testing',
       'serviceDetails': {
         'testing': [
@@ -690,38 +859,45 @@ class _MapScreenState extends State<MapScreen> {
           'Anonymous Testing',
         ],
       },
-      'photos': [],
+      'photos': [
+        'https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=YpH4vR-7SzY21xuRKlMFyQ&cb_client=search.gws-prod.gps&w=408&h=240&yaw=183.12291&pitch=0&thumbfov=100',
+        'https://scontent.fdvo5-1.fna.fbcdn.net/v/t39.30808-6/482027691_498340490000623_8452687627038826527_n.jpg?_nc_cat=108&ccb=1-7&_nc_sid=833d8c&_nc_aid=0&_nc_ohc=V82_C1KYZ0IQ7kNvwG5NKXl&_nc_oc=Adm2kF3okArM0ardNf5z9TjIOjJrY_f-H0JNdxDfzvVdHxGQ5c8r2dE5FCTKTvzwUjw&_nc_zt=23&_nc_ht=scontent.fdvo5-1.fna&_nc_gid=LrrCMolFkKjFfm-d7HUk2g&oh=00_AfXcCIeyPx0RxChbuykgTpX3ODBe8XIMNz0R8dtwLZxRTg&oe=689A9903',
+      ],
     },
 
     // SINGLE SERVICE CENTERS - Laboratory Only
     {
-      'id': 'spmc_hiv_lab',
-      'name': 'SPMC HIV LAB',
-      'position': LatLng(7.128066, 125.647549),
+      'id': 'davao_doctors_hospital',
+      'name': 'Davao Doctors Hospital (ARTU)',
+      'position': LatLng(7.070359023666482, 125.60467408187525),
       'category': 'single',
-      'services': ['laboratory'],
-      'hours': 'Mon-Fri 8AM-5PM',
-      'phone': '+63-82-221-8000',
-      'address': 'J.P. Laurel Ave, Bajada, Davao City',
+      'services': ['treatment'],
+      'hours': 'open 24 hours',
+      'phone': '(08) 222 28000',
+      'address':
+          '118 Elpidio Quirino Ave, Poblacion District, Davao City, 8000 Davao del Sur',
       'description': 'Regional HIV/AIDS laboratory testing facility',
       'serviceDetails': {
-        'laboratory': [
-          'CD4 Count',
-          'Viral Load Testing',
-          'Drug Resistance Testing',
-          'Confirmatory Testing',
+        'treatment': [
+          'HIV Treatment',
+          'ARV Therapy',
+          'Counseling',
+          'Case Management',
         ],
       },
-      'photos': [],
+      'photos': [
+        'https://lh3.googleusercontent.com/p/AF1QipOVMr4Vv68D1A5gStPeqCyspLUliTXUdOUZ4LXV=w408-h291-k-no',
+        'https://lh3.googleusercontent.com/gps-cs-s/AC9h4npJjCKxsSMvdzfmLTFzujS8c7ST9A7v0vfNGKW4z--zW8v_Qe_J3_Afs4RC2zXufgMXBEPhVXzp_5PrPZpEzOlVPRiwp291R0MhQjZD61W2DsFxkocBo86gma4xVS38s7zJcZ4nfQ=s819-k-no',
+      ],
     },
     {
-      'id': 'drmc_lab',
-      'name': 'DRMC Laboratory',
-      'position': LatLng(7.070345, 125.618234),
+      'id': 'drmc',
+      'name': 'DRMC',
+      'position': LatLng(7.4223483412456615, 125.82869652866002),
       'category': 'single',
       'services': ['laboratory'],
       'hours': 'Open 24 hours',
-      'phone': '+63-82-227-2731',
+      'phone': 'hemu@drmc.doh.gov.ph',
       'address': 'Tagum City, Davao del Norte',
       'description': 'Regional medical center HIV diagnostic services',
       'serviceDetails': {
@@ -731,7 +907,10 @@ class _MapScreenState extends State<MapScreen> {
           'Emergency Testing',
         ],
       },
-      'photos': [],
+      'photos': [
+        'https://scontent.fdvo8-1.fna.fbcdn.net/v/t39.30808-6/486693600_681798800862453_2212917487596536947_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=cc71e4&_nc_ohc=TAP4JAs_zPUQ7kNvwHufL8E&_nc_oc=Adnqk0El9oVnwQ-xD9yGAk6flCHWi_9JgYr5u0gpGf5tsV31iAMWiFVOr7V7k3Fl12M&_nc_zt=23&_nc_ht=scontent.fdvo8-1.fna&_nc_gid=ehdVmvcd0erpCNzlsDwuAg&oh=00_AfVE7hD347huhVfZ5gm4Chps5qj2uIdeHE09I4tfJQ3a-g&oe=689A7776',
+        'https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=JddCkGeyGe7beW3cwbnTGA&cb_client=maps_sv.tactile.gps&w=203&h=100&yaw=131.56364&pitch=0&thumbfov=100',
+      ],
     },
   ];
 
