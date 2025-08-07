@@ -163,7 +163,7 @@ class _HomePageState extends State<HomePage> {
                           ),
                           child: TextButton(
                             onPressed: () {
-                              if (cards[index].doctor == "find near center") {
+                              if (cards[index].doctor == "center") {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
