@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:projecho/login/signup/UIC.dart'; 
-import 'package:projecho/model/registration_data.dart'; 
+import 'package:projecho/login/signup/UIC.dart';
+import 'package:projecho/models/registration_data.dart';
 
 class TermsAndConditionsPage extends StatefulWidget {
   final RegistrationData registrationData;
 
-  const TermsAndConditionsPage({
-    super.key,
-    required this.registrationData,
-  });
+  const TermsAndConditionsPage({super.key, required this.registrationData});
 
   @override
   State<TermsAndConditionsPage> createState() => _TermsAndConditionsPageState();
@@ -22,7 +19,8 @@ class _TermsAndConditionsPageState extends State<TermsAndConditionsPage> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (context) => UICScreen(registrationData: widget.registrationData),
+          builder:
+              (context) => UICScreen(registrationData: widget.registrationData),
         ),
       );
     } else {
@@ -43,10 +41,7 @@ class _TermsAndConditionsPageState extends State<TermsAndConditionsPage> {
   }
 
   Widget sectionText(String content) {
-    return Text(
-      content,
-      style: const TextStyle(fontSize: 15, height: 1.5),
-    );
+    return Text(content, style: const TextStyle(fontSize: 15, height: 1.5));
   }
 
   @override
@@ -68,7 +63,9 @@ class _TermsAndConditionsPageState extends State<TermsAndConditionsPage> {
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Card(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: SingleChildScrollView(
@@ -76,27 +73,42 @@ class _TermsAndConditionsPageState extends State<TermsAndConditionsPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   sectionTitle("Acceptance of Terms"),
-                  sectionText("By using ECHO, you agree to abide by these terms. If you do not agree, please do not use the app."),
+                  sectionText(
+                    "By using ECHO, you agree to abide by these terms. If you do not agree, please do not use the app.",
+                  ),
                   sectionTitle("Purpose of the App"),
-                  sectionText("ECHO is a support and advocacy platform for people living with HIV (PLHIV)..."),
+                  sectionText(
+                    "ECHO is a support and advocacy platform for people living with HIV (PLHIV)...",
+                  ),
                   sectionTitle("User Responsibilities"),
-                  sectionText("• Provide accurate info during registration\n• Use respectful language\n• Respect others’ privacy..."),
+                  sectionText(
+                    "• Provide accurate info during registration\n• Use respectful language\n• Respect others’ privacy...",
+                  ),
                   sectionTitle("Privacy and Data"),
-                  sectionText("• Your personal data is secure\n• You may request deletion anytime..."),
+                  sectionText(
+                    "• Your personal data is secure\n• You may request deletion anytime...",
+                  ),
                   sectionTitle("Content Ownership"),
                   sectionText("You retain ownership of what you post..."),
                   sectionTitle("Moderation and Removal"),
-                  sectionText("Violating community guidelines may result in removal or bans..."),
+                  sectionText(
+                    "Violating community guidelines may result in removal or bans...",
+                  ),
                   sectionTitle("Location Sharing (Optional)"),
-                  sectionText("Sharing region info is optional and not tied to exact location..."),
+                  sectionText(
+                    "Sharing region info is optional and not tied to exact location...",
+                  ),
                   sectionTitle("Changes to Terms"),
-                  sectionText("Using the app after updates means you accept the changes..."),
+                  sectionText(
+                    "Using the app after updates means you accept the changes...",
+                  ),
 
                   const SizedBox(height: 20),
                   CheckboxListTile(
                     title: const Text("accept the Terms and Conditions."),
                     value: _accepted,
-                    onChanged: (val) => setState(() => _accepted = val ?? false),
+                    onChanged:
+                        (val) => setState(() => _accepted = val ?? false),
                     controlAffinity: ListTileControlAffinity.leading,
                     activeColor: Colors.blue,
                   ),
@@ -113,7 +125,10 @@ class _TermsAndConditionsPageState extends State<TermsAndConditionsPage> {
                     ),
                     child: const Text(
                       "Accept and Continue",
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ],

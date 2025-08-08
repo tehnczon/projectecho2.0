@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:projecho/model/registration_data.dart';
+import 'package:projecho/models/registration_data.dart';
 import 'package:projecho/plhiv_form/yeardiag.dart';
 import 'package:projecho/login/signup/wlcmPrjecho.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

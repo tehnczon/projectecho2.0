@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
-import 'package:projecho/model/registration_data.dart';
+import 'package:projecho/models/registration_data.dart';
 import 'package:projecho/login/signup/genID.dart';
 
 class LocationScreen extends StatefulWidget {

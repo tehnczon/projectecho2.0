@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/painting.dart';
+// import 'package:flutter/painting.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:projecho/model/cardModel.dart';
+import 'package:projecho/models/cardcontent/cardModel.dart';
 import 'package:projecho/carouselSlider.dart';
 import 'package:projecho/screens/profilingform.dart';
-import 'package:projecho/screens/map/nearest_sites_map.dart';
+import 'package:projecho/screens/map/map_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

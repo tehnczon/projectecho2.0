@@ -7,9 +7,13 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:projecho/login/login/inputNum.dart';
 import 'package:projecho/mainPage.dart';
 import 'package:projecho/screens/userProfile.dart';
-// Import the dashboard properly
-import 'package:projecho/screens/Insights.dart'; // Add this import
-import 'package:provider/provider.dart'; // Add this import
+import 'package:projecho/screens/Insights.dart';
+import 'package:provider/provider.dart';
+
+// ADD THESE NEW IMPORTS FOR MAP PROVIDERS
+import 'package:projecho/providers/map_provider.dart';
+import 'package:projecho/providers/location_provider.dart';
+
 import 'firebase_options.dart';
 import 'package:projecho/introduction_animation/onbrdingAnimationScreen.dart';
 
@@ -39,26 +43,35 @@ class MyApp extends StatelessWidget {
       ),
     );
 
-    return MaterialApp(
-      title: 'ProjEcho',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        textTheme: AppTheme.textTheme,
-        platform: TargetPlatform.iOS,
+    // WRAP YOUR ENTIRE MATERIALAPP WITH MULTIPROVIDER
+    return MultiProvider(
+      providers: [
+        // ADD THE MAP PROVIDERS HERE
+        ChangeNotifierProvider(create: (_) => MapProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
+        // Keep your existing analytics provider if needed elsewhere
+      ],
+      child: MaterialApp(
+        title: 'ProjEcho',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          textTheme: AppTheme.textTheme,
+          platform: TargetPlatform.iOS,
+        ),
+        home: MyOnboardingScreen(),
+        routes: {
+          '/enternumber': (context) => EnterNumberPage(),
+          '/home': (context) => MainPage(),
+          '/profile': (context) => UserProfile(),
+          // SIMPLIFIED DASHBOARD ROUTE - Provider now available from top level
+          '/dashboard':
+              (context) => ChangeNotifierProvider(
+                create: (_) => AnalyticsProvider(),
+                child: PLHIVDashboard(),
+              ),
+        },
       ),
-      home: MyOnboardingScreen(),
-      routes: {
-        '/enternumber': (context) => EnterNumberPage(),
-        '/home': (context) => MainPage(),
-        '/profile': (context) => UserProfile(),
-        // Add the dashboard route properly
-        '/dashboard':
-            (context) => ChangeNotifierProvider(
-              create: (_) => AnalyticsProvider(),
-              child: PLHIVDashboard(),
-            ),
-      },
     );
   }
 }

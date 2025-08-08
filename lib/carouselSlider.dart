@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:projecho/model/bannerModel.dart';
+import 'package:projecho/models/cardcontent/bannerModel.dart';
 
 class Carouselslider extends StatelessWidget {
   const Carouselslider({super.key});
@@ -39,10 +39,7 @@ class Carouselslider extends StatelessWidget {
                   Positioned.fill(
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(20),
-                      child: Image.asset(
-                        banner.image,
-                        fit: BoxFit.cover,
-                      ),
+                      child: Image.asset(banner.image, fit: BoxFit.cover),
                     ),
                   ),
                   Container(

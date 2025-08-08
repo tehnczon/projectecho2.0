@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:projecho/login/signup/terms_and_condition.dart';
-import 'package:projecho/model/registration_data.dart';
+import 'package:projecho/models/registration_data.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phoneNumber;
