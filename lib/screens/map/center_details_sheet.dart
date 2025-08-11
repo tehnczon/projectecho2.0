@@ -1,643 +1,732 @@
-// lib/widgets/map/center_details_sheet.dart - ENHANCED VERSION
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/hiv_center.dart';
+import 'dart:ui';
 
-class CenterDetailsSheet extends StatelessWidget {
+// Main function to show the bottom sheet
+void showCenterDetailsSheet(BuildContext context, HIVCenter center) {
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    isDismissible: true,
+    enableDrag: true,
+    backgroundColor: Colors.transparent,
+    builder: (context) => CenterDetailsSheet(center: center),
+  ).then((_) {
+    // Optional: Add any cleanup code here
+  });
+}
+
+class CenterDetailsSheet extends StatefulWidget {
   final HIVCenter center;
-  final VoidCallback onClose;
+  final VoidCallback? onClose;
 
-  const CenterDetailsSheet({
-    Key? key,
-    required this.center,
-    required this.onClose,
-  }) : super(key: key);
+  const CenterDetailsSheet({Key? key, required this.center, this.onClose})
+    : super(key: key);
+
+  @override
+  State<CenterDetailsSheet> createState() => _CenterDetailsSheetState();
+}
+
+class _CenterDetailsSheetState extends State<CenterDetailsSheet> {
+  final DraggableScrollableController _draggableController =
+      DraggableScrollableController();
+  final PageController _pageController = PageController();
+  int _currentPhotoIndex = 0;
+
+  // Facebook-like color scheme
+  final Color fbBlue = const Color(0xFF1877F2);
+  final Color fbDarkBlue = const Color(0xFF1C4B8C);
+  final Color fbLightGray = const Color(0xFFF0F2F5);
+  final Color fbGray = const Color(0xFFE4E6EB);
+  final Color fbTextPrimary = const Color(0xFF050505);
+  final Color fbTextSecondary = const Color(0xFF65676B);
+  final Color fbGreen = const Color(0xFF42B883);
+  final Color fbCardBg = Colors.white;
+
+  // Weekly schedule - you can modify this based on your data structure
+  final Map<String, Map<String, dynamic>> weeklySchedule = {
+    'Monday': {'open': '8:00 AM', 'close': '6:00 PM', 'isOpen': true},
+    'Tuesday': {'open': '8:00 AM', 'close': '6:00 PM', 'isOpen': true},
+    'Wednesday': {'open': '8:00 AM', 'close': '6:00 PM', 'isOpen': true},
+    'Thursday': {'open': '8:00 AM', 'close': '6:00 PM', 'isOpen': true},
+    'Friday': {'open': '8:00 AM', 'close': '5:00 PM', 'isOpen': true},
+    'Saturday': {'open': '9:00 AM', 'close': '2:00 PM', 'isOpen': true},
+    'Sunday': {'open': 'Closed', 'close': '', 'isOpen': false},
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _draggableController.addListener(_onDragUpdate);
+  }
+
+  @override
+  void dispose() {
+    _draggableController.removeListener(_onDragUpdate);
+    _draggableController.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onDragUpdate() {
+    if (_draggableController.size < 0.1) {
+      // Close the sheet when dragged below 10%
+      if (widget.onClose != null) {
+        widget.onClose!();
+      } else {
+        Navigator.of(context).maybePop();
+      }
+    }
+  }
+
+  Future<void> _launchUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    }
+  }
+
+  void _launchMaps() {
+    final address = widget.center.contactInfo.address ?? widget.center.name;
+    final mapsUrl =
+        'https://www.google.com/maps/search/?api=1&query=${Uri.encodeComponent(address)}';
+    _launchUrl(mapsUrl);
+  }
+
+  List<String> get _photos {
+    // Return photos or placeholder
+    if (widget.center.photos.isNotEmpty) {
+      return widget.center.photos;
+    }
+    return [
+      'https://via.placeholder.com/400x200/1877F2/FFFFFF?text=Health+Center',
+    ];
+  }
+
+  String get _currentDay {
+    final now = DateTime.now();
+    final days = [
+      'Sunday',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+    ];
+    return days[now.weekday % 7];
+  }
+
+  bool get _isCurrentlyOpen {
+    final schedule = weeklySchedule[_currentDay];
+    return schedule?['isOpen'] ?? false;
+  }
 
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
-      initialChildSize: 0.5,
+      controller: _draggableController,
+      initialChildSize: 0.7,
       minChildSize: 0.0,
-      maxChildSize: 0.9,
+      maxChildSize: 0.95,
       snap: true,
-      snapSizes: const [0.0, 0.5, 0.9],
+      snapSizes: const [0.0, 0.35, 0.7, 0.95],
       builder: (context, scrollController) {
-        return NotificationListener<DraggableScrollableNotification>(
-          onNotification: (notification) {
-            if (notification.extent <= 0.05) {
-              WidgetsBinding.instance.addPostFrameCallback((_) => onClose());
-            }
-            return true;
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(24),
+        return Container(
+          decoration: BoxDecoration(
+            color: fbCardBg,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 20,
+                offset: const Offset(0, -5),
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 20,
-                  offset: const Offset(0, -4),
-                ),
-              ],
-            ),
-            child: SingleChildScrollView(
-              controller: scrollController,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Handle bar
-                  Center(
-                    child: Container(
-                      margin: const EdgeInsets.only(top: 12, bottom: 8),
-                      width: 48,
-                      height: 5,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(100),
-                      ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              CustomScrollView(
+                controller: scrollController,
+                slivers: [
+                  // Hero Image Carousel
+                  SliverToBoxAdapter(
+                    child: Stack(
+                      children: [
+                        // Photo Carousel
+                        Container(
+                          height: 200,
+                          child: PageView.builder(
+                            controller: _pageController,
+                            onPageChanged: (index) {
+                              setState(() {
+                                _currentPhotoIndex = index;
+                              });
+                            },
+                            itemCount: _photos.length,
+                            itemBuilder: (context, index) {
+                              return Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(16),
+                                  ),
+                                  image: DecorationImage(
+                                    image: NetworkImage(_photos[index]),
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                child: Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: const BorderRadius.vertical(
+                                      top: Radius.circular(16),
+                                    ),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.transparent,
+                                        Colors.black.withOpacity(0.3),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        // Drag Handle
+                        Positioned(
+                          top: 12,
+                          left: 0,
+                          right: 0,
+                          child: Center(
+                            child: Container(
+                              width: 40,
+                              height: 5,
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(2.5),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    blurRadius: 2,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Photo Indicators
+                        if (_photos.length > 1)
+                          Positioned(
+                            bottom: 12,
+                            left: 0,
+                            right: 0,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(
+                                _photos.length,
+                                (index) => Container(
+                                  margin: const EdgeInsets.symmetric(
+                                    horizontal: 2,
+                                  ),
+                                  width: index == _currentPhotoIndex ? 24 : 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color:
+                                        index == _currentPhotoIndex
+                                            ? Colors.white
+                                            : Colors.white.withOpacity(0.5),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
+                  // Content Section
+                  SliverToBoxAdapter(
+                    child: Container(
+                      color: fbCardBg,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Header Info
+                          _buildHeaderInfo(),
 
-                  // Photo Gallery
-                  if (center.photos.isNotEmpty) _buildPhotoGallery(),
+                          // Directions Button
+                          _buildDirectionsButton(),
 
-                  // Content
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Title and Status
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    center.name,
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                      height: 1.2,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  // Address
-                                  Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.location_on,
-                                        size: 18,
-                                        color: Colors.grey,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          center.contactInfo.address,
-                                          style: TextStyle(
-                                            color: Colors.grey[600],
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            // Status Badge
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 6,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    center.isOpenNow
-                                        ? Colors.green.withOpacity(0.1)
-                                        : Colors.orange.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color:
-                                      center.isOpenNow
-                                          ? Colors.green
-                                          : Colors.orange,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    width: 8,
-                                    height: 8,
-                                    decoration: BoxDecoration(
-                                      color:
-                                          center.isOpenNow
-                                              ? Colors.green
-                                              : Colors.orange,
-                                      shape: BoxShape.circle,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    center.isOpenNow ? 'Open' : 'Closed',
-                                    style: TextStyle(
-                                      color:
-                                          center.isOpenNow
-                                              ? Colors.green
-                                              : Colors.orange,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 20),
+                          const Divider(height: 1),
 
-                        // Category badge
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
+                          // About Section
+                          _buildSection(
+                            icon: Icons.info_outline,
+                            title: 'About',
+                            child: _buildAboutContent(),
                           ),
-                          decoration: BoxDecoration(
-                            color:
-                                center.isMultiService
-                                    ? Colors.purple.withOpacity(0.1)
-                                    : center.primaryService.color.withOpacity(
-                                      0.1,
-                                    ),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color:
-                                  center.isMultiService
-                                      ? Colors.purple
-                                      : center.primaryService.color,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                center.isMultiService
-                                    ? Icons.auto_awesome
-                                    : center.primaryService.icon,
-                                size: 16,
-                                color:
-                                    center.isMultiService
-                                        ? Colors.purple
-                                        : center.primaryService.color,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                center.isMultiService
-                                    ? 'Multi-Service Center'
-                                    : center.primaryService.label,
-                                style: TextStyle(
-                                  color:
-                                      center.isMultiService
-                                          ? Colors.purple
-                                          : center.primaryService.color,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: 20),
 
-                        // Services
-                        const Text(
-                          'Services Available',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                          // Services Section
+                          _buildSection(
+                            icon: Icons.medical_services,
+                            title: 'Services Available',
+                            child: _buildServicesContent(),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children:
-                              center.services.map((service) {
-                                return Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: service.color.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: service.color.withOpacity(0.3),
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        service.icon,
-                                        size: 16,
-                                        color: service.color,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        service.label,
-                                        style: TextStyle(
-                                          color: service.color,
-                                          fontWeight: FontWeight.w500,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }).toList(),
-                        ),
-                        const SizedBox(height: 24),
 
-                        // Contact Information
-                        if (center.contactInfo.hasAnyContact) ...[
-                          const Text(
-                            'Contact Information',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          // Operating Hours Section with Weekly Schedule
+                          _buildSection(
+                            icon: Icons.schedule,
+                            title: 'Operating Hours',
+                            child: _buildWeeklySchedule(),
                           ),
-                          const SizedBox(height: 12),
-                          _buildContactSection(),
-                          const SizedBox(height: 24),
+
+                          // Contact Section
+                          _buildSection(
+                            icon: Icons.location_on,
+                            title: 'Contact & Location',
+                            child: _buildContactContent(),
+                          ),
+
+                          const SizedBox(height: 32),
                         ],
-
-                        // Hours
-                        const Text(
-                          'Operating Hours',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.blue.withOpacity(0.05),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.blue.withOpacity(0.1),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.access_time,
-                                size: 20,
-                                color:
-                                    center.isOpenNow
-                                        ? Colors.green
-                                        : Colors.orange,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  center.displayHours,
-                                  style: TextStyle(
-                                    color:
-                                        center.isOpenNow
-                                            ? Colors.green
-                                            : Colors.orange,
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 15,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        // Description
-                        if (center.description != null) ...[
-                          const SizedBox(height: 24),
-                          const Text(
-                            'About This Center',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-                          Text(
-                            center.description!,
-                            style: const TextStyle(
-                              fontSize: 15,
-                              height: 1.5,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ],
-
-                        // Action Buttons
-                        const SizedBox(height: 32),
-                        _buildActionButtons(),
-
-                        const SizedBox(height: 20),
-                      ],
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
+              // Close Button
+              Positioned(
+                top: 12,
+                right: 12,
+                child: Material(
+                  color: Colors.black.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(20),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(20),
+                    onTap: () {
+                      if (widget.onClose != null) {
+                        widget.onClose!();
+                      } else {
+                        Navigator.of(context).pop();
+                      }
+                    },
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                      child: const Icon(
+                        Icons.close,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  Widget _buildPhotoGallery() {
-    if (center.photos.isEmpty) return const SizedBox.shrink();
-
-    return Container(
-      height: 200,
-      child: PageView.builder(
-        itemCount: center.photos.length,
-        itemBuilder: (context, index) {
-          return Container(
-            decoration: BoxDecoration(
-              image: DecorationImage(
-                image: NetworkImage(center.photos[index]),
-                fit: BoxFit.cover,
-                onError: (error, stackTrace) {},
-              ),
+  Widget _buildHeaderInfo() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            widget.center.name,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: fbTextPrimary,
             ),
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Colors.transparent, Colors.black.withOpacity(0.3)],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(Icons.verified, size: 16, color: fbBlue),
+              const SizedBox(width: 4),
+              Text(
+                'Verified Health Center',
+                style: TextStyle(fontSize: 14, color: fbTextSecondary),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color:
+                      _isCurrentlyOpen
+                          ? fbGreen.withOpacity(0.1)
+                          : Colors.red.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  _isCurrentlyOpen ? 'OPEN NOW' : 'CLOSED',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: _isCurrentlyOpen ? fbGreen : Colors.red,
+                  ),
                 ),
               ),
-              child: Stack(
-                children: [
-                  if (center.photos.length > 1)
-                    Positioned(
-                      bottom: 16,
-                      right: 16,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          '${index + 1}/${center.photos.length}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          );
-        },
+            ],
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildContactSection() {
-    return Column(
+  Widget _buildDirectionsButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: SizedBox(
+        width: double.infinity,
+        child: ElevatedButton.icon(
+          onPressed: _launchMaps,
+          icon: const Icon(Icons.directions, size: 20),
+          label: const Text('Get Directions'),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: fbBlue,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSection({
+    required IconData icon,
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, size: 20, color: fbBlue),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: fbTextPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAboutContent() {
+    return Text(
+      widget.center.description ??
+          'We provide comprehensive HIV testing and treatment services in a safe, confidential, and supportive environment. Our experienced medical team is dedicated to delivering quality healthcare with compassion and respect.',
+      style: TextStyle(fontSize: 14, color: fbTextPrimary, height: 1.5),
+    );
+  }
+
+  Widget _buildServicesContent() {
+    return Row(
       children: [
-        // Phone
-        if (center.contactInfo.hasPhone)
-          _buildContactItem(
-            icon: Icons.phone,
-            label: 'Phone',
-            value: center.contactInfo.phone!,
-            color: Colors.green,
-            onTap: () => _makePhoneCall(center.contactInfo.phone!),
+        Expanded(
+          child: _buildServiceCard(
+            available: widget.center.hasTesting,
+            icon: Icons.biotech,
+            title: 'HIV Testing',
+            description: 'Rapid & lab testing',
           ),
-
-        // Email
-        if (center.contactInfo.hasEmail)
-          _buildContactItem(
-            icon: Icons.email,
-            label: 'Email',
-            value: center.contactInfo.email!,
-            color: Colors.blue,
-            onTap: () => _sendEmail(center.contactInfo.email!),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildServiceCard(
+            available: widget.center.hasTreatment,
+            icon: Icons.medical_services,
+            title: 'Treatment',
+            description: 'ART therapy',
           ),
-
-        // Facebook
-        if (center.contactInfo.hasFacebook)
-          _buildContactItem(
-            icon: Icons.facebook,
-            label: 'Facebook',
-            value: center.contactInfo.facebook!,
-            color: const Color(0xFF1877F2),
-            onTap: () => _openFacebook(center.contactInfo.facebook!),
-          ),
-
-        // Website
-        if (center.contactInfo.hasWebsite)
-          _buildContactItem(
-            icon: Icons.language,
-            label: 'Website',
-            value: center.contactInfo.website!,
-            color: Colors.orange,
-            onTap: () => _openWebsite(center.contactInfo.website!),
-          ),
+        ),
       ],
     );
   }
 
-  Widget _buildContactItem({
+  Widget _buildServiceCard({
+    required bool available,
     required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-    required VoidCallback onTap,
+    required String title,
+    required String description,
   }) {
+    final color = available ? fbGreen : Colors.grey;
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: fbTextPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            available ? description : 'Not available',
+            style: TextStyle(fontSize: 12, color: fbTextSecondary),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeeklySchedule() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Current status
+        Container(
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: color.withOpacity(0.1)),
+            color:
+                _isCurrentlyOpen
+                    ? fbGreen.withOpacity(0.1)
+                    : Colors.red.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, size: 20, color: color),
+              Icon(
+                _isCurrentlyOpen ? Icons.check_circle : Icons.cancel,
+                color: _isCurrentlyOpen ? fbGreen : Colors.red,
+                size: 20,
               ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      value,
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
+              const SizedBox(width: 8),
+              Text(
+                _isCurrentlyOpen
+                    ? 'Open now · Closes at ${weeklySchedule[_currentDay]?['close']}'
+                    : 'Closed now',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: _isCurrentlyOpen ? fbGreen : Colors.red,
                 ),
               ),
-              Icon(Icons.arrow_forward_ios, size: 16, color: color),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildActionButtons() {
-    return Column(
-      children: [
-        Row(
-          children: [
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: () => _getDirections(),
-                icon: const Icon(Icons.directions),
-                label: const Text('Get Directions'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _shareCenter(),
-                icon: const Icon(Icons.share),
-                label: const Text('Share'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
         const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: () => _saveToBookmarks(),
-            icon: const Icon(Icons.bookmark_add),
-            label: const Text('Save to Bookmarks'),
-            style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+        // Weekly schedule
+        Container(
+          decoration: BoxDecoration(
+            border: Border.all(color: fbGray),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Column(
+            children:
+                weeklySchedule.entries.map((entry) {
+                  final isToday = entry.key == _currentDay;
+                  final isOpen = entry.value['isOpen'];
+
+                  return InkWell(
+                    onTap: () {
+                      // You can add functionality here if needed
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${entry.key}: ${isOpen ? "${entry.value['open']} - ${entry.value['close']}" : "Closed"}',
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color:
+                            isToday
+                                ? fbBlue.withOpacity(0.05)
+                                : Colors.transparent,
+                        border: Border(
+                          bottom: BorderSide(
+                            color:
+                                entry.key != 'Sunday'
+                                    ? fbGray
+                                    : Colors.transparent,
+                            width: 0.5,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 100,
+                            child: Text(
+                              entry.key,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight:
+                                    isToday
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                color: isToday ? fbBlue : fbTextPrimary,
+                              ),
+                            ),
+                          ),
+                          Expanded(
+                            child: Text(
+                              isOpen
+                                  ? '${entry.value['open']} - ${entry.value['close']}'
+                                  : 'Closed',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isOpen ? fbTextPrimary : Colors.red,
+                                fontWeight:
+                                    isToday
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                              ),
+                            ),
+                          ),
+                          if (isToday)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: fbBlue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'TODAY',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: fbBlue,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
           ),
         ),
       ],
     );
   }
 
-  // Action methods
-  Future<void> _makePhoneCall(String phone) async {
-    final Uri phoneUrl = Uri.parse('tel:$phone');
-    if (await canLaunchUrl(phoneUrl)) {
-      await launchUrl(phoneUrl);
-    }
+  Widget _buildContactContent() {
+    return Column(
+      children: [
+        if (widget.center.contactInfo.address != null)
+          _buildContactRow(
+            icon: Icons.location_on,
+            label: 'Address',
+            value: widget.center.contactInfo.address!,
+            onTap: _launchMaps,
+          ),
+        if (widget.center.contactInfo.phone != null) ...[
+          const SizedBox(height: 12),
+          _buildContactRow(
+            icon: Icons.phone,
+            label: 'Phone',
+            value: widget.center.contactInfo.phone!,
+            onTap: () => _launchUrl('tel:${widget.center.contactInfo.phone}'),
+          ),
+        ],
+        if (widget.center.contactInfo.email != null) ...[
+          const SizedBox(height: 12),
+          _buildContactRow(
+            icon: Icons.email,
+            label: 'Email',
+            value: widget.center.contactInfo.email!,
+            onTap:
+                () => _launchUrl('mailto:${widget.center.contactInfo.email}'),
+          ),
+        ],
+      ],
+    );
   }
 
-  Future<void> _sendEmail(String email) async {
-    final Uri emailUrl = Uri.parse('mailto:$email');
-    if (await canLaunchUrl(emailUrl)) {
-      await launchUrl(emailUrl);
-    }
-  }
-
-  Future<void> _openFacebook(String facebook) async {
-    // Handle both full URLs and usernames
-    String url = facebook;
-    if (!facebook.startsWith('http')) {
-      url = 'https://facebook.com/$facebook';
-    }
-
-    final Uri facebookUrl = Uri.parse(url);
-    if (await canLaunchUrl(facebookUrl)) {
-      await launchUrl(facebookUrl, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  Future<void> _openWebsite(String website) async {
-    String url = website;
-    if (!website.startsWith('http')) {
-      url = 'https://$website';
-    }
-
-    final Uri websiteUrl = Uri.parse(url);
-    if (await canLaunchUrl(websiteUrl)) {
-      await launchUrl(websiteUrl, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  Future<void> _getDirections() async {
-    final url =
-        'https://www.google.com/maps/search/?api=1&query=${center.position.latitude},${center.position.longitude}';
-    final Uri directionsUrl = Uri.parse(url);
-    if (await canLaunchUrl(directionsUrl)) {
-      await launchUrl(directionsUrl, mode: LaunchMode.externalApplication);
-    }
-  }
-
-  void _shareCenter() {
-    // TODO: Implement sharing functionality
-    // You can use the share_plus package for this
-  }
-
-  void _saveToBookmarks() {
-    // TODO: Implement bookmark functionality
+  Widget _buildContactRow({
+    required IconData icon,
+    required String label,
+    required String value,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: fbLightGray,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: fbBlue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Icon(icon, size: 20, color: fbBlue),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(fontSize: 11, color: fbTextSecondary),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    value,
+                    style: TextStyle(fontSize: 14, color: fbTextPrimary),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, size: 20, color: fbTextSecondary),
+          ],
+        ),
+      ),
+    );
   }
 }
