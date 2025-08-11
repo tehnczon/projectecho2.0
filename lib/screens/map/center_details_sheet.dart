@@ -33,6 +33,8 @@ class _CenterDetailsSheetState extends State<CenterDetailsSheet> {
       DraggableScrollableController();
   final PageController _pageController = PageController();
   int _currentPhotoIndex = 0;
+  bool _isScrollingUp = false;
+  double _lastPosition = 0.0;
 
   // Facebook-like color scheme
   final Color fbBlue = const Color(0xFF1877F2);
@@ -70,13 +72,29 @@ class _CenterDetailsSheetState extends State<CenterDetailsSheet> {
   }
 
   void _onDragUpdate() {
-    if (_draggableController.size < 0.1) {
-      // Close the sheet when dragged below 10%
-      if (widget.onClose != null) {
-        widget.onClose!();
-      } else {
-        Navigator.of(context).maybePop();
-      }
+    final currentSize = _draggableController.size;
+
+    // Detect scroll direction
+    if (currentSize > _lastPosition) {
+      _isScrollingUp = true;
+    } else if (currentSize < _lastPosition) {
+      _isScrollingUp = false;
+    }
+
+    _lastPosition = currentSize;
+
+    // Auto-close when dragged very low
+    if (currentSize < 0.08 && !_isScrollingUp) {
+      // Small delay to ensure smooth animation
+      Future.delayed(const Duration(milliseconds: 50), () {
+        if (mounted) {
+          if (widget.onClose != null) {
+            widget.onClose!();
+          } else {
+            Navigator.of(context).maybePop();
+          }
+        }
+      });
     }
   }
 
@@ -125,213 +143,256 @@ class _CenterDetailsSheetState extends State<CenterDetailsSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return DraggableScrollableSheet(
-      controller: _draggableController,
-      initialChildSize: 0.7,
-      minChildSize: 0.0,
-      maxChildSize: 0.95,
-      snap: true,
-      snapSizes: const [0.0, 0.35, 0.7, 0.95],
-      builder: (context, scrollController) {
-        return Container(
-          decoration: BoxDecoration(
-            color: fbCardBg,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 20,
-                offset: const Offset(0, -5),
+    return NotificationListener<ScrollNotification>(
+      onNotification: (scrollNotification) {
+        // If scrolling down at the top of the list, close the sheet
+        if (scrollNotification is ScrollUpdateNotification) {
+          if (scrollNotification.metrics.pixels < -50 &&
+              scrollNotification.dragDetails != null &&
+              scrollNotification.dragDetails!.delta.dy > 0) {
+            // User is pulling down beyond the top
+            if (widget.onClose != null) {
+              widget.onClose!();
+            } else {
+              Navigator.of(context).maybePop();
+            }
+          }
+        }
+        return false;
+      },
+      child: DraggableScrollableSheet(
+        controller: _draggableController,
+        initialChildSize: 0.4, // Start at collapsed state like Google Maps
+        minChildSize: 0.0,
+        maxChildSize: 0.95,
+        snap: true,
+        snapSizes: const [
+          0.0,
+          0.4,
+          0.95,
+        ], // Only 3 states: closed, collapsed, expanded
+        snapAnimationDuration: const Duration(milliseconds: 150),
+        shouldCloseOnMinExtent: false, // We handle closing manually
+        builder: (context, scrollController) {
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            decoration: BoxDecoration(
+              color: fbCardBg,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(16),
               ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              CustomScrollView(
-                controller: scrollController,
-                slivers: [
-                  // Hero Image Carousel
-                  SliverToBoxAdapter(
-                    child: Stack(
-                      children: [
-                        // Photo Carousel
-                        Container(
-                          height: 200,
-                          child: PageView.builder(
-                            controller: _pageController,
-                            onPageChanged: (index) {
-                              setState(() {
-                                _currentPhotoIndex = index;
-                              });
-                            },
-                            itemCount: _photos.length,
-                            itemBuilder: (context, index) {
-                              return Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(16),
-                                  ),
-                                  image: DecorationImage(
-                                    image: NetworkImage(_photos[index]),
-                                    fit: BoxFit.cover,
-                                  ),
-                                ),
-                                child: Container(
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 20,
+                  offset: const Offset(0, -5),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                CustomScrollView(
+                  controller: scrollController,
+                  physics: const BouncingScrollPhysics(
+                    parent: AlwaysScrollableScrollPhysics(),
+                  ),
+                  slivers: [
+                    // Hero Image Carousel
+                    SliverToBoxAdapter(
+                      child: Stack(
+                        children: [
+                          // Photo Carousel
+                          Container(
+                            height: 200,
+                            child: PageView.builder(
+                              controller: _pageController,
+                              onPageChanged: (index) {
+                                setState(() {
+                                  _currentPhotoIndex = index;
+                                });
+                              },
+                              itemCount: _photos.length,
+                              itemBuilder: (context, index) {
+                                return Container(
                                   decoration: BoxDecoration(
                                     borderRadius: const BorderRadius.vertical(
                                       top: Radius.circular(16),
                                     ),
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.transparent,
-                                        Colors.black.withOpacity(0.3),
-                                      ],
+                                    image: DecorationImage(
+                                      image: NetworkImage(_photos[index]),
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(16),
+                                      ),
+                                      gradient: LinearGradient(
+                                        begin: Alignment.topCenter,
+                                        end: Alignment.bottomCenter,
+                                        colors: [
+                                          Colors.transparent,
+                                          Colors.black.withOpacity(0.3),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                          // Drag Handle with better touch target
+                          Positioned(
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onVerticalDragUpdate: (details) {
+                                // Better drag feedback
+                                _draggableController.jumpTo(
+                                  _draggableController.size -
+                                      (details.delta.dy / context.size!.height),
+                                );
+                              },
+                              child: Container(
+                                height: 30, // Larger touch area
+                                color: Colors.transparent,
+                                alignment: Alignment.topCenter,
+                                child: Container(
+                                  margin: const EdgeInsets.only(top: 12),
+                                  width: 40,
+                                  height: 5,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.9),
+                                    borderRadius: BorderRadius.circular(2.5),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        blurRadius: 2,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          // Photo Indicators
+                          if (_photos.length > 1)
+                            Positioned(
+                              bottom: 12,
+                              left: 0,
+                              right: 0,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: List.generate(
+                                  _photos.length,
+                                  (index) => Container(
+                                    margin: const EdgeInsets.symmetric(
+                                      horizontal: 2,
+                                    ),
+                                    width: index == _currentPhotoIndex ? 24 : 8,
+                                    height: 8,
+                                    decoration: BoxDecoration(
+                                      color:
+                                          index == _currentPhotoIndex
+                                              ? Colors.white
+                                              : Colors.white.withOpacity(0.5),
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
                                   ),
                                 ),
-                              );
-                            },
-                          ),
-                        ),
-                        // Drag Handle
-                        Positioned(
-                          top: 12,
-                          left: 0,
-                          right: 0,
-                          child: Center(
-                            child: Container(
-                              width: 40,
-                              height: 5,
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(2.5),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    blurRadius: 2,
-                                  ),
-                                ],
                               ),
                             ),
-                          ),
-                        ),
-                        // Photo Indicators
-                        if (_photos.length > 1)
-                          Positioned(
-                            bottom: 12,
-                            left: 0,
-                            right: 0,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: List.generate(
-                                _photos.length,
-                                (index) => Container(
-                                  margin: const EdgeInsets.symmetric(
-                                    horizontal: 2,
-                                  ),
-                                  width: index == _currentPhotoIndex ? 24 : 8,
-                                  height: 8,
-                                  decoration: BoxDecoration(
-                                    color:
-                                        index == _currentPhotoIndex
-                                            ? Colors.white
-                                            : Colors.white.withOpacity(0.5),
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  // Content Section
-                  SliverToBoxAdapter(
-                    child: Container(
-                      color: fbCardBg,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Header Info
-                          _buildHeaderInfo(),
-
-                          // Directions Button
-                          _buildDirectionsButton(),
-
-                          const Divider(height: 1),
-
-                          // About Section
-                          _buildSection(
-                            icon: Icons.info_outline,
-                            title: 'About',
-                            child: _buildAboutContent(),
-                          ),
-
-                          // Services Section
-                          _buildSection(
-                            icon: Icons.medical_services,
-                            title: 'Services Available',
-                            child: _buildServicesContent(),
-                          ),
-
-                          // Operating Hours Section with Weekly Schedule
-                          _buildSection(
-                            icon: Icons.schedule,
-                            title: 'Operating Hours',
-                            child: _buildWeeklySchedule(),
-                          ),
-
-                          // Contact Section
-                          _buildSection(
-                            icon: Icons.location_on,
-                            title: 'Contact & Location',
-                            child: _buildContactContent(),
-                          ),
-
-                          const SizedBox(height: 32),
                         ],
                       ),
                     ),
-                  ),
-                ],
-              ),
-              // Close Button
-              Positioned(
-                top: 12,
-                right: 12,
-                child: Material(
-                  color: Colors.black.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(20),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(20),
-                    onTap: () {
-                      if (widget.onClose != null) {
-                        widget.onClose!();
-                      } else {
-                        Navigator.of(context).pop();
-                      }
-                    },
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(18),
+                    // Content Section
+                    SliverToBoxAdapter(
+                      child: Container(
+                        color: fbCardBg,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Header Info
+                            _buildHeaderInfo(),
+
+                            // Directions Button
+                            _buildDirectionsButton(),
+
+                            const Divider(height: 1),
+
+                            // About Section
+                            _buildSection(
+                              icon: Icons.info_outline,
+                              title: 'About',
+                              child: _buildAboutContent(),
+                            ),
+
+                            // Services Section
+                            _buildSection(
+                              icon: Icons.medical_services,
+                              title: 'Services Available',
+                              child: _buildServicesContent(),
+                            ),
+
+                            // Operating Hours Section with Weekly Schedule
+                            _buildSection(
+                              icon: Icons.schedule,
+                              title: 'Operating Hours',
+                              child: _buildWeeklySchedule(),
+                            ),
+
+                            // Contact Section
+                            _buildSection(
+                              icon: Icons.location_on,
+                              title: 'Contact & Location',
+                              child: _buildContactContent(),
+                            ),
+
+                            const SizedBox(height: 32),
+                          ],
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.close,
-                        color: Colors.white,
-                        size: 20,
+                    ),
+                  ],
+                ),
+                // Close Button
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Material(
+                    color: Colors.black.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(20),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        if (widget.onClose != null) {
+                          widget.onClose!();
+                        } else {
+                          Navigator.of(context).pop();
+                        }
+                      },
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 20,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -655,6 +716,7 @@ class _CenterDetailsSheetState extends State<CenterDetailsSheet> {
             icon: Icons.location_on,
             label: 'Address',
             value: widget.center.contactInfo.address!,
+            color: fbBlue,
             onTap: _launchMaps,
           ),
         if (widget.center.contactInfo.phone != null) ...[
@@ -663,6 +725,7 @@ class _CenterDetailsSheetState extends State<CenterDetailsSheet> {
             icon: Icons.phone,
             label: 'Phone',
             value: widget.center.contactInfo.phone!,
+            color: fbGreen,
             onTap: () => _launchUrl('tel:${widget.center.contactInfo.phone}'),
           ),
         ],
@@ -672,8 +735,31 @@ class _CenterDetailsSheetState extends State<CenterDetailsSheet> {
             icon: Icons.email,
             label: 'Email',
             value: widget.center.contactInfo.email!,
+            color: fbBlue,
             onTap:
                 () => _launchUrl('mailto:${widget.center.contactInfo.email}'),
+          ),
+        ],
+        // Add Facebook if available
+        if (widget.center.contactInfo.facebook != null) ...[
+          const SizedBox(height: 12),
+          _buildContactRow(
+            icon: Icons.facebook,
+            label: 'Facebook',
+            value: widget.center.contactInfo.facebook!,
+            color: const Color(0xFF1877F2), // Facebook blue
+            onTap: () => _launchUrl(widget.center.contactInfo.facebook!),
+          ),
+        ],
+        // Add Website if available
+        if (widget.center.contactInfo.website != null) ...[
+          const SizedBox(height: 12),
+          _buildContactRow(
+            icon: Icons.language,
+            label: 'Website',
+            value: widget.center.contactInfo.website!,
+            color: fbTextSecondary,
+            onTap: () => _launchUrl(widget.center.contactInfo.website!),
           ),
         ],
       ],
@@ -684,47 +770,61 @@ class _CenterDetailsSheetState extends State<CenterDetailsSheet> {
     required IconData icon,
     required String label,
     required String value,
+    required Color color,
     required VoidCallback onTap,
   }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: fbLightGray,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: fbBlue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Icon(icon, size: 20, color: fbBlue),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: TextStyle(fontSize: 11, color: fbTextSecondary),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        splashColor: color.withOpacity(0.1),
+        highlightColor: color.withOpacity(0.05),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: fbLightGray,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(18),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: TextStyle(fontSize: 14, color: fbTextPrimary),
+                  child: Icon(icon, size: 20, color: color),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: fbTextSecondary,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        value,
+                        style: TextStyle(fontSize: 14, color: fbTextPrimary),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                Icon(Icons.chevron_right, size: 20, color: fbTextSecondary),
+              ],
             ),
-            Icon(Icons.chevron_right, size: 20, color: fbTextSecondary),
-          ],
+          ),
         ),
       ),
     );
