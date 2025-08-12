@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 // import 'package:flutter/painting.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:projecho/models/cardcontent/cardModel.dart';
-import 'package:projecho/carouselSlider.dart';
-import 'package:projecho/screens/profilingform.dart';
-import 'package:projecho/screens/map/map_screen.dart';
+import 'package:projecho/screens/home/cardcontent/cardModel.dart';
+import 'package:projecho/screens/home/carouselSlider.dart';
+import 'package:projecho/map/map_screen.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -171,13 +170,13 @@ class _HomePageState extends State<HomePage> {
                                   ),
                                 );
                               } else if (cards[index].doctor == "profiling") {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (context) => const PLHIVProfilingForm(),
-                                  ),
-                                );
+                                // Navigator.push(
+                                //   context,
+                                //   MaterialPageRoute(
+                                //     builder:
+                                //         (context) => const PLHIVProfilingForm(),
+                                //   ),
+                                // );
                               } else {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:projecho/introduction_animation/OnboardingComponents/onbrding_3.dart';
-import 'package:projecho/introduction_animation/OnboardingComponents/onbrdingController.dart';
-import 'package:projecho/introduction_animation/OnboardingComponents/onbrding_4.dart';
-import 'package:projecho/introduction_animation/OnboardingComponents/onbrding_2.dart';
-import 'package:projecho/introduction_animation/OnboardingComponents/onbrding_1.dart';
-import 'package:projecho/introduction_animation/OnboardingComponents/skip.dart';
-import 'package:projecho/introduction_animation/OnboardingComponents/welcome_view.dart';
+import 'package:projecho/onboarding/OnboardingComponents/onbrding_3.dart';
+import 'package:projecho/onboarding/OnboardingComponents/onbrdingController.dart';
+import 'package:projecho/onboarding/OnboardingComponents/onbrding_4.dart';
+import 'package:projecho/onboarding/OnboardingComponents/onbrding_2.dart';
+import 'package:projecho/onboarding/OnboardingComponents/onbrding_1.dart';
+import 'package:projecho/onboarding/OnboardingComponents/skip.dart';
+import 'package:projecho/onboarding/OnboardingComponents/welcome_view.dart';
 import 'package:projecho/login/login/inputNum.dart';
 
 class MyOnboardingScreen extends StatefulWidget {

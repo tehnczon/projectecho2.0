@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:projecho/models/registration_data.dart';
+import 'package:projecho/map/models/registration_data.dart';
 import 'package:projecho/login/signup/userType.dart';
 
 class GenderSelectionScreen extends StatelessWidget {

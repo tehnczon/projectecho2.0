@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:projecho/mainPage.dart';
+import 'package:projecho/main/mainPage.dart';
 
 class ForgotPasswordFlow extends StatefulWidget {
   const ForgotPasswordFlow({super.key});
@@ -12,22 +12,22 @@ class ForgotPasswordFlow extends StatefulWidget {
 
 class _ForgotPasswordFlowState extends State<ForgotPasswordFlow> {
   final TextEditingController _newPasswordController = TextEditingController();
-  final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _confirmPasswordController =
+      TextEditingController();
   bool _showPassword = false;
   Timer? _inactivityTimer;
 
   @override
-void initState() {
-  super.initState();
+  void initState() {
+    super.initState();
 
-  // Wait until the first frame is rendered before showing the dialog
-  WidgetsBinding.instance.addPostFrameCallback((_) {
-    _showConfirmationDialog();
-  });
+    // Wait until the first frame is rendered before showing the dialog
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showConfirmationDialog();
+    });
 
-  _startInactivityTimer();
-}
-
+    _startInactivityTimer();
+  }
 
   void _startInactivityTimer() {
     _inactivityTimer?.cancel();
@@ -47,75 +47,78 @@ void initState() {
   }
 
   void _showConfirmationDialog() {
-    final TextEditingController _confirmTextController = TextEditingController();
+    final TextEditingController _confirmTextController =
+        TextEditingController();
     String typedText = '';
 
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: const Text("Confirm Password Reset"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text("Type the phrase below to proceed:"),
-                const SizedBox(height: 12),
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.grey),
-                  ),
-                  child: const Text(
-                    "reset my password",
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
+      builder:
+          (context) => StatefulBuilder(
+            builder: (context, setState) {
+              return AlertDialog(
+                title: const Text("Confirm Password Reset"),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text("Type the phrase below to proceed:"),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: Colors.grey),
+                      ),
+                      child: const Text(
+                        "reset my password",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _confirmTextController,
+                      onChanged: (value) {
+                        setState(() {
+                          typedText = value.trim().toLowerCase();
+                        });
+                      },
+                      decoration: const InputDecoration(
+                        hintText: "Type here...",
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _confirmTextController,
-                  onChanged: (value) {
-                    setState(() {
-                      typedText = value.trim().toLowerCase();
-                    });
-                  },
-                  decoration: const InputDecoration(
-                    hintText: "Type here...",
+                actions: [
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context); // close dialog
+                      Navigator.pop(context); // go back to login
+                    },
+                    child: const Text("Cancel"),
                   ),
-                ),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context); // close dialog
-                  Navigator.pop(context); // go back to login
-                },
-                child: const Text("Cancel"),
-              ),
-              ElevatedButton(
-                onPressed: typedText == "reset my password"
-                    ? () => Navigator.pop(context)
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.red,
-                ),
-                child: const Text("Yes, Continue"),
-              ),
-            ],
-          );
-        },
-      ),
+                  ElevatedButton(
+                    onPressed:
+                        typedText == "reset my password"
+                            ? () => Navigator.pop(context)
+                            : null,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
+                    child: const Text("Yes, Continue"),
+                  ),
+                ],
+              );
+            },
+          ),
     );
   }
 
   void _showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _handlePasswordReset() async {
@@ -129,7 +132,9 @@ void initState() {
     } else if (newPass != confirmPass) {
       _showSnackBar("Passwords do not match");
     } else if (!_isSecure(newPass)) {
-      _showSnackBar("Password must be strong: 8+ chars, uppercase, number, symbol");
+      _showSnackBar(
+        "Password must be strong: 8+ chars, uppercase, number, symbol",
+      );
     } else {
       try {
         final user = FirebaseAuth.instance.currentUser;
@@ -171,65 +176,68 @@ void initState() {
           backgroundColor: Colors.lightBlueAccent,
         ),
         body: SafeArea(
-  child: SingleChildScrollView(
-    padding: const EdgeInsets.all(24),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Create a new password",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 20),
-        TextField(
-          controller: _newPasswordController,
-          obscureText: !_showPassword,
-          onChanged: (_) => _resetInactivityTimer(),
-          decoration: InputDecoration(
-            hintText: "New Password",
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        const SizedBox(height: 16),
-        TextField(
-          controller: _confirmPasswordController,
-          obscureText: !_showPassword,
-          onChanged: (_) => _resetInactivityTimer(),
-          decoration: InputDecoration(
-            hintText: "Confirm Password",
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        const SizedBox(height: 16),
-        SwitchListTile(
-          title: const Text("Show Passwords"),
-          value: _showPassword,
-          onChanged: (value) {
-            setState(() => _showPassword = value);
-            _resetInactivityTimer();
-          },
-        ),
-        const SizedBox(height: 24),
-        SizedBox(
-          width: double.infinity,
-          height: 48,
-          child: ElevatedButton(
-            onPressed: _handlePasswordReset,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.lightBlueAccent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24),
-              ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "Create a new password",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _newPasswordController,
+                  obscureText: !_showPassword,
+                  onChanged: (_) => _resetInactivityTimer(),
+                  decoration: InputDecoration(
+                    hintText: "New Password",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _confirmPasswordController,
+                  obscureText: !_showPassword,
+                  onChanged: (_) => _resetInactivityTimer(),
+                  decoration: InputDecoration(
+                    hintText: "Confirm Password",
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  title: const Text("Show Passwords"),
+                  value: _showPassword,
+                  onChanged: (value) {
+                    setState(() => _showPassword = value);
+                    _resetInactivityTimer();
+                  },
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    onPressed: _handlePasswordReset,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.lightBlueAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                    ),
+                    child: const Text("Reset Password"),
+                  ),
+                ),
+              ],
             ),
-            child: const Text("Reset Password"),
           ),
         ),
-      ],
-    ),
-  ),
-),
-
-    )
+      ),
     );
   }
 }

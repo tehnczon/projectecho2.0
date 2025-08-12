@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:local_auth/local_auth.dart';
-import 'package:projecho/screens/userSettings.dart';
+import 'package:projecho/screens/profile/userSettings.dart';
 import 'package:projecho/login/login/inputNum.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:intl/intl.dart';

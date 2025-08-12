@@ -383,7 +383,7 @@ class _PLHIVDashboardState extends State<PLHIVDashboard> {
   }
 
   // Solution 3: Use dynamic height calculation
-  Widget _buildKeyMetricsAlternative(DashboardData data) {
+  Widget buildKeyMetricsAlternative(DashboardData data) {
     return LayoutBuilder(
       builder: (context, constraints) {
         double cardHeight =
@@ -428,7 +428,7 @@ class _PLHIVDashboardState extends State<PLHIVDashboard> {
   }
 
   // Solution 4: Use FittedBox to scale content
-  Widget _buildMetricCardWithFittedBox(
+  Widget buildMetricCardWithFittedBox(
     String title,
     String value,
     IconData icon,

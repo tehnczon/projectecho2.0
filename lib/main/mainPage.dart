@@ -1,6 +1,6 @@
-import 'package:projecho/screens/homePage.dart';
-import 'package:projecho/screens/Insights.dart'; // Update this import
-import 'package:projecho/screens/userProfile.dart';
+import 'package:projecho/screens/home/homePage.dart';
+import 'package:projecho/screens/analytics/Insights.dart'; // Update this import
+import 'package:projecho/screens/profile/userProfile.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart'; // Add this import

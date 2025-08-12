@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../models/hiv_center.dart';
+import 'models/hiv_center.dart';
 import 'dart:ui';
 
 // Main function to show the bottom sheet

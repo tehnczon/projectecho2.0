@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'dart:io';
-import 'package:projecho/app_theme.dart';
+import 'package:projecho/main/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:projecho/login/login/inputNum.dart';
-import 'package:projecho/mainPage.dart';
-import 'package:projecho/screens/userProfile.dart';
-import 'package:projecho/screens/Insights.dart';
+import 'package:projecho/main/mainPage.dart';
+import 'package:projecho/screens/profile/userProfile.dart';
+import 'package:projecho/screens/analytics/Insights.dart';
 import 'package:provider/provider.dart';
 
 // MAP PROVIDERS
-import 'package:projecho/providers/map_provider.dart';
-import 'package:projecho/providers/location_provider.dart';
-import 'package:projecho/providers/filter_provider.dart';
+import 'package:projecho/map/providers/map_provider.dart';
+import 'package:projecho/map/providers/location_provider.dart';
+import 'package:projecho/map/providers/filter_provider.dart';
 
-import 'firebase_options.dart';
-import 'package:projecho/introduction_animation/onbrdingAnimationScreen.dart';
+import 'main/firebase_options.dart';
+import 'package:projecho/onboarding/onbrdingAnimationScreen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

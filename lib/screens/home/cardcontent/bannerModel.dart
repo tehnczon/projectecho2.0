@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:projecho/screens/doctorProfile.dart'; // Replace with your actual destination
-import 'package:projecho/screens/article_screen.dart'; // Replace with your actual destination
+import 'package:projecho/screens/home/doctorProfile.dart'; // Replace with your actual destination
+import 'package:projecho/screens/home/article_screen.dart'; // Replace with your actual destination
 
 class BannerModel {
   String text;
@@ -25,4 +25,3 @@ List<BannerModel> bannerCards = [
     ArticleScreen(), // ✅ No issue here
   ),
 ];
-

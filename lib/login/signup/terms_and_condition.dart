@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:projecho/login/signup/UIC.dart';
-import 'package:projecho/models/registration_data.dart';
+import 'package:projecho/map/models/registration_data.dart';
 
 class TermsAndConditionsPage extends StatefulWidget {
   final RegistrationData registrationData;

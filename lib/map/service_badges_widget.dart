@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/hiv_center.dart';
+import 'models/hiv_center.dart';
 
 class ServiceBadgesWidget extends StatelessWidget {
   final HIVCenter center;

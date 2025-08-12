@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/registration_data.dart';
+import '../map/models/registration_data.dart';
 
 class Step5WorkStatusForm extends StatefulWidget {
   final RegistrationData registrationData;

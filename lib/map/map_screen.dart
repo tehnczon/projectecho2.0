@@ -2,12 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:provider/provider.dart';
-import '../../providers/map_provider.dart';
-import '../../providers/location_provider.dart';
+import 'providers/map_provider.dart';
+import 'providers/location_provider.dart';
 import 'center_details_sheet.dart';
-import '../../models/service_type.dart';
-import 'package:flutter/material.dart';
-import '../../services/firestore_service.dart';
+import 'models/service_type.dart';
 
 class MapScreen extends StatefulWidget {
   @override

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/operating_hours.dart';
+import 'models/operating_hours.dart';
 
 class OperatingHoursCard extends StatelessWidget {
   final OperatingHours operatingHours;
