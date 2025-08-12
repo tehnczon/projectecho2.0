@@ -10,9 +10,10 @@ import 'package:projecho/screens/userProfile.dart';
 import 'package:projecho/screens/Insights.dart';
 import 'package:provider/provider.dart';
 
-// ADD THESE NEW IMPORTS FOR MAP PROVIDERS
+// MAP PROVIDERS
 import 'package:projecho/providers/map_provider.dart';
 import 'package:projecho/providers/location_provider.dart';
+import 'package:projecho/providers/filter_provider.dart';
 
 import 'firebase_options.dart';
 import 'package:projecho/introduction_animation/onbrdingAnimationScreen.dart';
@@ -43,13 +44,12 @@ class MyApp extends StatelessWidget {
       ),
     );
 
-    // WRAP YOUR ENTIRE MATERIALAPP WITH MULTIPROVIDER
     return MultiProvider(
       providers: [
-        // ADD THE MAP PROVIDERS HERE
+        // MAP PROVIDERS - These need to be initialized at app level
         ChangeNotifierProvider(create: (_) => MapProvider()),
         ChangeNotifierProvider(create: (_) => LocationProvider()),
-        // Keep your existing analytics provider if needed elsewhere
+        ChangeNotifierProvider(create: (_) => FilterProvider()),
       ],
       child: MaterialApp(
         title: 'ProjEcho',
@@ -64,7 +64,6 @@ class MyApp extends StatelessWidget {
           '/enternumber': (context) => EnterNumberPage(),
           '/home': (context) => MainPage(),
           '/profile': (context) => UserProfile(),
-          // SIMPLIFIED DASHBOARD ROUTE - Provider now available from top level
           '/dashboard':
               (context) => ChangeNotifierProvider(
                 create: (_) => AnalyticsProvider(),
