@@ -73,11 +73,13 @@ dependencies:
   http: ^1.4.0
   flutter_heatmap_calendar: ^1.0.5
   percent_indicator: ^4.2.5
+  shared_preferences: ^2.5.3
+  crypto: ^3.0.6
 
 flutter_icons:
   android: true
   ios: false
-  image_path: "assets/images/logo.png"
+  image_path: "assets/images/icon.png"
 
 dev_dependencies:
   flutter_test:

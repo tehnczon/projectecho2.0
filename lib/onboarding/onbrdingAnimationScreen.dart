@@ -7,6 +7,7 @@ import 'package:projecho/onboarding/OnboardingComponents/onbrding_1.dart';
 import 'package:projecho/onboarding/OnboardingComponents/skip.dart';
 import 'package:projecho/onboarding/OnboardingComponents/welcome_view.dart';
 import 'package:projecho/login/login/inputNum.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // ADD THIS
 
 class MyOnboardingScreen extends StatefulWidget {
   const MyOnboardingScreen({super.key});
@@ -129,7 +130,11 @@ class _MyOnboardingScreenState extends State<MyOnboardingScreen>
     }
   }
 
-  void _signUpClick() {
+  void _signUpClick() async {
+    // Mark onboarding as completed
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('has_seen_onboarding', true);
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (context) => EnterNumberPage()),

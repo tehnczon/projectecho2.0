@@ -1,0 +1,85 @@
+flowchart TD
+    A[App Launch] --> B[Firebase Initialization]
+    B --> C[Onboarding Screen]
+    
+    C --> D{User Action}
+    D -->|Skip| E[Welcome View]
+    D -->|Next| F[Onboarding Steps]
+    
+    F --> G[Splash View]
+    G --> H[Relax View]
+    H --> I[Care View]
+    I --> J[Mood Diary View]
+    J --> E[Welcome View]
+    
+    E --> K[Phone Number Input]
+    K --> L[OTP Verification]
+    L --> M{User Exists?}
+    M -->|Yes| N[Main Page]
+    M -->|No| O[Terms & Conditions]
+    O --> P[UIC Generation]
+    P --> Q[Gender Selection]
+    Q --> R[User Type Selection]
+    R --> S{User Type}
+    S -->|PLHIV| T[Year Diagnosis]
+    S -->|Info Seeker| U[Save to Researchers Collection]
+    T --> V[Location Screen]
+    V --> W[PLHIV Profiling Flow]
+    W --> X[Save to PLHIV Collection]
+    U --> Y[Welcome Screen]
+    X --> Y[Welcome Screen]
+    Y --> N[Main Page]
+    
+    N --> Z{Bottom Navigation}
+    
+    Z -->|Home Tab| AA[Home Page]
+    Z -->|Analytics Tab| BB[Analytics Dashboard]
+    Z -->|Profile Tab| CC[User Profile]
+    
+    AA --> DD{Home Actions}
+    DD -->|Center Card| EE[Map Screen]
+    DD -->|Profiling Card| FF[PLHIV Profiling Form]
+    DD -->|Other Services| GG[Service Actions]
+    
+    EE --> HH[Map View]
+    HH --> II[Location Provider]
+    HH --> JJ[Filter Provider]
+    HH --> KK[Center Details Sheet]
+    KK --> LL[Center Information]
+    KK --> MM[Directions/Contact]
+    
+    FF --> NN[Profiling Onboarding]
+    NN --> OO[PLHIV Stepper Form]
+    OO --> PP[Registration Data]
+    PP --> QQ[Firebase Storage]
+    
+    BB --> RR[Firebase Analytics Data]
+    RR --> SS{Analytics Views}
+    SS --> TT[Key Metrics]
+    SS --> UU[Age Distribution]
+    SS --> VV[Gender Breakdown]
+    SS --> WW[MSM Statistics]
+    SS --> XX[Treatment Hubs]
+    SS --> YY[Medication Adherence]
+    SS --> ZZ[Viral Load Status]
+    SS --> AAA[Diagnosis Trends]
+    SS --> BBB[Deep Dive Analytics]
+    
+    CC --> CCC{Profile Actions}
+    CCC --> DDD[Edit Profile]
+    CCC --> EEE[Terms & Conditions]
+    CCC --> FFF[Privacy Settings]
+    CCC --> GGG[PIN Authentication]
+    GGG --> HHH[Sensitive Data Access]
+    
+    classDef startEnd fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef process fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef decision fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef screen fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef data fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    
+    class A,QQ startEnd
+    class B,C,F,G,H,I,J,E,K,L,O,P,Q,R,NN,OO process
+    class D,M,S,Z,DD,SS,CCC decision
+    class N,AA,BB,CC,EE,HH,KK,LL,MM,RR,TT,UU,VV,WW,XX,YY,ZZ,AAA,BBB,DDD,EEE,FFF,GGG,HHH screen
+    class PP,II,JJ data
