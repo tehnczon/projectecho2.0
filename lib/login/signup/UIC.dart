@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:projecho/login/signup/location.dart';
-import 'package:projecho/map/models/registration_data.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:projecho/main/app_theme.dart';
 
 class UICScreen extends StatefulWidget {
-  final RegistrationData registrationData;
+  final dynamic registrationData;
 
   const UICScreen({super.key, required this.registrationData});
 
@@ -11,21 +12,22 @@ class UICScreen extends StatefulWidget {
   State<UICScreen> createState() => _UICScreenState();
 }
 
-class _UICScreenState extends State<UICScreen> with TickerProviderStateMixin {
+class _UICScreenState extends State<UICScreen>
+    with SingleTickerProviderStateMixin {
   final _motherController = TextEditingController();
   final _fatherController = TextEditingController();
   final _birthOrderController = TextEditingController();
   DateTime? _selectedDate;
-  bool _isVisible = false;
+  late AnimationController _animationController;
+  String _generatedUIC = '';
 
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(milliseconds: 100), () {
-      setState(() {
-        _isVisible = true;
-      });
-    });
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
   }
 
   @override
@@ -33,10 +35,12 @@ class _UICScreenState extends State<UICScreen> with TickerProviderStateMixin {
     _motherController.dispose();
     _fatherController.dispose();
     _birthOrderController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   void _pickDate() async {
+    HapticFeedback.lightImpact();
     DateTime initial = DateTime(2000);
     final picked = await showDatePicker(
       context: context,
@@ -46,98 +50,147 @@ class _UICScreenState extends State<UICScreen> with TickerProviderStateMixin {
         DateTime.now().year - 13,
         DateTime.now().month,
         DateTime.now().day,
-      ), // age limit
+      ),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primary,
+              onPrimary: Colors.white,
+              surface: AppColors.surface,
+              onSurface: AppColors.textPrimary,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
+
     if (picked != null) {
-      setState(() => _selectedDate = picked);
+      setState(() {
+        _selectedDate = picked;
+        _updateUIC();
+      });
     }
   }
 
-  void _handleNext() {
+  void _updateUIC() {
     String mother = _motherController.text.trim();
     String father = _fatherController.text.trim();
     String birthOrderStr = _birthOrderController.text.trim();
 
-    if (mother.isEmpty ||
-        father.isEmpty ||
-        birthOrderStr.isEmpty ||
+    if (mother.isNotEmpty && father.isNotEmpty && _selectedDate != null) {
+      String motherCode =
+          mother.length >= 2
+              ? mother.substring(0, 2).toUpperCase()
+              : mother.padRight(2, 'X').toUpperCase();
+
+      String fatherCode =
+          father.length >= 2
+              ? father.substring(0, 2).toUpperCase()
+              : father.padRight(2, 'X').toUpperCase();
+
+      int? birthOrder = int.tryParse(birthOrderStr);
+      String birthOrderCode =
+          (birthOrder == null || birthOrder <= 0)
+              ? "99"
+              : birthOrder.toString().padLeft(2, '0');
+
+      String birthDateCode =
+          "${_selectedDate!.month.toString().padLeft(2, '0')}"
+          "${_selectedDate!.day.toString().padLeft(2, '0')}"
+          "${_selectedDate!.year}";
+
+      setState(() {
+        _generatedUIC = "$motherCode$fatherCode$birthOrderCode$birthDateCode";
+      });
+    }
+  }
+
+  void _handleNext() {
+    if (_motherController.text.isEmpty ||
+        _fatherController.text.isEmpty ||
+        _birthOrderController.text.isEmpty ||
         _selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Please complete all fields.")),
-      );
+      _showErrorSnackBar('Please complete all fields');
       return;
     }
 
     // Age verification
     final now = DateTime.now();
-    final age =
-        now.year -
-        _selectedDate!.year -
-        ((now.month < _selectedDate!.month ||
-                (now.month == _selectedDate!.month &&
-                    now.day < _selectedDate!.day))
-            ? 1
-            : 0);
+    final age = now.year - _selectedDate!.year;
     if (age < 13) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("You must be at least 13 years old to continue."),
-        ),
-      );
+      _showErrorSnackBar('You must be at least 13 years old to continue');
       return;
     }
 
-    // Birth Order fallback
-    int? birthOrder = int.tryParse(birthOrderStr);
-    String birthOrderCode =
-        (birthOrder == null || birthOrder <= 0)
-            ? "99"
-            : birthOrder.toString().padLeft(2, '0');
-
-    // Initial fallback helper
-    String extractInitials(String name) {
-      List<String> parts = name.split(" ");
-      if (parts.length >= 2) {
-        return "${parts[0][0]}${parts[1][0]}".toUpperCase();
-      } else if (parts.length == 1 && parts[0].length >= 2) {
-        return parts[0].substring(0, 2).toUpperCase();
-      } else {
-        return "XX";
-      }
-    }
-
-    // Generate parent codes
-    String motherCode =
-        mother.length >= 2
-            ? mother.substring(0, 2).toUpperCase()
-            : extractInitials(mother);
-    String fatherCode =
-        father.length >= 2
-            ? father.substring(0, 2).toUpperCase()
-            : extractInitials(father);
-
-    // Birthdate code
-    String birthDateCode =
-        _selectedDate != null
-            ? "${_selectedDate!.month.toString().padLeft(2, '0')}${_selectedDate!.day.toString().padLeft(2, '0')}${_selectedDate!.year}"
-            : "99999999";
-
-    // Final UIC
-    String uicCode = "$motherCode$fatherCode$birthOrderCode$birthDateCode";
-
-    // Save to registration data
-    // widget.registrationData.motherFirstName = mother;
-    // widget.registrationData.fatherFirstName = father;
-    // widget.registrationData.birthOrder = birthOrder ?? 99;
+    HapticFeedback.mediumImpact();
     widget.registrationData.birthDate = _selectedDate;
-    widget.registrationData.generatedUIC = uicCode;
+    widget.registrationData.generatedUIC = _generatedUIC;
 
-    // Navigate to user type screen
     Navigator.push(
       context,
       MaterialPageRoute(
         builder:
-            (_) => LocationScreen(registrationData: widget.registrationData),
+            (_) =>
+                ModernLocationScreen(registrationData: widget.registrationData),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  Widget _buildModernTextField({
+    required String label,
+    required TextEditingController controller,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    String? hint,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        onChanged: (_) => _updateUIC(),
+        style: TextStyle(fontSize: 16, color: AppColors.textPrimary),
+        decoration: InputDecoration(
+          labelText: label,
+          hintText: hint,
+          labelStyle: TextStyle(color: AppColors.textSecondary),
+          hintStyle: TextStyle(color: AppColors.textLight),
+          prefixIcon: Icon(icon, color: AppColors.primary),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: AppColors.surface,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 16,
+          ),
+        ),
       ),
     );
   }
@@ -145,140 +198,267 @@ class _UICScreenState extends State<UICScreen> with TickerProviderStateMixin {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: BackButton(color: Colors.black),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+          onPressed: () => Navigator.pop(context),
+        ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: ListView(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            AnimatedOpacity(
-              opacity: _isVisible ? 1 : 0,
-              duration: const Duration(milliseconds: 800),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text(
-                    "Let's generate your Unique Identifier Code (UIC)",
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            // Header
+            Center(
+              child: Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.primary, AppColors.primaryLight],
                   ),
-                  SizedBox(height: 8),
-                  Text(
-                    "This will help us keep your records secure and make your future visits smoother.\n"
-                    "Your UIC is confidential and used only for your privacy and protection.",
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                      fontStyle: FontStyle.italic,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(Icons.fingerprint, color: Colors.white, size: 40),
+              ).animate().scale(duration: 500.ms, curve: Curves.elasticOut),
+            ),
+
+            const SizedBox(height: 24),
+
+            Text(
+              'Create Your Unique ID',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ).animate().fadeIn(duration: 500.ms).slideX(begin: -0.1, end: 0),
+
+            const SizedBox(height: 8),
+
+            Text(
+              'This helps us keep your records secure and confidential',
+              style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+            ).animate().fadeIn(duration: 600.ms, delay: 100.ms),
+
+            const SizedBox(height: 32),
+
+            // UIC Preview
+            if (_generatedUIC.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withOpacity(0.1),
+                      AppColors.secondary.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Your UIC',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      _generatedUIC,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ],
+                ),
+              ).animate().fadeIn().scale(
+                begin: const Offset(0.9, 0.9),
+                end: const Offset(1, 1),
+              ),
+
+            // Form Fields
+            _buildModernTextField(
+                  label: "Mother's First Name",
+                  controller: _motherController,
+                  icon: Icons.person_outline,
+                  hint: "Enter mother's first name",
+                )
+                .animate()
+                .fadeIn(duration: 600.ms, delay: 200.ms)
+                .slideX(begin: -0.1, end: 0),
+
+            _buildModernTextField(
+                  label: "Father's First Name",
+                  controller: _fatherController,
+                  icon: Icons.person_outline,
+                  hint: "Enter father's first name",
+                )
+                .animate()
+                .fadeIn(duration: 600.ms, delay: 300.ms)
+                .slideX(begin: -0.1, end: 0),
+
+            _buildModernTextField(
+                  label: "Birth Order",
+                  controller: _birthOrderController,
+                  icon: Icons.format_list_numbered,
+                  keyboardType: TextInputType.number,
+                  hint: "e.g., 1, 2, 3",
+                )
+                .animate()
+                .fadeIn(duration: 600.ms, delay: 400.ms)
+                .slideX(begin: -0.1, end: 0),
+
+            // Date Picker
+            InkWell(
+                  onTap: _pickDate,
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.calendar_today, color: AppColors.primary),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Text(
+                            _selectedDate == null
+                                ? "Select Birthdate"
+                                : "${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}",
+                            style: TextStyle(
+                              fontSize: 16,
+                              color:
+                                  _selectedDate == null
+                                      ? AppColors.textSecondary
+                                      : AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_drop_down,
+                          color: AppColors.textSecondary,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+                .animate()
+                .fadeIn(duration: 600.ms, delay: 500.ms)
+                .slideX(begin: -0.1, end: 0),
+
+            const SizedBox(height: 24),
+
+            // Info Card
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(Icons.info_outline, size: 20, color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'This information is used only to generate your UIC and will not be stored',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: AppColors.textSecondary,
+                      ),
                     ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(height: 16),
-            _buildTextField("Mother's First Name", _motherController),
+            ).animate().fadeIn(duration: 800.ms, delay: 600.ms),
 
-            const SizedBox(height: 12),
-            _buildTextField("Father's First Name", _fatherController),
-            const SizedBox(height: 4),
+            const SizedBox(height: 32),
 
-            const Text(
-              "This information is used only to generate your UIC and will not be stored.",
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            const SizedBox(height: 18),
-            _buildTextField(
-              "Birth Order (e.g. 1, 2, 3)",
-              _birthOrderController,
-              keyboardType: TextInputType.number,
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              "If unknown, enter 99. This field is used only for UIC generation.",
-              style: TextStyle(
-                fontSize: 10,
-                color: Colors.grey,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Container(height: 1, color: Colors.grey.shade400),
-            const SizedBox(height: 12),
-            InkWell(
-              onTap: _pickDate,
-              child: InputDecorator(
-                decoration: InputDecoration(
-                  labelText: "Birthdate",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+            // Continue Button
+            Container(
+                  width: double.infinity,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.primary, AppColors.primaryLight],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.primary.withOpacity(0.3),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
                   ),
-                ),
-                child: Text(
-                  _selectedDate == null
-                      ? "Tap to select date"
-                      : "${_selectedDate!.month}/${_selectedDate!.day}/${_selectedDate!.year}",
-                  style: const TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            const Text(
-              "Note:\n"
-              "• If parent's name is unknown, use your initials (first & last name, e.g. Mark Anthony = M F).\n"
-              "• For unknown birth order or birthday, replace each with '9' (e.g. 99).",
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton(
-                onPressed: _handleNext,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightBlueAccent,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+                  child: ElevatedButton(
+                    onPressed: _handleNext,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text(
+                          'Continue',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                      ],
+                    ),
                   ),
-                ),
-                child: const Text(
-                  "Next",
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            ),
+                )
+                .animate()
+                .fadeIn(duration: 600.ms, delay: 700.ms)
+                .slideY(begin: 0.1, end: 0),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildTextField(
-    String label,
-    TextEditingController controller, {
-    TextInputType keyboardType = TextInputType.text,
-  }) {
-    return TextField(
-      controller: controller,
-      keyboardType: keyboardType,
-      decoration: InputDecoration(
-        labelText: label,
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 14,
-        ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
+// Placeholder for ModernLocationScreen - Add this to complete the flow
+class ModernLocationScreen extends StatelessWidget {
+  final dynamic registrationData;
+
+  const ModernLocationScreen({super.key, required this.registrationData});
+
+  @override
+  Widget build(BuildContext context) {
+    // Implement your location screen here
+    return Container();
   }
 }

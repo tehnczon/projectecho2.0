@@ -114,7 +114,7 @@ class _CustomSplashScreenState extends State<CustomSplashScreen>
       } else if (currentUser != null) {
         nextScreen = MainPage();
       } else {
-        nextScreen = StandaloneWelcomeScreen();
+        nextScreen = WelcomeScreen();
       }
 
       // Animate out and navigate
