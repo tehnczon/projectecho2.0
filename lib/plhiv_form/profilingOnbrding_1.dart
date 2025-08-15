@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:projecho/main/app_theme.dart';
-import 'package:projecho/map/models/registration_data.dart';
+import 'package:projecho/main/registration_data.dart';
 import 'package:projecho/plhiv_form/mainplhivform.dart';
 
 class ProfOnboard1Screen extends StatefulWidget {

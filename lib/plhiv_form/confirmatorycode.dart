@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/main/app_theme.dart';
-import 'package:projecho/map/models/registration_data.dart';
+import 'package:projecho/main/registration_data.dart';
 import 'package:projecho/plhiv_form/trtmentHub.dart';
 
 class ConfirmatoryCodeScreen extends StatefulWidget {

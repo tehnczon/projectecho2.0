@@ -89,8 +89,11 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
           context,
           MaterialPageRoute(
             builder:
-                (_) =>
-                    TermsAndConditionsPage(registrationData: RegistrationData),
+                (_) => TermsAndConditionsPage(
+                  registrationData: RegistrationData(
+                    phoneNumber: widget.phoneNumber,
+                  ),
+                ),
           ),
         );
       }

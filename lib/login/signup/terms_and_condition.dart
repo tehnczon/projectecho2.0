@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/login/signup/UIC.dart';
+import 'package:projecho/main/registration_data.dart';
 
 class TermsAndConditionsPage extends StatefulWidget {
-  final dynamic registrationData;
+  final RegistrationData registrationData;
 
   const TermsAndConditionsPage({super.key, required this.registrationData});
 

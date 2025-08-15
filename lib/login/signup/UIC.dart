@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/main/app_theme.dart';
+import 'package:projecho/login/signup/location.dart';
+import 'package:projecho/main/registration_data.dart';
 
 class UICScreen extends StatefulWidget {
-  final dynamic registrationData;
+  final RegistrationData registrationData;
 
   const UICScreen({super.key, required this.registrationData});
 
@@ -132,8 +134,7 @@ class _UICScreenState extends State<UICScreen>
       context,
       MaterialPageRoute(
         builder:
-            (_) =>
-                ModernLocationScreen(registrationData: widget.registrationData),
+            (_) => LocationScreen(registrationData: widget.registrationData),
       ),
     );
   }
@@ -450,15 +451,15 @@ class _UICScreenState extends State<UICScreen>
   }
 }
 
-// Placeholder for ModernLocationScreen - Add this to complete the flow
-class ModernLocationScreen extends StatelessWidget {
-  final dynamic registrationData;
+// // Placeholder for ModernLocationScreen - Add this to complete the flow
+// class ModernLocationScreen extends StatelessWidget {
+//   final dynamic registrationData;
 
-  const ModernLocationScreen({super.key, required this.registrationData});
+//   const ModernLocationScreen({super.key, required this.registrationData});
 
-  @override
-  Widget build(BuildContext context) {
-    // Implement your location screen here
-    return Container();
-  }
-}
+//   @override
+//   Widget build(BuildContext context) {
+//     // Implement your location screen here
+//     return Container();
+//   }
+// }

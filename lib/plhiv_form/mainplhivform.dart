@@ -4,7 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projecho/login/signup/wlcmPrjecho.dart';
 import 'package:projecho/main/app_theme.dart';
-import 'package:projecho/map/models/registration_data.dart';
+import 'package:projecho/main/registration_data.dart';
 import 'package:projecho/plhiv_form/step1_age_identity.dart';
 import 'package:projecho/plhiv_form/step2_education_status.dart';
 import 'package:projecho/plhiv_form/step3_health_pregnancy.dart';
