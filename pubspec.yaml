@@ -47,7 +47,7 @@ dependencies:
   animations: ^2.0.11
   intl: ^0.20.2
   flutter_rating_bar: ^4.0.1
-  carousel_slider: ^5.0.0
+  carousel_slider: ^5.1.1
   flutter_vector_icons: ^2.0.0
   google_nav_bar: ^5.0.7
   typicons_flutter: ^0.5.0
@@ -75,6 +75,9 @@ dependencies:
   percent_indicator: ^4.2.5
   shared_preferences: ^2.5.3
   crypto: ^3.0.6
+  csv: ^6.0.0
+  pdf: ^3.11.3
+  printing: ^5.14.2
 
 flutter_icons:
   android: true

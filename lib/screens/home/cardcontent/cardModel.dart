@@ -1,19 +1,49 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_vector_icons/flutter_vector_icons.dart';
-import 'package:flutter_tabler_icons/flutter_tabler_icons.dart';
 
 class CardModel {
-  String doctor;
-  int cardBackground;
-  IconData cardIcon;
+  final String title;
+  final String subtitle;
+  final String route;
+  final List<Color> gradient;
+  final IconData icon;
 
-  CardModel(this.doctor, this.cardBackground, this.cardIcon);
+  CardModel({
+    required this.title,
+    required this.subtitle,
+    required this.route,
+    required this.gradient,
+    required this.icon,
+  });
 }
 
-List<CardModel> cards = [
-  CardModel("center", 0xFF73A9E5, AntDesign.enviroment),
-  CardModel("volunteers", 0xFF7ABDE5, MaterialCommunityIcons.hand_heart),
-  CardModel("profiling", 0xFF88D0E5, TablerIcons.user_search),
-  // CardModel("Orthopaedic", 0xFF1565C0, Icons.wheelchair_pickup_sharp),
-  // CardModel("Paediatrician", 0xFF2E7D32, FontAwesome5Solid.baby),
+final List<CardModel> Cards = [
+  CardModel(
+    title: 'Treatment Centers',
+    subtitle: 'Find nearby',
+    route: 'center',
+    gradient: [const Color(0xFF73A9E5), const Color(0xFF5B8FD4)],
+    icon: Icons.location_on,
+  ),
+  CardModel(
+    title: 'Volunteers',
+    subtitle: 'Get support',
+    route: 'volunteers',
+    gradient: [const Color(0xFF7ABDE5), const Color(0xFF5BA4D4)],
+    icon: MaterialCommunityIcons.hand_heart,
+  ),
+  CardModel(
+    title: 'Profile',
+    subtitle: 'Your health',
+    route: 'profiling',
+    gradient: [const Color(0xFF88D0E5), const Color(0xFF6BBDD4)],
+    icon: Icons.person_search,
+  ),
+  CardModel(
+    title: 'Resources',
+    subtitle: 'Learn more',
+    route: 'resources',
+    gradient: [const Color(0xFF9C88E5), const Color(0xFF8570D4)],
+    icon: Icons.library_books,
+  ),
 ];
