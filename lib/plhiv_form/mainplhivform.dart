@@ -394,7 +394,7 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
       final Map<String, dynamic> data = widget.registrationData.toJson();
 
       await FirebaseFirestore.instance
-          .collection('plhiv_profiles')
+          .collection('users')
           .doc(widget.registrationData.phoneNumber)
           .set(data);
 

@@ -4,106 +4,124 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import './testing/providers/enhanced_analytics_provider.dart';
+import 'package:projecho/screens/analytics/testing/providers/user_role_provider.dart';
+import './researcher_dashboard.dart';
 
 class GeneralBasicDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFFF0F2F5),
-      body: SafeArea(
-        child: Consumer<EnhancedAnalyticsProvider>(
-          builder: (context, provider, child) {
-            final insights = provider.generalInsights;
+    // Check user role and show appropriate dashboard
+    return Consumer<UserRoleProvider>(
+      builder: (context, roleProvider, child) {
+        // If researcher, show researcher dashboard
+        if (roleProvider.isResearcher) {
+          return ResearcherDashboard();
+        }
 
-            if (provider.isLoading) {
-              return _buildLoadingState();
-            }
+        // Otherwise show basic dashboard
+        return Scaffold(
+          backgroundColor: Color(0xFFF0F2F5),
+          body: SafeArea(
+            child: Consumer<EnhancedAnalyticsProvider>(
+              builder: (context, provider, child) {
+                final insights = provider.generalInsights;
 
-            if (insights == null) {
-              return _buildEmptyState(context, provider);
-            }
+                if (provider.isLoading) {
+                  return _buildLoadingState();
+                }
 
-            return CustomScrollView(
-              slivers: [
-                // App Bar
-                SliverAppBar(
-                  floating: true,
-                  backgroundColor: Colors.white,
-                  elevation: 0,
-                  automaticallyImplyLeading: false,
-                  expandedHeight: 120,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Color(0xFF1877F2).withOpacity(0.1),
-                            Colors.white,
-                          ],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
+                if (insights == null) {
+                  return _buildEmptyState(context, provider);
+                }
+
+                return CustomScrollView(
+                  slivers: [
+                    // App Bar
+                    SliverAppBar(
+                      floating: true,
+                      backgroundColor: Colors.white,
+                      elevation: 0,
+                      automaticallyImplyLeading: false,
+                      expandedHeight: 120,
+                      flexibleSpace: FlexibleSpaceBar(
+                        background: Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                Color(0xFF1877F2).withOpacity(0.1),
+                                Colors.white,
+                              ],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                          ),
+                          child: Padding(
+                            padding: EdgeInsets.all(16),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Community Insights',
+                                  style: GoogleFonts.workSans(
+                                    color: Color(0xFF1C1E21),
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 28,
+                                  ),
+                                ),
+                                SizedBox(height: 4),
+                                Text(
+                                  'Together, we are stronger',
+                                  style: GoogleFonts.workSans(
+                                    color: Color(0xFF65676B),
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Community Insights',
-                              style: GoogleFonts.workSans(
-                                color: Color(0xFF1C1E21),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 28,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Together, we are stronger',
-                              style: GoogleFonts.workSans(
-                                color: Color(0xFF65676B),
-                                fontSize: 14,
-                              ),
-                            ),
-                          ],
+                      actions: [
+                        IconButton(
+                          icon: Icon(Icons.refresh, color: Color(0xFF65676B)),
+                          onPressed: () => provider.fetchData(),
                         ),
-                      ),
+                      ],
                     ),
-                  ),
-                  actions: [
-                    IconButton(
-                      icon: Icon(Icons.refresh, color: Color(0xFF65676B)),
-                      onPressed: () => provider.fetchData(),
+
+                    // Content
+                    SliverPadding(
+                      padding: EdgeInsets.all(16),
+                      sliver: SliverList(
+                        delegate: SliverChildListDelegate([
+                          _buildSupportiveMessageCard(
+                            insights.supportiveMessage,
+                          ),
+                          SizedBox(height: 16),
+                          _buildCommunityOverviewCard(insights),
+                          SizedBox(height: 16),
+                          _buildPopularTreatmentHubsCard(
+                            insights.popularTreatmentHubs,
+                          ),
+                          SizedBox(height: 16),
+                          _buildHealthTipsCard(insights.generalHealthTips),
+                          SizedBox(height: 16),
+                          _buildResourcesGrid(
+                            context,
+                            insights.availableResources,
+                          ),
+                          SizedBox(height: 80), // Space for bottom navigation
+                        ]),
+                      ),
                     ),
                   ],
-                ),
-
-                // Content
-                SliverPadding(
-                  padding: EdgeInsets.all(16),
-                  sliver: SliverList(
-                    delegate: SliverChildListDelegate([
-                      _buildSupportiveMessageCard(insights.supportiveMessage),
-                      SizedBox(height: 16),
-                      _buildCommunityOverviewCard(insights),
-                      SizedBox(height: 16),
-                      _buildPopularTreatmentHubsCard(
-                        insights.popularTreatmentHubs,
-                      ),
-                      SizedBox(height: 16),
-                      _buildHealthTipsCard(insights.generalHealthTips),
-                      SizedBox(height: 16),
-                      _buildResourcesGrid(context, insights.availableResources),
-                      SizedBox(height: 80), // Space for bottom navigation
-                    ]),
-                  ),
-                ),
-              ],
-            );
-          },
-        ),
-      ),
+                );
+              },
+            ),
+          ),
+        );
+      },
     );
   }
 

@@ -167,7 +167,7 @@ class RegistrationData {
       'isOFW': isOFW,
       'city': city,
       'barangay': barangay,
-      'userType': userType,
+      'role': userType,
       'yearDiagnosed': yearDiagnosed,
       'confirmatoryCode': confirmatoryCode,
       'treatmentHub': treatmentHub,

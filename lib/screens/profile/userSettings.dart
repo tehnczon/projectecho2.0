@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:projecho/screens/analytics/researcher_request_screen.dart';
 
 class BiometricAuthPage extends StatefulWidget {
   const BiometricAuthPage({super.key});
@@ -51,7 +52,7 @@ class _BiometricAuthPageState extends State<BiometricAuthPage> {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const AuthSuccessPage()),
+          MaterialPageRoute(builder: (_) => UpgradeRequestScreen()),
         );
       } else {
         _showError('Authentication failed.');

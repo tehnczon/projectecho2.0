@@ -89,7 +89,7 @@ class _UserTypeScreenState extends State<UserTypeScreen>
       // Save data for Health Information Seeker
       try {
         await FirebaseFirestore.instance
-            .collection('researchers')
+            .collection('users')
             .doc(widget.registrationData.phoneNumber)
             .set(widget.registrationData.toJson());
 

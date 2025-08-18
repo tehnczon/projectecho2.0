@@ -78,6 +78,9 @@ dependencies:
   csv: ^6.0.0
   pdf: ^3.11.3
   printing: ^5.14.2
+  syncfusion_flutter_gauges: ^30.2.5
+  image_picker: ^1.2.0
+  firebase_storage: ^12.4.10
 
 flutter_icons:
   android: true

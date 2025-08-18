@@ -11,9 +11,9 @@ import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-// ANALYTICS IMPORTS
+// PROVIDERS
+import 'package:projecho/screens/analytics/testing/providers/user_role_provider.dart';
 import 'package:projecho/screens/analytics/testing/providers/enhanced_analytics_provider.dart';
-import 'package:projecho/screens/analytics/testing/services/adjusted_role_service.dart';
 
 // MAP PROVIDERS
 import 'package:projecho/map/providers/map_provider.dart';
@@ -80,10 +80,10 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => LocationProvider()),
         ChangeNotifierProvider(create: (_) => FilterProvider()),
 
-        // ANALYTICS PROVIDER - Using the enhanced version
+        // ANALYTICS PROVIDER
         ChangeNotifierProvider(create: (_) => EnhancedAnalyticsProvider()),
 
-        // USER ROLE PROVIDER - Using your existing structure
+        // USER ROLE PROVIDER - Single consolidated version
         ChangeNotifierProvider(create: (_) => UserRoleProvider()),
       ],
       child: MaterialApp(
@@ -100,134 +100,9 @@ class _MyAppState extends State<MyApp> {
           '/enternumber': (context) => EnterNumberPage(),
           '/home': (context) => MainPage(),
           '/profile': (context) => UserProfile(),
-          // Note: Don't route directly to GeneralBasicDashboard
-          // Use InsightsDashboard which will route based on role
         },
       ),
     );
   }
 }
-
-// Enhanced User Role Management for your structure
-class UserRoleProvider extends ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final AdjustedRoleService _roleService = AdjustedRoleService();
-
-  String _currentRole = 'basicUser';
-  bool _isAuthenticated = false;
-  Map<String, dynamic>? _userData;
-  String? _phoneNumber;
-
-  String get currentRole => _currentRole;
-  bool get isAuthenticated => _isAuthenticated;
-  bool get isResearcher =>
-      _currentRole == 'researcher' || _currentRole == 'admin';
-  bool get isAdmin => _currentRole == 'admin';
-  Map<String, dynamic>? get userData => _userData;
-  String? get phoneNumber => _phoneNumber;
-
-  Future<void> checkUserRole() async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null || user.phoneNumber == null) {
-        _currentRole = 'basicUser';
-        _isAuthenticated = false;
-        notifyListeners();
-        return;
-      }
-
-      _phoneNumber = user.phoneNumber;
-      _isAuthenticated = true;
-
-      // Clean phone number for document ID
-      String cleanedPhone = user.phoneNumber!.replaceAll(RegExp(r'[^\d]'), '');
-
-      // Check if super admin first (using UID)
-      final adminDoc =
-          await _firestore.collection('super_admin').doc(user.uid).get();
-
-      if (adminDoc.exists) {
-        _currentRole = 'admin';
-        _userData = adminDoc.data();
-        notifyListeners();
-        return;
-      }
-
-      // Check if researcher (using phone number)
-      // Try multiple phone formats
-      final phoneFormats = [
-        user.phoneNumber!, // Original format (+639123456789)
-        cleanedPhone, // Cleaned format (639123456789)
-        user.phoneNumber!.replaceAll('+63', ''), // Without +63
-        user.phoneNumber!.replaceAll('+', ''), // Without +
-      ];
-
-      for (String format in phoneFormats) {
-        final researcherDoc =
-            await _firestore.collection('researchers').doc(format).get();
-
-        if (researcherDoc.exists) {
-          _currentRole = 'researcher';
-          _userData = researcherDoc.data();
-          notifyListeners();
-          return;
-        }
-      }
-
-      // Check users collection for stored role
-      final userDoc =
-          await _firestore.collection('users').doc(cleanedPhone).get();
-
-      if (userDoc.exists) {
-        _userData = userDoc.data();
-        _currentRole = userDoc.data()?['role'] ?? 'basicUser';
-      } else {
-        // Create new user document
-        await _firestore.collection('users').doc(cleanedPhone).set({
-          'phoneNumber': user.phoneNumber,
-          'cleanedPhone': cleanedPhone,
-          'role': 'basicUser',
-          'createdAt': FieldValue.serverTimestamp(),
-          'lastLogin': FieldValue.serverTimestamp(),
-        });
-        _currentRole = 'basicUser';
-      }
-
-      notifyListeners();
-    } catch (e) {
-      print('Error checking user role: $e');
-      _currentRole = 'basicUser';
-      _isAuthenticated = false;
-      notifyListeners();
-    }
-  }
-
-  // Method to refresh user role
-  Future<void> refreshRole() async {
-    await checkUserRole();
-  }
-
-  // Method to upgrade a user (admin only)
-  Future<bool> upgradeUserToResearcher(String phoneNumber) async {
-    if (_currentRole != 'admin') return false;
-
-    try {
-      return await _roleService.addResearcher(phoneNumber, {
-        'addedBy': _auth.currentUser?.uid,
-        'addedAt': FieldValue.serverTimestamp(),
-      });
-    } catch (e) {
-      print('Error upgrading user: $e');
-      return false;
-    }
-  }
-
-  void logout() {
-    _currentRole = 'basicUser';
-    _isAuthenticated = false;
-    _userData = null;
-    _phoneNumber = null;
-    notifyListeners();
-  }
-}
+// REMOVE THE UserRoleProvider CLASS FROM HERE - IT'S NOW IN SEPARATE FILE

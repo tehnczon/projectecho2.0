@@ -1,11 +1,11 @@
 import 'package:projecho/screens/home/homePage.dart';
-import 'package:projecho/screens/analytics/general_basic_dashboard.dart'; // Update this import
+import 'package:projecho/screens/analytics/general_basic_dashboard.dart';
 import 'package:projecho/screens/profile/userProfile.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart'; // Add this import
+import 'package:provider/provider.dart';
 import 'dart:ui';
-import 'package:projecho/screens/analytics/testing/models/user_model.dart'; // for ImageFilter.blur
+import 'package:projecho/screens/analytics/testing/providers/user_role_provider.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -18,15 +18,10 @@ class _MainPageState extends State<MainPage> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
 
-  late final List<Widget> _pages;
-  late final List<BottomNavigationBarItem> _navItems;
-
   @override
   void initState() {
     super.initState();
-
-    // Check user role on init
-    Future.microtask(() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<UserRoleProvider>(context, listen: false).checkUserRole();
     });
   }
@@ -35,20 +30,14 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     return Consumer<UserRoleProvider>(
       builder: (context, roleProvider, child) {
-        // Build pages based on role
-        _pages = [
+        // Build pages dynamically based on role
+        final List<Widget> pages = [
           HomePage(),
-          InsightsDashboard(), // This will route internally based on role
+          GeneralBasicDashboard(), // This internally handles role-based content
           UserProfile(),
         ];
 
-        // Add admin panel if user is admin
-        if (roleProvider.isAdmin) {
-          _pages.add(SuperAdminPanel());
-        }
-
-        // Build navigation items
-        _navItems = [
+        final List<BottomNavigationBarItem> navItems = [
           BottomNavigationBarItem(
             icon: Icon(Icons.home_outlined),
             activeIcon: Icon(Icons.home),
@@ -57,7 +46,7 @@ class _MainPageState extends State<MainPage> {
           BottomNavigationBarItem(
             icon: Icon(Icons.insights_outlined),
             activeIcon: Icon(Icons.insights),
-            label: 'Insights',
+            label: roleProvider.isResearcher ? 'Analytics' : 'Insights',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
@@ -66,23 +55,12 @@ class _MainPageState extends State<MainPage> {
           ),
         ];
 
-        // Add admin nav item if user is admin
-        if (roleProvider.isAdmin) {
-          _navItems.add(
-            BottomNavigationBarItem(
-              icon: Icon(Icons.admin_panel_settings_outlined),
-              activeIcon: Icon(Icons.admin_panel_settings),
-              label: 'Admin',
-            ),
-          );
-        }
-
         return Container(
           color: Colors.white,
           child: Scaffold(
             backgroundColor: Colors.transparent,
             key: _scaffoldKey,
-            body: IndexedStack(index: _selectedIndex, children: _pages),
+            body: IndexedStack(index: _selectedIndex, children: pages),
             bottomNavigationBar: ClipRRect(
               borderRadius: const BorderRadius.only(
                 topLeft: Radius.circular(24),
@@ -124,7 +102,7 @@ class _MainPageState extends State<MainPage> {
                     elevation: 0,
                     showSelectedLabels: true,
                     showUnselectedLabels: true,
-                    items: _navItems,
+                    items: navItems,
                   ),
                 ),
               ),
