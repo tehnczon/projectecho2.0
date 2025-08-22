@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '/../../utils/phone_number_utils.dart';
 // lib/providers/user_role_provider.dart
 
 class UserRoleProvider extends ChangeNotifier {
@@ -50,8 +51,9 @@ class UserRoleProvider extends ChangeNotifier {
       _phoneNumber = user.phoneNumber;
       _isAuthenticated = true;
 
-      String cleanedPhone = user.phoneNumber!.replaceAll(RegExp(r'[^\d]'), '');
-
+      String cleanedPhone = PhoneNumberUtils.cleanForDocumentId(
+        user.phoneNumber!,
+      );
       // Check if user exists
       final userDoc =
           await _firestore.collection('users').doc(cleanedPhone).get();

@@ -75,7 +75,7 @@ class EnhancedAnalyticsProvider extends ChangeNotifier {
   // For basic users - general insights without personal data
   Future<void> _fetchGeneralInsights() async {
     try {
-      final snapshot = await _firestore.collection('profiles').get();
+      final snapshot = await _firestore.collection('users').get();
       final profiles = snapshot.docs.map((doc) => doc.data()).toList();
 
       _generalInsights = GeneralInsights(

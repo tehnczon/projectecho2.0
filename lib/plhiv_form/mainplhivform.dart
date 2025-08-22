@@ -383,7 +383,6 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
   }
 
   void _submitForm() async {
-    // Implementation remains the same as original
     try {
       showDialog(
         context: context,
@@ -391,27 +390,38 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
         builder: (_) => const Center(child: CircularProgressIndicator()),
       );
 
-      final Map<String, dynamic> data = widget.registrationData.toJson();
+      // OLD CODE - REMOVE:
+      // final Map<String, dynamic> data = widget.registrationData.toJson();
+      // await FirebaseFirestore.instance
+      //   .collection('users')
+      //   .doc(widget.registrationData.phoneNumber)
+      //   .set(data);
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(widget.registrationData.phoneNumber)
-          .set(data);
+      // NEW CODE - USE THIS:
+      bool success = await widget.registrationData.saveToFirestore();
 
-      Navigator.pop(context);
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => WelcomeScreen()),
-      );
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Profiling completed successfully!")),
-      );
+      if (success) {
+        Navigator.pop(context); // Close loading dialog
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => WelcomeScreen()),
+        );
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Profiling completed successfully!")),
+        );
+      } else {
+        Navigator.pop(context); // Close loading dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Error saving profile. Please try again."),
+          ),
+        );
+      }
     } catch (e) {
-      Navigator.pop(context);
+      Navigator.pop(context); // Close loading dialog
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text("Error submitting: $e")));
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     }
   }
 

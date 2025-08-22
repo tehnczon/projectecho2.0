@@ -86,23 +86,29 @@ class _UserTypeScreenState extends State<UserTypeScreen>
       );
       setState(() => _isLoading = false);
     } else {
-      // Save data for Health Information Seeker
+      // Health Information Seeker - save immediately
       try {
-        await FirebaseFirestore.instance
-            .collection('users')
-            .doc(widget.registrationData.phoneNumber)
-            .set(widget.registrationData.toJson());
+        // OLD CODE - REMOVE:
+        // await FirebaseFirestore.instance
+        //   .collection('users')
+        //   .doc(widget.registrationData.phoneNumber)
+        //   .set(widget.registrationData.toJson());
 
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-          (route) => false,
-        );
+        // NEW CODE - USE THIS:
+        bool success = await widget.registrationData.saveToFirestore();
 
-        _showSuccessSnackBar('Profile saved successfully!');
+        if (success) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const WelcomeScreen()),
+            (route) => false,
+          );
+          _showSuccessSnackBar('Profile saved successfully!');
+        } else {
+          _showErrorSnackBar('Error saving profile. Please try again.');
+        }
       } catch (e) {
-        setState(() => _isLoading = false);
-        _showErrorSnackBar('Error saving profile: $e');
+        _showErrorSnackBar('Error: $e');
       }
     }
   }
