@@ -30,13 +30,18 @@ class UserRoleProvider extends ChangeNotifier {
   Map<String, dynamic>? get plhivData => _userData?['plhivData'];
 
   // Computed properties
+  // ✅ NEW (flat structure):
   bool get isMSM =>
-      demographics?['sexAssignedAtBirth'] == 'Male' &&
-      (healthInfo?['unprotectedSexWith'] == 'Male' ||
-          healthInfo?['unprotectedSexWith'] == 'Both');
+      _userData?['sexAssignedAtBirth'] == 'Male' &&
+      (_userData?['unprotectedSexWith'] == 'Male' ||
+          _userData?['unprotectedSexWith'] == 'Both');
 
-  String? get ageRange => uicData?['ageRange'];
-  String? get treatmentHub => plhivData?['treatmentHub'];
+  String? get ageRange => _userData?['ageRange'];
+  String? get treatmentHub => _userData?['treatmentHub'];
+  String? get city => _userData?['city'];
+  String? get barangay => _userData?['barangay'];
+  String? get genderIdentity => _userData?['genderIdentity'];
+  int? get yearDiagnosed => _userData?['yearDiagnosed'];
 
   Future<void> checkUserRole() async {
     try {
