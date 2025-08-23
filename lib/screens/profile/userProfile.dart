@@ -7,6 +7,7 @@ import 'package:projecho/screens/profile/userSettings.dart';
 import 'package:projecho/login/login/inputNum.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:intl/intl.dart';
+import 'package:projecho/utils/phone_number_utils.dart';
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -38,9 +39,15 @@ class _UserProfileState extends State<UserProfile> {
       final phone = user.phoneNumber;
       if (phone == null) return;
 
-      // Fetch user document from the "users" collection
+      // ✅ FIX: Clean phone number for Firestore lookup
+      final cleanedPhone = PhoneNumberUtils.cleanForDocumentId(phone);
+
+      // Fetch user document using cleaned phone
       final userDoc =
-          await FirebaseFirestore.instance.collection('users').doc(phone).get();
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(cleanedPhone) // ✅ Use cleaned phone
+              .get();
 
       if (userDoc.exists) {
         final data = userDoc.data();
@@ -51,18 +58,9 @@ class _UserProfileState extends State<UserProfile> {
 
         // Optional: handle role-specific logic
         final role = data?['role'];
-        switch (role) {
-          case 'plhiv':
-            print("User is PLHIV");
-            break;
-          case 'infoSeeker':
-            print("User is Info Seeker");
-            break;
-          default:
-            print("User role: $role");
-        }
+        print("User role: $role");
       } else {
-        print("User not found in Firestore");
+        print("User not found in Firestore with ID: $cleanedPhone");
       }
     } catch (e) {
       print("Failed to load user data: $e");

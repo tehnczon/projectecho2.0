@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projecho/screens/analytics/components/models/user_model.dart'; // Adjust the import based on your project structure
+import 'package:projecho/utils/phone_number_utils.dart';
 
 class RoleManagementService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -14,8 +15,8 @@ class RoleManagementService {
         return 'basicUser';
       }
 
-      // Use phone number as document ID (remove + and spaces)
-      String phoneId = user.phoneNumber!.replaceAll(RegExp(r'[^\d]'), '');
+      // ✅ Use standardized cleaning
+      String phoneId = PhoneNumberUtils.cleanForDocumentId(user.phoneNumber!);
 
       // Check if user document exists
       final userDoc = await _firestore.collection('users').doc(phoneId).get();
@@ -30,6 +31,7 @@ class RoleManagementService {
         // Create new user document with basic role
         await _firestore.collection('users').doc(phoneId).set({
           'phoneNumber': user.phoneNumber,
+          'cleanedPhone': phoneId, // ✅ Store cleaned version
           'role': 'basicUser',
           'createdAt': FieldValue.serverTimestamp(),
           'lastLogin': FieldValue.serverTimestamp(),
@@ -46,7 +48,9 @@ class RoleManagementService {
   // Admin function to upgrade user role
   Future<bool> upgradeUserRole(String phoneNumber, String newRole) async {
     try {
-      String phoneId = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
+      // ✅ Use standardized cleaning
+      String phoneId = PhoneNumberUtils.cleanForDocumentId(phoneNumber);
+
       await _firestore.collection('users').doc(phoneId).update({
         'role': newRole,
         'updatedAt': FieldValue.serverTimestamp(),

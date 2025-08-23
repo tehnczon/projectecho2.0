@@ -71,34 +71,89 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
         verificationId: widget.verificationId,
         smsCode: currentOTP,
       );
-      await _auth.signInWithCredential(credential);
 
-      // 🔧 FIX: Use cleaned phone number for Firestore lookup
+      // Sign in
+      final userCredential = await _auth.signInWithCredential(credential);
+
+      // DEBUG: Print auth details
+      print('🔐 AUTH SUCCESS');
+      print('🔐 UID: ${userCredential.user?.uid}');
+      print('🔐 Phone: ${userCredential.user?.phoneNumber}');
+
+      // Clean phone number
       final String cleanedPhone = PhoneNumberUtils.cleanForDocumentId(
         widget.phoneNumber,
       );
 
       print('📱 Original phone: ${widget.phoneNumber}');
-      print('📱 Cleaned phone for lookup: $cleanedPhone');
+      print('📱 Cleaned phone: $cleanedPhone');
 
+      // DEBUG: Try different approaches
       final firestore = FirebaseFirestore.instance;
+
+      // Approach 1: Direct document get
+      try {
+        print('🔍 Attempting direct document get...');
+        final userDoc =
+            await firestore.collection('users').doc(cleanedPhone).get();
+
+        print('✅ Document get successful!');
+        print('📄 Document exists: ${userDoc.exists}');
+
+        if (userDoc.exists) {
+          print('📄 Document data: ${userDoc.data()}');
+        }
+      } catch (e) {
+        print('❌ Direct get failed: $e');
+      }
+
+      // Approach 2: Try with where query
+      try {
+        print('🔍 Attempting query with where clause...');
+        final querySnapshot =
+            await firestore
+                .collection('users')
+                .where('phoneNumber', isEqualTo: widget.phoneNumber)
+                .limit(1)
+                .get();
+
+        print('✅ Query successful!');
+        print('📄 Found ${querySnapshot.docs.length} documents');
+
+        if (querySnapshot.docs.isNotEmpty) {
+          print('📄 First doc ID: ${querySnapshot.docs.first.id}');
+          print('📄 First doc data: ${querySnapshot.docs.first.data()}');
+        }
+      } catch (e) {
+        print('❌ Query failed: $e');
+      }
+
+      // Continue with your normal flow...
+      setState(() => _isLoading = false);
+
+      // Check if user exists
       final userDoc =
           await firestore.collection('users').doc(cleanedPhone).get();
 
-      print('📱 Document exists: ${userDoc.exists}');
       if (userDoc.exists) {
-        print('📱 User data: ${userDoc.data()}');
-      }
-
-      setState(() => _isLoading = false);
-
-      if (userDoc.exists) {
-        // ✅ User already registered - go to home
-        print('✅ Existing user found - navigating to home');
+        print('✅ User exists - navigating to home');
         Navigator.pushReplacementNamed(context, '/home');
       } else {
-        // ✅ New user - start registration flow
-        print('✅ New user - starting registration flow');
+        print('🆕 New user - starting registration');
+        // If document doesn't exist, try creating it first
+        try {
+          await firestore.collection('users').doc(cleanedPhone).set({
+            'phoneNumber': widget.phoneNumber,
+            'cleanedPhone': cleanedPhone,
+            'role': 'infoSeeker',
+            'createdAt': FieldValue.serverTimestamp(),
+            'uid': userCredential.user?.uid,
+          });
+          print('✅ Created initial user document');
+        } catch (e) {
+          print('❌ Failed to create user document: $e');
+        }
+
         Navigator.push(
           context,
           MaterialPageRoute(
