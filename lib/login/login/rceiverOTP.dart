@@ -7,6 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/login/signup/terms_and_condition.dart';
 import 'package:projecho/main/registration_data.dart';
+import 'package:projecho/utils/phone_number_utils.dart'; // ✅ ADD THIS IMPORT
 
 class OTPScreen extends StatefulWidget {
   final String phoneNumber;
@@ -72,19 +73,32 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
       );
       await _auth.signInWithCredential(credential);
 
-      final firestore = FirebaseFirestore.instance;
-      final String phone = widget.phoneNumber;
+      // 🔧 FIX: Use cleaned phone number for Firestore lookup
+      final String cleanedPhone = PhoneNumberUtils.cleanForDocumentId(
+        widget.phoneNumber,
+      );
 
-      final plhivDoc =
-          await firestore.collection('plhiv_profiles').doc(phone).get();
-      final researcherDoc =
-          await firestore.collection('researchers').doc(phone).get();
+      print('📱 Original phone: ${widget.phoneNumber}');
+      print('📱 Cleaned phone for lookup: $cleanedPhone');
+
+      final firestore = FirebaseFirestore.instance;
+      final userDoc =
+          await firestore.collection('users').doc(cleanedPhone).get();
+
+      print('📱 Document exists: ${userDoc.exists}');
+      if (userDoc.exists) {
+        print('📱 User data: ${userDoc.data()}');
+      }
 
       setState(() => _isLoading = false);
 
-      if (plhivDoc.exists || researcherDoc.exists) {
+      if (userDoc.exists) {
+        // ✅ User already registered - go to home
+        print('✅ Existing user found - navigating to home');
         Navigator.pushReplacementNamed(context, '/home');
       } else {
+        // ✅ New user - start registration flow
+        print('✅ New user - starting registration flow');
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -99,15 +113,72 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
       }
     } on FirebaseAuthException catch (e) {
       setState(() => _isLoading = false);
-      _showErrorSnackBar('Error: ${e.message}');
+      print('❌ Firebase Auth Error: ${e.code} - ${e.message}');
+      _showErrorSnackBar('Verification failed: ${e.message}');
+    } catch (e) {
+      setState(() => _isLoading = false);
+      print('❌ General Error: $e');
+      _showErrorSnackBar('Something went wrong. Please try again.');
+    }
+  }
+
+  void _resendOTP() async {
+    try {
+      setState(() => _isLoading = true);
+
+      await FirebaseAuth.instance.verifyPhoneNumber(
+        phoneNumber: widget.phoneNumber,
+        verificationCompleted: (PhoneAuthCredential credential) {},
+        verificationFailed: (FirebaseAuthException e) {
+          setState(() => _isLoading = false);
+          _showErrorSnackBar('Failed to resend code: ${e.message}');
+        },
+        codeSent: (String verificationId, int? resendToken) {
+          setState(() => _isLoading = false);
+          _showSuccessSnackBar('New verification code sent!');
+          // You might want to update the verificationId here
+        },
+        codeAutoRetrievalTimeout: (String verificationId) {
+          // This callback is triggered when SMS auto-retrieval times out
+          print('Auto-retrieval timeout for verification ID: $verificationId');
+        },
+        timeout: const Duration(seconds: 60),
+        forceResendingToken: null, // You can store and use resend token
+      );
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showErrorSnackBar('Failed to resend code. Please try again.');
     }
   }
 
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
         backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  void _showSuccessSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
@@ -124,6 +195,14 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
         leading: IconButton(
           icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
           onPressed: () => Navigator.pop(context),
+        ),
+        title: Text(
+          'Phone Verification',
+          style: TextStyle(
+            color: AppColors.textPrimary,
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
       body: SingleChildScrollView(
@@ -284,7 +363,7 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
 
             const SizedBox(height: 24),
 
-            // Resend Timer
+            // Resend Timer/Button
             Center(
               child:
                   _resendTimer > 0
@@ -306,21 +385,59 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
                           ),
                         ],
                       )
-                      : TextButton(
-                        onPressed: () {
-                          setState(() => _resendTimer = 60);
-                          _startResendTimer();
-                          // Add resend logic here
-                        },
-                        child: Text(
-                          'Resend Code',
-                          style: TextStyle(
-                            color: AppColors.primary,
-                            fontWeight: FontWeight.w600,
+                      : TextButton.icon(
+                        onPressed:
+                            _isLoading
+                                ? null
+                                : () {
+                                  setState(() => _resendTimer = 60);
+                                  _startResendTimer();
+                                  _resendOTP();
+                                },
+                        icon: Icon(Icons.refresh, size: 18),
+                        label: Text('Resend Code'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
                           ),
                         ),
                       ),
             ).animate().fadeIn(duration: 800.ms, delay: 700.ms),
+
+            const SizedBox(height: 32),
+
+            // Debug info (remove in production)
+            // if (true) // Set to false in production
+            //   Container(
+            //     padding: EdgeInsets.all(12),
+            //     decoration: BoxDecoration(
+            //       color: Colors.grey.withOpacity(0.1),
+            //       borderRadius: BorderRadius.circular(8),
+            //     ),
+            //     child: Column(
+            //       crossAxisAlignment: CrossAxisAlignment.start,
+            //       children: [
+            //         Text(
+            //           'Debug Info:',
+            //           style: TextStyle(
+            //             fontWeight: FontWeight.bold,
+            //             fontSize: 12,
+            //           ),
+            //         ),
+            //         SizedBox(height: 4),
+            //         Text(
+            //           'Original: ${widget.phoneNumber}',
+            //           style: TextStyle(fontSize: 11),
+            //         ),
+            //         Text(
+            //           'Cleaned: ${PhoneNumberUtils.cleanForDocumentId(widget.phoneNumber)}',
+            //           style: TextStyle(fontSize: 11),
+            //         ),
+            //       ],
+            //     ),
+            //   ),
           ],
         ),
       ),

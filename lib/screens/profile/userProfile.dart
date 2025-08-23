@@ -36,35 +36,33 @@ class _UserProfileState extends State<UserProfile> {
       if (user == null) return;
 
       final phone = user.phoneNumber;
+      if (phone == null) return;
 
-      // Try PLHIV collection first
-      final plhivDoc =
-          await FirebaseFirestore.instance
-              .collection('plhiv_profiles')
-              .doc(phone)
-              .get();
+      // Fetch user document from the "users" collection
+      final userDoc =
+          await FirebaseFirestore.instance.collection('users').doc(phone).get();
 
-      if (plhivDoc.exists) {
+      if (userDoc.exists) {
+        final data = userDoc.data();
         setState(() {
-          userData = plhivDoc.data();
-          displayName = userData?['generatedUIC'] ?? 'Anonymous';
+          userData = data;
+          displayName = data?['generatedUIC'] ?? 'Anonymous';
         });
-        return;
-      }
 
-      // Try researchers collection next
-      final researcherDoc =
-          await FirebaseFirestore.instance
-              .collection('researchers')
-              .doc(phone)
-              .get();
-
-      if (researcherDoc.exists) {
-        setState(() {
-          userData = researcherDoc.data();
-          displayName = userData?['generatedUIC'] ?? 'Anonymous';
-        });
-        return;
+        // Optional: handle role-specific logic
+        final role = data?['role'];
+        switch (role) {
+          case 'plhiv':
+            print("User is PLHIV");
+            break;
+          case 'infoSeeker':
+            print("User is Info Seeker");
+            break;
+          default:
+            print("User role: $role");
+        }
+      } else {
+        print("User not found in Firestore");
       }
     } catch (e) {
       print("Failed to load user data: $e");

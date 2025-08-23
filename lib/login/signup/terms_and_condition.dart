@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/main/app_theme.dart';
-import 'package:projecho/login/signup/UIC.dart';
 import 'package:projecho/main/registration_data.dart';
+import 'package:projecho/login/registration_flow_manager.dart';
 
 class TermsAndConditionsPage extends StatefulWidget {
   final RegistrationData registrationData;
@@ -42,12 +42,10 @@ class _TermsAndConditionsPageState extends State<TermsAndConditionsPage> {
   void _onAccept() {
     if (_accepted) {
       HapticFeedback.mediumImpact();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) => UICScreen(registrationData: widget.registrationData),
-        ),
+      RegistrationFlowManager.navigateToNextStep(
+        context: context,
+        currentStep: 'terms',
+        registrationData: widget.registrationData,
       );
     } else {
       _showErrorSnackBar('Please accept the terms to continue');

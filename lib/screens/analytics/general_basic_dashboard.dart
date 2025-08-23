@@ -3,125 +3,261 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import './testing/providers/enhanced_analytics_provider.dart';
-import 'package:projecho/screens/analytics/testing/providers/user_role_provider.dart';
+import './components/providers/enhanced_analytics_provider.dart';
+import 'package:projecho/screens/analytics/components/providers/user_role_provider.dart';
 import './researcher_dashboard.dart';
+import './researcher_request_screen.dart';
 
 class GeneralBasicDashboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // Check user role and show appropriate dashboard
-    return Consumer<UserRoleProvider>(
-      builder: (context, roleProvider, child) {
-        // If researcher, show researcher dashboard
-        if (roleProvider.isResearcher) {
-          return ResearcherDashboard();
-        }
+    return Scaffold(
+      backgroundColor: Color(0xFFF0F2F5),
+      body: SafeArea(
+        child: Consumer2<EnhancedAnalyticsProvider, UserRoleProvider>(
+          builder: (context, analyticsProvider, roleProvider, child) {
+            final insights = analyticsProvider.generalInsights;
 
-        // Otherwise show basic dashboard
-        return Scaffold(
-          backgroundColor: Color(0xFFF0F2F5),
-          body: SafeArea(
-            child: Consumer<EnhancedAnalyticsProvider>(
-              builder: (context, provider, child) {
-                final insights = provider.generalInsights;
+            if (analyticsProvider.isLoading) {
+              return _buildLoadingState();
+            }
 
-                if (provider.isLoading) {
-                  return _buildLoadingState();
-                }
+            if (insights == null) {
+              return _buildEmptyState(context, analyticsProvider);
+            }
 
-                if (insights == null) {
-                  return _buildEmptyState(context, provider);
-                }
+            return CustomScrollView(
+              slivers: [
+                // App Bar with role-specific title
+                _buildAppBar(context, roleProvider, analyticsProvider),
 
-                return CustomScrollView(
-                  slivers: [
-                    // App Bar
-                    SliverAppBar(
-                      floating: true,
-                      backgroundColor: Colors.white,
-                      elevation: 0,
-                      automaticallyImplyLeading: false,
-                      expandedHeight: 120,
-                      flexibleSpace: FlexibleSpaceBar(
-                        background: Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Color(0xFF1877F2).withOpacity(0.1),
-                                Colors.white,
-                              ],
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                            ),
-                          ),
-                          child: Padding(
-                            padding: EdgeInsets.all(16),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Community Insights',
-                                  style: GoogleFonts.workSans(
-                                    color: Color(0xFF1C1E21),
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 28,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                Text(
-                                  'Together, we are stronger',
-                                  style: GoogleFonts.workSans(
-                                    color: Color(0xFF65676B),
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                      actions: [
-                        IconButton(
-                          icon: Icon(Icons.refresh, color: Color(0xFF65676B)),
-                          onPressed: () => provider.fetchData(),
-                        ),
+                // Content
+                SliverPadding(
+                  padding: EdgeInsets.all(16),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      // Show upgrade card for infoSeeker users
+                      if (roleProvider.isInfoSeeker) ...[
+                        _buildUpgradeToResearcherCard(context),
+                        SizedBox(height: 16),
                       ],
-                    ),
 
-                    // Content
-                    SliverPadding(
-                      padding: EdgeInsets.all(16),
-                      sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          _buildSupportiveMessageCard(
-                            insights.supportiveMessage,
-                          ),
-                          SizedBox(height: 16),
-                          _buildCommunityOverviewCard(insights),
-                          SizedBox(height: 16),
-                          _buildPopularTreatmentHubsCard(
-                            insights.popularTreatmentHubs,
-                          ),
-                          SizedBox(height: 16),
-                          _buildHealthTipsCard(insights.generalHealthTips),
-                          SizedBox(height: 16),
-                          _buildResourcesGrid(
-                            context,
-                            insights.availableResources,
-                          ),
-                          SizedBox(height: 80), // Space for bottom navigation
-                        ]),
+                      _buildSupportiveMessageCard(
+                        insights.supportiveMessage,
+                        roleProvider,
+                      ),
+                      SizedBox(height: 16),
+                      _buildCommunityOverviewCard(insights),
+                      SizedBox(height: 16),
+                      _buildPopularTreatmentHubsCard(
+                        insights.popularTreatmentHubs,
+                      ),
+                      SizedBox(height: 16),
+                      _buildHealthTipsCard(insights.generalHealthTips),
+                      SizedBox(height: 16),
+                      _buildResourcesGrid(context, insights.availableResources),
+                      SizedBox(height: 80), // Space for bottom navigation
+                    ]),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAppBar(
+    BuildContext context,
+    UserRoleProvider roleProvider,
+    EnhancedAnalyticsProvider analyticsProvider,
+  ) {
+    return SliverAppBar(
+      floating: true,
+      backgroundColor: Colors.white,
+      elevation: 0,
+      automaticallyImplyLeading: false,
+      expandedHeight: 120,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Color(0xFF1877F2).withOpacity(0.1), Colors.white],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.end,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  _getTitle(roleProvider),
+                  style: GoogleFonts.workSans(
+                    color: Color(0xFF1C1E21),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 28,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  _getSubtitle(roleProvider),
+                  style: GoogleFonts.workSans(
+                    color: Color(0xFF65676B),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: Icon(Icons.refresh, color: Color(0xFF65676B)),
+          onPressed: () => analyticsProvider.fetchData(),
+        ),
+      ],
+    );
+  }
+
+  String _getTitle(UserRoleProvider roleProvider) {
+    if (roleProvider.isPLHIV) {
+      return 'Your Community';
+    } else {
+      return 'Community Insights';
+    }
+  }
+
+  String _getSubtitle(UserRoleProvider roleProvider) {
+    if (roleProvider.isPLHIV) {
+      return 'You\'re part of something bigger';
+    } else {
+      return 'Together, we are stronger';
+    }
+  }
+
+  Widget _buildUpgradeToResearcherCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Color(0xFF9C27B0), Color(0xFFAB47BC)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0xFF9C27B0).withOpacity(0.3),
+            blurRadius: 12,
+            offset: Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  FontAwesomeIcons.userDoctor,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              Spacer(),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.trending_up, color: Colors.white, size: 16),
+                    SizedBox(width: 4),
+                    Text(
+                      'Upgrade',
+                      style: GoogleFonts.workSans(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
-                );
-              },
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
+          Text(
+            'Are you a healthcare professional?',
+            style: GoogleFonts.workSans(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              height: 1.3,
             ),
           ),
-        );
-      },
+          SizedBox(height: 8),
+          Text(
+            'Access advanced analytics and contribute to research by becoming a verified researcher.',
+            style: GoogleFonts.workSans(
+              color: Colors.white.withOpacity(0.9),
+              fontSize: 14,
+              height: 1.4,
+            ),
+          ),
+          SizedBox(height: 20),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ResearcherRequestScreen(),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Color(0xFF9C27B0),
+                padding: EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.verified_user_outlined, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'Become a Researcher',
+                    style: GoogleFonts.workSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -185,7 +321,10 @@ class GeneralBasicDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildSupportiveMessageCard(String message) {
+  Widget _buildSupportiveMessageCard(
+    String message,
+    UserRoleProvider roleProvider,
+  ) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(20),
@@ -233,7 +372,7 @@ class GeneralBasicDashboard extends StatelessWidget {
                     Icon(Icons.auto_awesome, color: Colors.white, size: 16),
                     SizedBox(width: 4),
                     Text(
-                      'Message of Hope',
+                      roleProvider.isPLHIV ? 'Just for You' : 'Message of Hope',
                       style: GoogleFonts.workSans(
                         color: Colors.white,
                         fontSize: 12,
@@ -612,7 +751,6 @@ class GeneralBasicDashboard extends StatelessWidget {
 
     return InkWell(
       onTap: () {
-        // Show resource details or navigate
         _showResourceDetails(context, title, description);
       },
       borderRadius: BorderRadius.circular(16),

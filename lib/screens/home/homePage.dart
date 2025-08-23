@@ -287,7 +287,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                 return Transform.scale(
                                   scale: 1 + (_scaleController.value * 0.05),
                                   child: Image.asset(
-                                    'assets/projecho.png',
+                                    'assets/images/icon.png',
                                     height: 100,
                                     width: 100,
                                     errorBuilder: (context, error, stackTrace) {

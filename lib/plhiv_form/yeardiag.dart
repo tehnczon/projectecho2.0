@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/main/registration_data.dart';
 import 'package:projecho/plhiv_form/confirmatorycode.dart';
+import 'package:projecho/login/registration_flow_manager.dart';
 
 class YearDiagPage extends StatefulWidget {
   final RegistrationData registrationData;
@@ -28,14 +29,10 @@ class _YearDiagPageState extends State<YearDiagPage> {
       HapticFeedback.mediumImpact();
       widget.registrationData.yearDiagnosed = selectedYear;
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (_) => ConfirmatoryCodeScreen(
-                registrationData: widget.registrationData,
-              ),
-        ),
+      RegistrationFlowManager.navigateToNextStep(
+        context: context,
+        currentStep: 'yearDiag',
+        registrationData: widget.registrationData,
       );
     } else {
       HapticFeedback.lightImpact();

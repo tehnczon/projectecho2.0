@@ -3,7 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/main/registration_data.dart';
-import 'package:projecho/login/signup/userType.dart';
+import 'package:projecho/login/registration_flow_manager.dart';
 
 class GenderSelectionScreen extends StatefulWidget {
   final RegistrationData registrationData;
@@ -74,13 +74,10 @@ class _GenderSelectionScreenState extends State<GenderSelectionScreen>
     // Add slight delay for visual feedback
     Future.delayed(const Duration(milliseconds: 300), () {
       widget.registrationData.genderIdentity = gender;
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (context) =>
-                  UserTypeScreen(registrationData: widget.registrationData),
-        ),
+      RegistrationFlowManager.navigateToNextStep(
+        context: context,
+        currentStep: 'gender',
+        registrationData: widget.registrationData,
       );
     });
   }

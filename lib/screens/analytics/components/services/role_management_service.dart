@@ -1,6 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:projecho/screens/analytics/testing/models/user_model.dart'; // Adjust the import based on your project structure
+import 'package:projecho/screens/analytics/components/models/user_model.dart'; // Adjust the import based on your project structure
 
 class RoleManagementService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;

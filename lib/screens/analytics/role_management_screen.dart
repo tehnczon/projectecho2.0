@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import './testing/services/role_management_service.dart';
-import './testing/models/user_model.dart';
+import 'components/services/role_management_service.dart';
+import 'components/models/user_model.dart';
 
 class RoleManagementScreen extends StatefulWidget {
   @override

@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/main/registration_data.dart';
 import 'package:projecho/plhiv_form/trtmentHub.dart';
+import 'package:projecho/login/registration_flow_manager.dart';
 
 class ConfirmatoryCodeScreen extends StatefulWidget {
   final RegistrationData registrationData;
@@ -22,13 +23,10 @@ class _ConfirmatoryCodeScreenState extends State<ConfirmatoryCodeScreen> {
     HapticFeedback.lightImpact();
     widget.registrationData.confirmatoryCode = _codeController.text.trim();
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (_) =>
-                TreatmentHubScreen(registrationData: widget.registrationData),
-      ),
+    RegistrationFlowManager.navigateToNextStep(
+      context: context,
+      currentStep: 'confirmCode',
+      registrationData: widget.registrationData,
     );
   }
 

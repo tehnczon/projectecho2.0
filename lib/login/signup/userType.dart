@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/main/registration_data.dart';
 import 'package:projecho/plhiv_form/yeardiag.dart';
 import 'package:projecho/login/signup/wlcmPrjecho.dart';
+import 'package:projecho/login/registration_flow_manager.dart';
 
 class UserTypeScreen extends StatefulWidget {
   final RegistrationData registrationData;
@@ -21,6 +24,8 @@ class _UserTypeScreenState extends State<UserTypeScreen>
   String? selectedType;
   late AnimationController _animationController;
   bool _isLoading = false;
+  bool _showRetryOption = false;
+  String? _errorMessage;
 
   final List<Map<String, dynamic>> userTypes = [
     {
@@ -58,6 +63,9 @@ class _UserTypeScreenState extends State<UserTypeScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
+
+    // Auto-save progress on init
+    _saveProgressLocally();
   }
 
   @override
@@ -66,376 +74,655 @@ class _UserTypeScreenState extends State<UserTypeScreen>
     super.dispose();
   }
 
+  // Save registration progress locally as backup
+  Future<void> _saveProgressLocally() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final progressData = {
+        'currentStep': 'userType',
+        'registrationData': widget.registrationData.toJson(),
+        'timestamp': DateTime.now().toIso8601String(),
+      };
+      await prefs.setString('registration_progress', json.encode(progressData));
+    } catch (e) {
+      print('Failed to save progress locally: $e');
+    }
+  }
+
+  // Clear local progress after successful completion
+  Future<void> _clearLocalProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('registration_progress');
+    } catch (e) {
+      print('Failed to clear local progress: $e');
+    }
+  }
+
   void _handleSelection(String userType) async {
+    if (_isLoading) return;
+
     HapticFeedback.mediumImpact();
     setState(() {
       selectedType = userType;
       widget.registrationData.userType = userType;
       _isLoading = true;
+      _showRetryOption = false;
+      _errorMessage = null;
     });
 
+    // Save progress locally before proceeding
+    await _saveProgressLocally();
+
+    // Add slight delay for visual feedback
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (userType == 'PLHIV') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (_) => YearDiagPage(registrationData: widget.registrationData),
-        ),
-      );
-      setState(() => _isLoading = false);
+      // PLHIV flow - navigate to diagnosis year
+      _navigateToPLHIVFlow();
     } else {
-      // Health Information Seeker - save immediately
-      try {
-        // OLD CODE - REMOVE:
-        // await FirebaseFirestore.instance
-        //   .collection('users')
-        //   .doc(widget.registrationData.phoneNumber)
-        //   .set(widget.registrationData.toJson());
+      // Info Seeker - save immediately and complete
+      await _completeInfoSeekerRegistration();
+    }
+  }
 
-        // NEW CODE - USE THIS:
+  void _navigateToPLHIVFlow() {
+    setState(() => _isLoading = false);
+
+    RegistrationFlowManager.navigateToNextStep(
+      context: context,
+      currentStep: 'userType',
+      registrationData: widget.registrationData,
+    );
+  }
+
+  Future<void> _completeInfoSeekerRegistration() async {
+    int retryCount = 0;
+    const maxRetries = 3;
+
+    while (retryCount < maxRetries) {
+      try {
+        // Attempt to save to Firestore
         bool success = await widget.registrationData.saveToFirestore();
 
         if (success) {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => const WelcomeScreen()),
-            (route) => false,
+          // Clear local progress after successful save
+          await _clearLocalProgress();
+
+          setState(() => _isLoading = false);
+
+          // Navigate to welcome screen
+          RegistrationFlowManager.navigateToNextStep(
+            context: context,
+            currentStep: 'userType',
+            registrationData: widget.registrationData,
           );
-          _showSuccessSnackBar('Profile saved successfully!');
+
+          _showSuccessSnackBar(
+            'Welcome! Your profile has been created successfully.',
+          );
+          return;
         } else {
-          _showErrorSnackBar('Error saving profile. Please try again.');
+          throw Exception('Save operation returned false');
         }
       } catch (e) {
-        _showErrorSnackBar('Error: $e');
+        retryCount++;
+        print('Save attempt $retryCount failed: $e');
+
+        if (retryCount < maxRetries) {
+          // Wait before retry with exponential backoff
+          await Future.delayed(Duration(seconds: retryCount * 2));
+        } else {
+          // Max retries reached - show error with retry option
+          _handleSaveError(e.toString());
+          return;
+        }
       }
     }
   }
 
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
+  void _handleSaveError(String error) {
+    setState(() {
+      _isLoading = false;
+      _showRetryOption = true;
+      _errorMessage =
+          'Failed to save your profile. Please check your internet connection and try again.';
+    });
+
+    _showErrorDialog(
+      title: 'Registration Error',
+      message:
+          'We couldn\'t complete your registration right now. Your progress has been saved locally.',
+      actions: [
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            _handleSelection(selectedType!); // Retry
+          },
+          child: Text('Retry', style: TextStyle(color: AppColors.primary)),
+        ),
+        TextButton(
+          onPressed: () {
+            Navigator.pop(context);
+            setState(() {
+              selectedType = null;
+              _showRetryOption = false;
+              _errorMessage = null;
+            });
+          },
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _handleNavigationError(String error) {
+    setState(() {
+      _isLoading = false;
+      selectedType = null;
+    });
+
+    _showErrorDialog(
+      title: 'Navigation Error',
+      message: 'Something went wrong. Please try again.',
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text('OK', style: TextStyle(color: AppColors.primary)),
+        ),
+      ],
+    );
+  }
+
+  void _showErrorDialog({
+    required String title,
+    required String message,
+    required List<Widget> actions,
+  }) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.error_outline, color: AppColors.error, size: 24),
+                SizedBox(width: 8),
+                Text(title, style: TextStyle(fontSize: 18)),
+              ],
+            ),
+            content: Text(message, style: TextStyle(fontSize: 14, height: 1.4)),
+            actions: actions,
+          ),
     );
   }
 
   void _showSuccessSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
+        content: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.error_outline, color: Colors.white, size: 20),
+            SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        action:
+            _showRetryOption
+                ? SnackBarAction(
+                  label: 'Retry',
+                  textColor: Colors.white,
+                  onPressed: () => _handleSelection(selectedType!),
+                )
+                : null,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
+    return WillPopScope(
+      onWillPop: () async {
+        if (_isLoading) {
+          // Prevent back navigation while loading
+          _showErrorSnackBar(
+            'Please wait for the current operation to complete',
+          );
+          return false;
+        }
+        // Save progress when going back
+        await _saveProgressLocally();
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+            onPressed: _isLoading ? null : () => Navigator.pop(context),
+          ),
+          title: Text(
+            'User Type Selection',
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
         ),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            // Header Icon
-            Container(
-              width: 100,
-              height: 100,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary.withOpacity(0.1),
-                    AppColors.secondary.withOpacity(0.05),
-                  ],
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              // Header Icon
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withOpacity(0.1),
+                      AppColors.secondary.withOpacity(0.05),
+                    ],
+                  ),
+                  shape: BoxShape.circle,
                 ),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.people, color: AppColors.primary, size: 50),
-            ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
+                child: Icon(Icons.people, color: AppColors.primary, size: 50),
+              ).animate().scale(duration: 600.ms, curve: Curves.elasticOut),
 
-            const SizedBox(height: 32),
+              const SizedBox(height: 32),
 
-            // Title
-            Text(
-              "Let's get to know you!",
-              style: TextStyle(
-                fontSize: 32,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-              textAlign: TextAlign.center,
-            ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.2, end: 0),
+              // Title
+              Text(
+                "Let's get to know you!",
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+                textAlign: TextAlign.center,
+              ).animate().fadeIn(duration: 500.ms).slideY(begin: 0.2, end: 0),
 
-            const SizedBox(height: 12),
+              const SizedBox(height: 12),
 
-            // Subtitle
-            Text(
-              'Please select your role',
-              style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
-              textAlign: TextAlign.center,
-            ).animate().fadeIn(duration: 600.ms, delay: 100.ms),
+              // Subtitle
+              Text(
+                'Please select your role',
+                style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
+                textAlign: TextAlign.center,
+              ).animate().fadeIn(duration: 600.ms, delay: 100.ms),
 
-            const SizedBox(height: 8),
+              const SizedBox(height: 8),
 
-            // Info Card
-            Container(
+              // Error message display
+              if (_errorMessage != null)
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 16),
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.primary.withOpacity(0.05),
-                        AppColors.secondary.withOpacity(0.03),
-                      ],
-                    ),
+                    color: AppColors.error.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.1),
-                    ),
+                    border: Border.all(color: AppColors.error.withOpacity(0.3)),
                   ),
                   child: Row(
                     children: [
                       Icon(
-                        Icons.info_outline,
+                        Icons.error_outline,
+                        color: AppColors.error,
                         size: 20,
-                        color: AppColors.primary,
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Your participation helps healthcare providers and researchers better understand and support communities affected by HIV.',
+                          _errorMessage!,
                           style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textSecondary,
+                            fontSize: 14,
+                            color: AppColors.error,
                             height: 1.4,
                           ),
                         ),
                       ),
                     ],
                   ),
-                )
-                .animate()
-                .fadeIn(duration: 700.ms, delay: 200.ms)
-                .slideY(begin: 0.1, end: 0),
+                ).animate().fadeIn(),
 
-            const SizedBox(height: 32),
-
-            // User Type Cards
-            ...userTypes.asMap().entries.map((entry) {
-              final index = entry.key;
-              final type = entry.value;
-              final isSelected = selectedType == type['type'];
-
-              return Container(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    child: InkWell(
-                      onTap:
-                          _isLoading
-                              ? null
-                              : () => _handleSelection(type['type']),
-                      borderRadius: BorderRadius.circular(20),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color:
-                              isSelected
-                                  ? type['color'].withOpacity(0.1)
-                                  : AppColors.surface,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color:
-                                isSelected ? type['color'] : AppColors.divider,
-                            width: isSelected ? 2 : 1,
+              // Info Card
+              Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primary.withOpacity(0.05),
+                          AppColors.secondary.withOpacity(0.03),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.primary.withOpacity(0.1),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 20,
+                          color: AppColors.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Your participation helps healthcare providers and researchers better understand and support communities affected by HIV.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                              height: 1.4,
+                            ),
                           ),
-                          boxShadow: [
-                            BoxShadow(
+                        ),
+                      ],
+                    ),
+                  )
+                  .animate()
+                  .fadeIn(duration: 700.ms, delay: 200.ms)
+                  .slideY(begin: 0.1, end: 0),
+
+              const SizedBox(height: 32),
+
+              // User Type Cards
+              ...userTypes.asMap().entries.map((entry) {
+                final index = entry.key;
+                final type = entry.value;
+                final isSelected = selectedType == type['type'];
+                final isDisabled = _isLoading && !isSelected;
+
+                return Container(
+                      margin: const EdgeInsets.only(bottom: 20),
+                      child: InkWell(
+                        onTap:
+                            isDisabled
+                                ? null
+                                : () => _handleSelection(type['type']),
+                        borderRadius: BorderRadius.circular(20),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color:
+                                isSelected
+                                    ? type['color'].withOpacity(0.1)
+                                    : isDisabled
+                                    ? AppColors.surface.withOpacity(0.5)
+                                    : AppColors.surface,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
                               color:
                                   isSelected
-                                      ? type['color'].withOpacity(0.2)
-                                      : Colors.black.withOpacity(0.05),
-                              blurRadius: isSelected ? 20 : 10,
-                              offset: const Offset(0, 5),
+                                      ? type['color']
+                                      : isDisabled
+                                      ? AppColors.divider.withOpacity(0.5)
+                                      : AppColors.divider,
+                              width: isSelected ? 2 : 1,
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                    isSelected
+                                        ? type['color'].withOpacity(0.2)
+                                        : Colors.black.withOpacity(0.05),
+                                blurRadius: isSelected ? 20 : 10,
+                                offset: const Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    width: 60,
+                                    height: 60,
+                                    decoration: BoxDecoration(
+                                      color: type['color'].withOpacity(
+                                        isDisabled ? 0.05 : 0.1,
+                                      ),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      type['icon'],
+                                      color: type['color'].withOpacity(
+                                        isDisabled ? 0.5 : 1.0,
+                                      ),
+                                      size: 30,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          type['title'],
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold,
+                                            color:
+                                                isSelected
+                                                    ? type['color']
+                                                    : isDisabled
+                                                    ? AppColors.textPrimary
+                                                        .withOpacity(0.5)
+                                                    : AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          type['subtitle'],
+                                          style: TextStyle(
+                                            fontSize: 14,
+                                            color: AppColors.textSecondary
+                                                .withOpacity(
+                                                  isDisabled ? 0.5 : 1.0,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  if (_isLoading && isSelected)
+                                    SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        color: type['color'],
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                  else
+                                    Icon(
+                                      isSelected
+                                          ? Icons.check_circle
+                                          : Icons.arrow_forward_ios,
+                                      color:
+                                          isSelected
+                                              ? type['color']
+                                              : isDisabled
+                                              ? AppColors.textLight.withOpacity(
+                                                0.5,
+                                              )
+                                              : AppColors.textLight,
+                                      size: isSelected ? 24 : 16,
+                                    ),
+                                ],
+                              ),
+                              if (isSelected) ...[
+                                const SizedBox(height: 16),
                                 Container(
-                                  width: 60,
-                                  height: 60,
+                                  padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: type['color'].withOpacity(0.1),
-                                    shape: BoxShape.circle,
+                                    color: type['color'].withOpacity(0.05),
+                                    borderRadius: BorderRadius.circular(12),
                                   ),
-                                  child: Icon(
-                                    type['icon'],
-                                    color: type['color'],
-                                    size: 30,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        type['title'],
+                                        'What you\'ll get:',
                                         style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color:
-                                              isSelected
-                                                  ? type['color']
-                                                  : AppColors.textPrimary,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: type['color'],
                                         ),
                                       ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        type['subtitle'],
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          color: AppColors.textSecondary,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                if (_isLoading && isSelected)
-                                  SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      color: type['color'],
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                else
-                                  Icon(
-                                    isSelected
-                                        ? Icons.check_circle
-                                        : Icons.arrow_forward_ios,
-                                    color:
-                                        isSelected
-                                            ? type['color']
-                                            : AppColors.textLight,
-                                    size: isSelected ? 24 : 16,
-                                  ),
-                              ],
-                            ),
-                            if (isSelected) ...[
-                              const SizedBox(height: 16),
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: type['color'].withOpacity(0.05),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'What you\'ll get:',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: type['color'],
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    ...(type['benefits'] as List<String>)
-                                        .map(
-                                          (benefit) => Padding(
-                                            padding: const EdgeInsets.only(
-                                              bottom: 4,
-                                            ),
-                                            child: Row(
-                                              children: [
-                                                Icon(
-                                                  Icons.check,
-                                                  size: 14,
-                                                  color: type['color'],
-                                                ),
-                                                const SizedBox(width: 8),
-                                                Expanded(
-                                                  child: Text(
-                                                    benefit,
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color:
-                                                          AppColors
-                                                              .textSecondary,
+                                      const SizedBox(height: 8),
+                                      ...(type['benefits'] as List<String>)
+                                          .map(
+                                            (benefit) => Padding(
+                                              padding: const EdgeInsets.only(
+                                                bottom: 4,
+                                              ),
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons.check,
+                                                    size: 14,
+                                                    color: type['color'],
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Expanded(
+                                                    child: Text(
+                                                      benefit,
+                                                      style: TextStyle(
+                                                        fontSize: 12,
+                                                        color:
+                                                            AppColors
+                                                                .textSecondary,
+                                                      ),
                                                     ),
                                                   ),
-                                                ),
-                                              ],
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                        )
-                                        .toList(),
-                                  ],
-                                ),
-                              ).animate().fadeIn().slideY(begin: 0.1, end: 0),
+                                          )
+                                          .toList(),
+                                    ],
+                                  ),
+                                ).animate().fadeIn().slideY(begin: 0.1, end: 0),
+                              ],
                             ],
-                          ],
+                          ),
                         ),
                       ),
+                    )
+                    .animate()
+                    .fadeIn(delay: (400 + index * 200).ms)
+                    .slideX(begin: 0.1, end: 0);
+              }).toList(),
+
+              const SizedBox(height: 24),
+
+              // Privacy Badge
+              Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.success.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.success.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.lock, size: 20, color: AppColors.success),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(
+                            'Your information is kept confidential and secure',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.success,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ],
                     ),
                   )
                   .animate()
-                  .fadeIn(delay: (400 + index * 200).ms)
-                  .slideX(begin: 0.1, end: 0);
-            }).toList(),
+                  .fadeIn(duration: 1000.ms, delay: 800.ms)
+                  .scale(
+                    begin: const Offset(0.9, 0.9),
+                    end: const Offset(1, 1),
+                  ),
 
-            const SizedBox(height: 24),
-
-            // Privacy Badge
-            Container(
-                  padding: const EdgeInsets.all(16),
+              // Connection status indicator
+              if (_isLoading)
+                Container(
+                  margin: const EdgeInsets.only(top: 16),
+                  padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.success.withOpacity(0.2),
-                    ),
+                    color: AppColors.primary.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.lock, size: 20, color: AppColors.success),
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.primary,
+                        ),
+                      ),
                       const SizedBox(width: 8),
                       Text(
-                        'Your information is kept confidential \n and secure',
+                        selectedType == 'PLHIV'
+                            ? 'Preparing PLHIV registration...'
+                            : 'Completing registration...',
                         style: TextStyle(
-                          fontSize: 13,
-                          color: AppColors.success,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 12,
+                          color: AppColors.primary,
                         ),
                       ),
                     ],
                   ),
-                )
-                .animate()
-                .fadeIn(duration: 1000.ms, delay: 800.ms)
-                .scale(begin: const Offset(0.9, 0.9), end: const Offset(1, 1)),
-          ],
+                ).animate().fadeIn(),
+            ],
+          ),
         ),
       ),
     );

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/main/registration_data.dart';
 import 'package:projecho/plhiv_form/mainplhivform.dart';
+import 'package:projecho/login/registration_flow_manager.dart';
 
 class ProfOnboard1Screen extends StatefulWidget {
   final RegistrationData registrationData;
@@ -47,13 +48,10 @@ class _ProfOnboard1ScreenState extends State<ProfOnboard1Screen>
     if (showFirstText) {
       setState(() => showFirstText = false);
     } else {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (_) =>
-                  PLHIVStepperScreen(registrationData: widget.registrationData),
-        ),
+      RegistrationFlowManager.navigateToNextStep(
+        context: context,
+        currentStep: 'plhivOnboarding',
+        registrationData: widget.registrationData,
       );
     }
   }

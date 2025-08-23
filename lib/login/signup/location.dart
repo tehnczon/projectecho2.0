@@ -6,6 +6,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/login/signup/genID.dart';
 import 'package:projecho/main/registration_data.dart';
+import 'package:projecho/login/registration_flow_manager.dart';
 
 class LocationScreen extends StatefulWidget {
   final RegistrationData registrationData;
@@ -354,14 +355,10 @@ class _LocationScreenState extends State<LocationScreen>
       widget.registrationData.city = selectedCity!;
       widget.registrationData.barangay = selectedBarangay!;
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder:
-              (_) => GenderSelectionScreen(
-                registrationData: widget.registrationData,
-              ),
-        ),
+      RegistrationFlowManager.navigateToNextStep(
+        context: context,
+        currentStep: 'location',
+        registrationData: widget.registrationData,
       );
     } else {
       _showErrorSnackBar('Please select both city and barangay');

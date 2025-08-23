@@ -53,7 +53,7 @@ class _BiometricAuthPageState extends State<BiometricAuthPage> {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => UpgradeRequestScreen()),
+          MaterialPageRoute(builder: (_) => ResearcherRequestScreen()),
         );
       } else {
         _showError('Authentication failed.');
@@ -132,7 +132,6 @@ class _BiometricAuthPageState extends State<BiometricAuthPage> {
     // Test phone number cleaning
     results += '📱 PHONE NUMBER TESTS:\n';
     results += 'Original: ${plhivUser.phoneNumber}\n';
-    results += 'Cleaned: ${plhivUser.cleanedPhoneNumber}\n';
     results += 'Role: ${plhivUser.role}\n\n';
 
     // Test computed properties
@@ -173,9 +172,7 @@ class _BiometricAuthPageState extends State<BiometricAuthPage> {
     final infoSeekerData = infoSeeker.toFirestore();
 
     results += '👩‍🎓 INFO SEEKER TEST:\n';
-    results +=
-        'Phone: ${infoSeeker.phoneNumber} → ${infoSeeker.cleanedPhoneNumber}\n';
-    results += 'Role: ${infoSeeker.role}\n';
+    results += results += 'Role: ${infoSeeker.role}\n';
     results += 'Age Range: ${infoSeeker.ageRange}\n';
     results += 'Is Youth: ${infoSeeker.isYouth}\n';
     results +=
