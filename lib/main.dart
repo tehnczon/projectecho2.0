@@ -22,6 +22,7 @@ import 'package:projecho/map/providers/filter_provider.dart';
 
 // REGISTRATION FLOW UTILITIES
 import 'package:projecho/login/registration_flow_manager.dart';
+import 'package:projecho/utils/phone_migration_service.dart';
 
 import 'main/firebase_options.dart';
 import 'package:projecho/onboarding/onbrdingAnimationScreen.dart' as onboarding;
@@ -73,8 +74,24 @@ class _MyAppState extends State<MyApp> {
       _showSplash = false;
     });
 
-    // ✅ CHECK FOR INCOMPLETE REGISTRATION AFTER SPLASH
+    // ✅ NEW: Run phone migration before checking registration
+    await _runPhoneMigration();
+
+    // Check for incomplete registration
     await _checkForIncompleteRegistration();
+  }
+
+  // 🆕 NEW: Phone migration method
+  Future<void> _runPhoneMigration() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      print('🔄 Checking if phone migration is needed...');
+      await PhoneMigrationService.migrateUserIfNeeded();
+    } catch (e) {
+      print('❌ Phone migration failed: $e');
+    }
   }
 
   // 🎯 NEW METHOD: Check for incomplete registration

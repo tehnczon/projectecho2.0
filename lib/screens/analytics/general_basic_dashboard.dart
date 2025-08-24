@@ -55,8 +55,8 @@ class GeneralBasicDashboard extends StatelessWidget {
                       SizedBox(height: 16),
                       _buildHealthTipsCard(insights.generalHealthTips),
                       SizedBox(height: 16),
-                      _buildResourcesGrid(context, insights.availableResources),
-                      SizedBox(height: 80), // Space for bottom navigation
+                      // _buildResourcesGrid(context, insights.availableResources),
+                      // SizedBox(height: 80), // Space for bottom navigation
                     ]),
                   ),
                 ),
@@ -698,233 +698,232 @@ class GeneralBasicDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildResourcesGrid(
-    BuildContext context,
-    List<Map<String, String>> resources,
-  ) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(bottom: 12),
-          child: Text(
-            'Available Resources',
-            style: GoogleFonts.workSans(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF1C1E21),
-            ),
-          ),
-        ),
-        GridView.builder(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 1.2,
-          ),
-          itemCount: resources.length,
-          itemBuilder: (context, index) {
-            final resource = resources[index];
-            return _buildResourceCard(
-              context,
-              title: resource['title'] ?? '',
-              description: resource['description'] ?? '',
-              iconName: resource['icon'] ?? 'help',
-            );
-          },
-        ),
-      ],
-    );
-  }
+  // Widget _buildResourcesGrid(
+  //   BuildContext context,
+  //   List<Map<String, String>> resources,
+  // ) {
+  // return Column(
+  //   crossAxisAlignment: CrossAxisAlignment.start,
+  //   children: [
+  //     Padding(
+  //       padding: EdgeInsets.only(bottom: 12),
+  //       child: Text(
+  //         'Available Resources',
+  //         style: GoogleFonts.workSans(
+  //           fontSize: 20,
+  //           fontWeight: FontWeight.w600,
+  //           color: Color(0xFF1C1E21),
+  //         ),
+  //       ),
+  //     ),
+  //     // GridView.builder(
+  //     //   shrinkWrap: true,
+  //     //   physics: NeverScrollableScrollPhysics(),
+  //     //   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+  //     //     crossAxisCount: 2,
+  //     //     crossAxisSpacing: 10,
+  //     //     mainAxisSpacing: 12,
+  //     //     childAspectRatio: 1.2,
+  //     //   ),
+  //     //   itemCount: resources.length,
+  //     //   itemBuilder: (context, index) {
+  //     //     final resource = resources[index];
+  //     //     return _buildResourceCard(
+  //     //       context,
+  //     //       title: resource['title'] ?? '',
+  //     //       description: resource['description'] ?? '',
+  //     //       iconName: resource['icon'] ?? 'help',
+  //     //     );
+  //     //   },
+  //     // ),
+  //   ],
+  // );
+}
 
-  Widget _buildResourceCard(
-    BuildContext context, {
-    required String title,
-    required String description,
-    required String iconName,
-  }) {
-    IconData icon = _getIconFromName(iconName);
-    Color color = _getColorForIcon(iconName);
+Widget _buildResourceCard(
+  BuildContext context, {
+  required String title,
+  required String description,
+  required String iconName,
+}) {
+  IconData icon = _getIconFromName(iconName);
+  Color color = _getColorForIcon(iconName);
 
-    return InkWell(
-      onTap: () {
-        _showResourceDetails(context, title, description);
-      },
-      borderRadius: BorderRadius.circular(16),
-      child: Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Container(
-              padding: EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.workSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1C1E21),
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 4),
-                Text(
-                  description,
-                  style: GoogleFonts.workSans(
-                    fontSize: 11,
-                    color: Color(0xFF65676B),
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ],
-        ),
+  return InkWell(
+    onTap: () {
+      _showResourceDetails(context, title, description);
+    },
+    borderRadius: BorderRadius.circular(16),
+    child: Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 4),
+          ),
+        ],
       ),
-    );
-  }
-
-  IconData _getIconFromName(String name) {
-    switch (name) {
-      case 'hospital':
-        return Icons.local_hospital;
-      case 'group':
-        return Icons.groups;
-      case 'book':
-        return Icons.menu_book;
-      case 'phone':
-        return Icons.phone_in_talk;
-      default:
-        return Icons.help_outline;
-    }
-  }
-
-  Color _getColorForIcon(String name) {
-    switch (name) {
-      case 'hospital':
-        return Color(0xFF1877F2);
-      case 'group':
-        return Color(0xFF42B883);
-      case 'book':
-        return Color(0xFF9C27B0);
-      case 'phone':
-        return Color(0xFFFFA726);
-      default:
-        return Color(0xFF65676B);
-    }
-  }
-
-  void _showResourceDetails(
-    BuildContext context,
-    String title,
-    String description,
-  ) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder:
-          (context) => Container(
-            padding: EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            padding: EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: Color(0xFFDADDE1),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                Text(
-                  title,
-                  style: GoogleFonts.workSans(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF1C1E21),
-                  ),
-                ),
-                SizedBox(height: 12),
-                Text(
-                  description,
-                  style: GoogleFonts.workSans(
-                    fontSize: 14,
-                    color: Color(0xFF65676B),
-                    height: 1.5,
-                  ),
-                ),
-                SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          // Add navigation or action here
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF1877F2),
-                          foregroundColor: Colors.white,
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text('Learn More'),
-                      ),
-                    ),
-                    SizedBox(width: 12),
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: () => Navigator.pop(context),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Color(0xFF65676B),
-                          padding: EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          side: BorderSide(color: Color(0xFFDADDE1)),
-                        ),
-                        child: Text('Close'),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
+            child: Icon(icon, color: color, size: 24),
           ),
-    );
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.workSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1C1E21),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(height: 4),
+              Text(
+                description,
+                style: GoogleFonts.workSans(
+                  fontSize: 11,
+                  color: Color(0xFF65676B),
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+IconData _getIconFromName(String name) {
+  switch (name) {
+    case 'hospital':
+      return Icons.local_hospital;
+    case 'group':
+      return Icons.groups;
+    case 'book':
+      return Icons.menu_book;
+    case 'phone':
+      return Icons.phone_in_talk;
+    default:
+      return Icons.help_outline;
   }
+}
+
+Color _getColorForIcon(String name) {
+  switch (name) {
+    case 'hospital':
+      return Color(0xFF1877F2);
+    case 'group':
+      return Color(0xFF42B883);
+    case 'book':
+      return Color(0xFF9C27B0);
+    case 'phone':
+      return Color(0xFFFFA726);
+    default:
+      return Color(0xFF65676B);
+  }
+}
+
+void _showResourceDetails(
+  BuildContext context,
+  String title,
+  String description,
+) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder:
+        (context) => Container(
+          padding: EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: EdgeInsets.only(bottom: 20),
+                decoration: BoxDecoration(
+                  color: Color(0xFFDADDE1),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Text(
+                title,
+                style: GoogleFonts.workSans(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1C1E21),
+                ),
+              ),
+              SizedBox(height: 12),
+              Text(
+                description,
+                style: GoogleFonts.workSans(
+                  fontSize: 14,
+                  color: Color(0xFF65676B),
+                  height: 1.5,
+                ),
+              ),
+              SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        // Add navigation or action here
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF1877F2),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text('Learn More'),
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Color(0xFF65676B),
+                        padding: EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        side: BorderSide(color: Color(0xFFDADDE1)),
+                      ),
+                      child: Text('Close'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+  );
 }

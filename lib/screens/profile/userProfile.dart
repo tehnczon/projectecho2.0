@@ -39,14 +39,15 @@ class _UserProfileState extends State<UserProfile> {
       final phone = user.phoneNumber;
       if (phone == null) return;
 
-      // ✅ FIX: Clean phone number for Firestore lookup
-      final cleanedPhone = PhoneNumberUtils.cleanForDocumentId(phone);
+      // 🔧 FIX: Use standardized phone cleaning
+      final String cleanedPhone = PhoneNumberUtils.cleanForDocumentId(phone);
+      print('📱 Loading profile with cleaned phone: $cleanedPhone');
 
-      // Fetch user document using cleaned phone
+      // Fetch user document from the "users" collection using cleaned phone
       final userDoc =
           await FirebaseFirestore.instance
               .collection('users')
-              .doc(cleanedPhone) // ✅ Use cleaned phone
+              .doc(cleanedPhone) // ✅ Now uses cleaned phone number
               .get();
 
       if (userDoc.exists) {
@@ -58,12 +59,50 @@ class _UserProfileState extends State<UserProfile> {
 
         // Optional: handle role-specific logic
         final role = data?['role'];
-        print("User role: $role");
+        switch (role) {
+          case 'plhiv':
+            print("✅ User is PLHIV");
+            break;
+          case 'infoSeeker':
+            print("✅ User is Info Seeker");
+            break;
+          case 'researcher':
+            print("✅ User is Researcher");
+            break;
+          default:
+            print("✅ User role: $role");
+        }
       } else {
-        print("User not found in Firestore with ID: $cleanedPhone");
+        print("❌ User not found in Firestore with phone: $cleanedPhone");
+
+        // 🆕 ENHANCEMENT: Try to recover from old phone format
+        final fallbackDoc =
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(phone.replaceAll(RegExp(r'[^\d]'), ''))
+                .get();
+
+        if (fallbackDoc.exists) {
+          print("🔄 Found user with fallback format, migrating...");
+          // Migrate to new format
+          final data = fallbackDoc.data()!;
+          data['cleanedPhone'] = cleanedPhone;
+
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(cleanedPhone)
+              .set(data);
+
+          await fallbackDoc.reference.delete();
+
+          setState(() {
+            userData = data;
+            displayName = data['generatedUIC'] ?? 'Anonymous';
+          });
+        }
       }
     } catch (e) {
-      print("Failed to load user data: $e");
+      print("❌ Failed to load user data: $e");
     }
   }
 

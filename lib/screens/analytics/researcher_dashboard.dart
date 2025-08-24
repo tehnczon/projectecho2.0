@@ -372,7 +372,7 @@ class _ResearcherDashboardState extends State<ResearcherDashboard> {
     ];
 
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: EdgeInsets.all(10),
       child: GridView.builder(
         shrinkWrap: true,
         physics: NeverScrollableScrollPhysics(),
@@ -397,7 +397,7 @@ class _ResearcherDashboardState extends State<ResearcherDashboard> {
                 ),
               ],
             ),
-            padding: EdgeInsets.all(16),
+            padding: EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -601,7 +601,7 @@ class _ResearcherDashboardState extends State<ResearcherDashboard> {
                     ),
                     SizedBox(width: 6),
                     Text(
-                      'Age Distribution',
+                      'Age \nDistribution',
                       style: GoogleFonts.workSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -663,7 +663,7 @@ class _ResearcherDashboardState extends State<ResearcherDashboard> {
                     Icon(Icons.donut_small, color: Color(0xFF42B883), size: 18),
                     SizedBox(width: 6),
                     Text(
-                      'Gender Distribution',
+                      'Gender \nDistribution',
                       style: GoogleFonts.workSans(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,

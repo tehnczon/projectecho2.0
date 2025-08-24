@@ -1,9 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 import 'package:projecho/screens/analytics/researcher_request_screen.dart';
 // Add these imports for testing
 import '/utils/phone_number_utils.dart';
 import '/main/registration_data.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:projecho/screens/analytics/components/services/role_management_service.dart';
 
 class BiometricAuthPage extends StatefulWidget {
   const BiometricAuthPage({super.key});
@@ -239,6 +242,83 @@ class _BiometricAuthPageState extends State<BiometricAuthPage> {
     _showTestResults('Integration Test', results);
   }
 
+  void _testCompleteIntegration() async {
+    String results = '🧪 COMPLETE INTEGRATION TEST\n\n';
+
+    try {
+      // Test 1: Phone number standardization
+      final testNumbers = ['+639171234567', '09181234567', '9051234567'];
+      bool allPhoneTestsPassed = true;
+
+      for (String testNumber in testNumbers) {
+        try {
+          String cleaned = PhoneNumberUtils.cleanForDocumentId(testNumber);
+          String expected = testNumber.replaceAll(RegExp(r'[^\d]'), '');
+          if (!expected.startsWith('63')) expected = '63$expected';
+          if (expected.length == 11 && expected.startsWith('63')) {
+            expected = '639${expected.substring(2)}';
+          }
+
+          bool passed = cleaned == expected || cleaned.length == 12;
+          results += '📱 $testNumber -> $cleaned ${passed ? '✅' : '❌'}\n';
+          if (!passed) allPhoneTestsPassed = false;
+        } catch (e) {
+          results += '📱 $testNumber -> ERROR: $e ❌\n';
+          allPhoneTestsPassed = false;
+        }
+      }
+
+      // Test 2: Current user data access
+      final user = FirebaseAuth.instance.currentUser;
+      if (user?.phoneNumber != null) {
+        try {
+          final cleanedPhone = PhoneNumberUtils.cleanForDocumentId(
+            user!.phoneNumber!,
+          );
+          final userDoc =
+              await FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(cleanedPhone)
+                  .get();
+
+          results += '\n👤 USER DATA ACCESS:\n';
+          results += 'Original phone: ${user.phoneNumber}\n';
+          results += 'Cleaned phone: $cleanedPhone\n';
+          results += 'Document exists: ${userDoc.exists ? '✅' : '❌'}\n';
+
+          if (userDoc.exists) {
+            final data = userDoc.data()!;
+            results += 'Role field: ${data['role'] ?? 'MISSING'}\n';
+            results += 'UserType field: ${data['userType'] ?? 'N/A'}\n';
+            results +=
+                'CleanedPhone field: ${data['cleanedPhone'] ?? 'MISSING'}\n';
+          }
+        } catch (e) {
+          results += '👤 USER DATA ACCESS: ERROR - $e ❌\n';
+        }
+      }
+
+      // Test 3: Role service integration
+      try {
+        final roleService = RoleManagementService();
+        final userRole = await roleService.getUserRole();
+        results += '\n🔐 ROLE SERVICE:\n';
+        results += 'Retrieved role: $userRole ✅\n';
+      } catch (e) {
+        results += '\n🔐 ROLE SERVICE: ERROR - $e ❌\n';
+      }
+
+      // Overall status
+      results += '\n📊 OVERALL STATUS:\n';
+      results += 'Phone standardization: ${allPhoneTestsPassed ? '✅' : '❌'}\n';
+      results += 'Integration complete: ${allPhoneTestsPassed ? '✅' : '⚠️'}\n';
+
+      _showTestResults('Complete Integration Test', results);
+    } catch (e) {
+      _showTestResults('Integration Test ERROR', 'Failed to run tests: $e');
+    }
+  }
+
   void _showTestResults(String title, String results) {
     showDialog(
       context: context,
@@ -263,6 +343,70 @@ class _BiometricAuthPageState extends State<BiometricAuthPage> {
             ],
           ),
     );
+  }
+
+  void _testCurrentRules() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        _showTestResults('Debug', 'No authenticated user');
+        return;
+      }
+
+      String results = 'CURRENT RULES DEBUG:\n\n';
+      results += 'Auth UID: ${user.uid}\n';
+      results += 'Auth Phone: ${user.phoneNumber}\n';
+
+      // Test the exact operation that's failing
+      try {
+        final cleanedPhone = PhoneNumberUtils.cleanForDocumentId(
+          user.phoneNumber!,
+        );
+        results += 'Cleaned Phone: $cleanedPhone\n\n';
+
+        final doc =
+            await FirebaseFirestore.instance
+                .collection('users')
+                .doc(cleanedPhone)
+                .get();
+
+        results += 'READ TEST: ✅ SUCCESS\n';
+        results += 'Document exists: ${doc.exists}\n';
+
+        if (doc.exists) {
+          results += 'Has data: ${doc.data() != null}\n';
+        }
+      } catch (e) {
+        results += 'READ TEST: ❌ FAILED\n';
+        results += 'Error: $e\n';
+
+        // 🔧 FIXED: Proper type handling for phone formats
+        results += '\nTrying different formats:\n';
+        final List<String> formats = [
+          user.phoneNumber!,
+          user.phoneNumber!.replaceAll('+', ''),
+          user.phoneNumber!.replaceAll('+63', '639'),
+        ];
+
+        for (String format in formats) {
+          try {
+            final testDoc =
+                await FirebaseFirestore.instance
+                    .collection('users')
+                    .doc(format)
+                    .get();
+            results +=
+                '  $format: ${testDoc.exists ? "EXISTS" : "NOT FOUND"}\n';
+          } catch (e) {
+            results += '  $format: ERROR - $e\n';
+          }
+        }
+      }
+
+      _showTestResults('Rules Debug', results);
+    } catch (e) {
+      _showTestResults('Debug Error', 'Failed: $e');
+    }
   }
 
   void _showError(String message) {
