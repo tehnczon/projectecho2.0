@@ -4,20 +4,25 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:projecho/main/app_theme.dart';
+import 'webview_screen.dart'; // Import your WebView screen
 
 class ModernBannerModel {
   final String title;
   final String subtitle;
   final List<Color> gradient;
-  final IconData icon;
-  final Widget destination;
+  final String imageUrl; // Logo URL
+  final IconData fallbackIcon; // Fallback icon if image fails
+  final String? url; // Website URL
+  final Widget? destination; // Keep destination for non-URL navigation
 
   ModernBannerModel({
     required this.title,
     required this.subtitle,
     required this.gradient,
-    required this.icon,
-    required this.destination,
+    required this.imageUrl,
+    required this.fallbackIcon,
+    this.url,
+    this.destination,
   });
 }
 
@@ -35,27 +40,69 @@ class _ModernCarouselSliderState extends State<ModernCarouselSlider> {
 
   final List<ModernBannerModel> banners = [
     ModernBannerModel(
-      title: 'Wellness Center',
-      subtitle: 'Find support and care near you',
+      title: '',
+      subtitle:
+          'Official U.S. government portal for federal HIV and AIDS resources and policy information',
       gradient: [const Color(0xFFFFD760), const Color(0xFFF5C6A1)],
-      icon: Icons.health_and_safety,
-      destination: Container(),
+      imageUrl:
+          'https://files.hiv.gov/s3fs-public/2025-07/OIDP_HIVgov_Blog-Email_ClinicalInfo-v01-540x405_0_0%20%281%29.jpg',
+      fallbackIcon: Icons.health_and_safety,
+      url: 'https://www.hiv.gov/',
     ),
     ModernBannerModel(
-      title: 'Health Articles',
-      subtitle: 'Stay informed with latest updates',
+      title: '',
+      subtitle:
+          'Provides information for the public, healthcare workers, and policymakers',
       gradient: [const Color(0xFFF1ACCF), const Color(0xFFFCCFE8)],
-      icon: Icons.article,
-      destination: Container(),
+      imageUrl:
+          'https://logos-world.net/wp-content/uploads/2021/09/CDC-Logo.png',
+      fallbackIcon: Icons.article,
+      url: 'https://www.cdc.gov/hiv/',
     ),
     ModernBannerModel(
-      title: 'Community',
-      subtitle: 'Connect with supportive people',
+      title: 'PNAC',
+      subtitle:
+          'Central advisory, planning, and policymaking body for HIV/AIDS prevention and control in the Philippines.',
       gradient: [AppColors.primary, AppColors.primaryLight],
-      icon: Icons.people,
-      destination: Container(),
+      imageUrl:
+          'https://scontent.fdvo8-1.fna.fbcdn.net/v/t39.30808-6/243165751_163231095982243_9153701041396663701_n.png?_nc_cat=110&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHD7DF6W8KW923TfEgfBm6l8AY_BbNR_IjwBj8Fs1H8iIb1mgwMprymZyCb0KRnHaIvin2NX9QchRICjrN6U1B7&_nc_ohc=HlnZiAIkYO0Q7kNvwEvZL2H&_nc_oc=Adkm2RKyOoETqB5u-XJbqhC8UDDsVe0_XHDn4syfyaOOvK9k2J5xXywTZjN8GI162rc&_nc_zt=23&_nc_ht=scontent.fdvo8-1.fna&_nc_gid=AQqpCQF5eieAUOaeHfYq7g&oh=00_AfZq_36CvLoaULInSn8LphgBf-WPM8Uc28XO6t3A4wzbEQ&oe=68BE03AB',
+      fallbackIcon: Icons.people,
+      url: 'https://pnac.doh.gov.ph/',
     ),
   ];
+
+  void _handleBannerTap(ModernBannerModel banner) {
+    HapticFeedback.lightImpact();
+
+    if (banner.url != null) {
+      // Navigate to WebView for URL-based banners
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => WebViewScreen(url: banner.url!, title: banner.title),
+        ),
+      );
+    } else if (banner.destination != null) {
+      // Navigate to specific widget for non-URL banners
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => banner.destination!),
+      );
+    } else {
+      // Show coming soon message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${banner.title} — Coming Soon'),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,23 +120,10 @@ class _ModernCarouselSliderState extends State<ModernCarouselSlider> {
                     final index = entry.key;
                     final banner = entry.value;
                     return GestureDetector(
-                          onTap: () {
-                            HapticFeedback.lightImpact();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => banner.destination,
-                              ),
-                            );
-                          },
+                          onTap: () => _handleBannerTap(banner),
                           child: Container(
                             margin: const EdgeInsets.symmetric(horizontal: 8),
                             decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: banner.gradient,
-                              ),
                               borderRadius: BorderRadius.circular(20),
                               boxShadow: [
                                 BoxShadow(
@@ -98,41 +132,39 @@ class _ModernCarouselSliderState extends State<ModernCarouselSlider> {
                                   offset: const Offset(0, 10),
                                 ),
                               ],
+                              image: DecorationImage(
+                                image: NetworkImage(banner.imageUrl),
+                                fit: BoxFit.cover, // Make it fill background
+                                onError: (error, stackTrace) {
+                                  // Fallback to a solid gradient if image fails
+                                },
+                              ),
                             ),
                             child: Stack(
                               children: [
-                                Positioned(
-                                  right: -30,
-                                  bottom: -30,
-                                  child: Icon(
-                                    banner.icon,
-                                    size: 150,
-                                    color: Colors.white.withOpacity(0.1),
+                                // Gradient overlay for text readability
+                                Container(
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.black.withOpacity(0.6),
+                                        Colors.black.withOpacity(0.2),
+                                      ],
+                                    ),
                                   ),
                                 ),
+
+                                // Main content (texts, button, etc.)
                                 Padding(
                                   padding: const EdgeInsets.all(20),
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
                                     mainAxisAlignment: MainAxisAlignment.center,
-                                    mainAxisSize: MainAxisSize.min, // Add this
                                     children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(10),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(
-                                            12,
-                                          ),
-                                        ),
-                                        child: Icon(
-                                          banner.icon,
-                                          color: Colors.white,
-                                          size: 30,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 18),
                                       Text(
                                         banner.title,
                                         style: GoogleFonts.poppins(
@@ -164,16 +196,20 @@ class _ModernCarouselSliderState extends State<ModernCarouselSlider> {
                                         child: Row(
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
-                                            const Text(
-                                              'Explore',
-                                              style: TextStyle(
+                                            Text(
+                                              banner.url != null
+                                                  ? 'Visit'
+                                                  : 'Explore',
+                                              style: const TextStyle(
                                                 color: Colors.white,
                                                 fontWeight: FontWeight.w600,
                                               ),
                                             ),
                                             const SizedBox(width: 4),
-                                            const Icon(
-                                              Icons.arrow_forward,
+                                            Icon(
+                                              banner.url != null
+                                                  ? Icons.open_in_new
+                                                  : Icons.arrow_forward,
                                               color: Colors.white,
                                               size: 16,
                                             ),

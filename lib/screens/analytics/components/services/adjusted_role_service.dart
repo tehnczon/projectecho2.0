@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:projecho/utils/phone_number_utils.dart';
 
 class AdjustedRoleService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -8,7 +7,15 @@ class AdjustedRoleService {
 
   // Clean phone number to match Firestore document ID format
   String cleanPhoneNumber(String phone) {
-    return PhoneNumberUtils.cleanForDocumentId(phone);
+    // Remove all non-digit characters
+    String cleaned = phone.replaceAll(RegExp(r'[^\d]'), '');
+
+    // If it starts with 63 (Philippines), keep it
+    // Otherwise, return as is
+    if (cleaned.startsWith('63')) {
+      return cleaned;
+    }
+    return cleaned;
   }
 
   // Get user role based on your structure
@@ -19,28 +26,39 @@ class AdjustedRoleService {
         return 'basicUser';
       }
 
-      // ✅ Use standardized cleaning
-      String cleanedPhone = PhoneNumberUtils.cleanForDocumentId(
-        user.phoneNumber!,
-      );
+      String phoneNumber = user.phoneNumber!;
+      String cleanedPhone = cleanPhoneNumber(phoneNumber);
 
       // Check if super admin first (using UID)
       final adminDoc =
           await _firestore.collection('super_admin').doc(user.uid).get();
+
       if (adminDoc.exists) {
         return 'admin';
       }
 
-      // Check if researcher
-      final researcherDoc =
-          await _firestore.collection('researchers').doc(cleanedPhone).get();
-      if (researcherDoc.exists) {
-        return 'researcher';
+      // Check if researcher (using phone number)
+      // Try multiple formats
+      final formats = [
+        phoneNumber, // Original format (+639123456789)
+        cleanedPhone, // Cleaned format (639123456789)
+        phoneNumber.replaceAll('+63', ''), // Without +63
+        phoneNumber.replaceAll('+', ''), // Without +
+      ];
+
+      for (String format in formats) {
+        final researcherDoc =
+            await _firestore.collection('researchers').doc(format).get();
+
+        if (researcherDoc.exists) {
+          return 'researcher';
+        }
       }
 
-      // Check users collection for stored role
+      // Check users collection for stored role (if you add it)
       final userDoc =
           await _firestore.collection('users').doc(cleanedPhone).get();
+
       if (userDoc.exists) {
         return userDoc.data()?['role'] ?? 'basicUser';
       }

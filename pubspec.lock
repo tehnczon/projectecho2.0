@@ -26,7 +26,7 @@ packages:
     source: hosted
     version: "2.0.11"
   archive:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: archive
       sha256: "2fde1607386ab523f7a36bb3e7edb43bd58e6edaf2ffb29d8a6d578b297fdbbd"
@@ -265,6 +265,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "7.0.1"
+  file_picker:
+    dependency: "direct main"
+    description:
+      name: file_picker
+      sha256: e7e16c9d15c36330b94ca0e2ad8cb61f93cd5282d0158c09805aed13b5452f22
+      url: "https://pub.dev"
+    source: hosted
+    version: "10.3.2"
   file_selector_linux:
     dependency: transitive
     description:
@@ -1033,7 +1041,7 @@ packages:
     source: hosted
     version: "1.1.0"
   path_provider:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: path_provider
       sha256: "50c5dd5b6e1aaf6fb3a78b33f6aa3afca52bf903a8a5298f53101fdaee55bbcd"
@@ -1232,6 +1240,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  share_plus:
+    dependency: "direct main"
+    description:
+      name: share_plus
+      sha256: d7dc0630a923883c6328ca31b89aa682bacbf2f8304162d29f7c6aaff03a27a1
+      url: "https://pub.dev"
+    source: hosted
+    version: "11.1.0"
+  share_plus_platform_interface:
+    dependency: transitive
+    description:
+      name: share_plus_platform_interface
+      sha256: "88023e53a13429bd65d8e85e11a9b484f49d4c190abbd96c7932b74d6927cc9a"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.1.0"
   shared_preferences:
     dependency: "direct main"
     description:
@@ -1353,10 +1377,18 @@ packages:
     dependency: transitive
     description:
       name: syncfusion_flutter_core
-      sha256: ce02ce65f51db8e29edc9d2225872d927e001bd2b13c2490d176563bbb046fc7
+      sha256: "6b8b8cb5b4647e6a5858d47fceda9b7e5a9a2be57cff28120acb65edbd92a48c"
       url: "https://pub.dev"
     source: hosted
-    version: "30.2.5"
+    version: "30.2.6"
+  syncfusion_flutter_datagrid:
+    dependency: "direct main"
+    description:
+      name: syncfusion_flutter_datagrid
+      sha256: "6f1ae3eed3afeec951faa9341b3b8c57723c17e3e2c1344284ed097a9a3c76da"
+      url: "https://pub.dev"
+    source: hosted
+    version: "30.2.6"
   syncfusion_flutter_gauges:
     dependency: "direct main"
     description:
@@ -1509,6 +1541,46 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.1"
+  webview_flutter:
+    dependency: "direct main"
+    description:
+      name: webview_flutter
+      sha256: c3e4fe614b1c814950ad07186007eff2f2e5dd2935eba7b9a9a1af8e5885f1ba
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.13.0"
+  webview_flutter_android:
+    dependency: transitive
+    description:
+      name: webview_flutter_android
+      sha256: "9a25f6b4313978ba1c2cda03a242eea17848174912cfb4d2d8ee84a556f248e3"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.10.1"
+  webview_flutter_platform_interface:
+    dependency: transitive
+    description:
+      name: webview_flutter_platform_interface
+      sha256: "63d26ee3aca7256a83ccb576a50272edd7cfc80573a4305caa98985feb493ee0"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.14.0"
+  webview_flutter_wkwebview:
+    dependency: transitive
+    description:
+      name: webview_flutter_wkwebview
+      sha256: fb46db8216131a3e55bcf44040ca808423539bc6732e7ed34fb6d8044e3d512f
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.23.0"
+  win32:
+    dependency: transitive
+    description:
+      name: win32
+      sha256: "66814138c3562338d05613a6e368ed8cfb237ad6d64a9e9334be3f309acfca03"
+      url: "https://pub.dev"
+    source: hosted
+    version: "5.14.0"
   xdg_directories:
     dependency: transitive
     description:

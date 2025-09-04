@@ -58,7 +58,7 @@ class _EnterNumberPageState extends State<EnterNumberPage>
         },
         codeSent: (String verificationId, int? resendToken) {
           setState(() => _isLoading = false);
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
             MaterialPageRoute(
               builder:

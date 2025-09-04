@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:projecho/utils/phone_number_utils.dart';
 
 class UserRoleProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -53,9 +52,8 @@ class UserRoleProvider extends ChangeNotifier {
       }
 
       _isAuthenticated = true;
+      String phoneId = _cleanPhoneNumber(user.phoneNumber!);
 
-      // ✅ UPDATED: Use PhoneNumberUtils for consistent phone cleaning
-      String phoneId = PhoneNumberUtils.cleanForDocumentId(user.phoneNumber!);
       print('🔍 Checking user role for phone: ${user.phoneNumber} -> $phoneId');
 
       // Get user from unified 'users' collection
@@ -64,29 +62,22 @@ class UserRoleProvider extends ChangeNotifier {
       if (userDoc.exists) {
         _userData = userDoc.data();
 
-        // ✅ UPDATED: Prioritize 'role' field, with fallback to 'userType'
+        // 🔄 UPDATED: Handle your existing role/userType structure
         if (_userData!.containsKey('role')) {
           _currentRole = _userData!['role'];
         } else if (_userData!.containsKey('userType')) {
-          // Map legacy userType to role
+          // Fallback: Map userType to role
           String userType = _userData!['userType'].toString().toLowerCase();
-          _currentRole = userType == 'plhiv' ? 'plhiv' : 'infoSeeker';
-
-          // Update document with role field
-          await _firestore.collection('users').doc(phoneId).update({
-            'role': _currentRole,
-          });
+          if (userType == 'plhiv') {
+            _currentRole = 'plhiv';
+          } else {
+            _currentRole = 'infoSeeker';
+          }
         } else if (_userData!.containsKey('yearDiagnosed')) {
           // Fallback: If has diagnosis data, assume PLHIV
           _currentRole = 'plhiv';
-          await _firestore.collection('users').doc(phoneId).update({
-            'role': 'plhiv',
-          });
         } else {
           _currentRole = 'infoSeeker';
-          await _firestore.collection('users').doc(phoneId).update({
-            'role': 'infoSeeker',
-          });
         }
 
         print('✅ User role determined: $_currentRole');
@@ -97,40 +88,13 @@ class UserRoleProvider extends ChangeNotifier {
           'lastLogin': FieldValue.serverTimestamp(),
         });
       } else {
-        // 🆕 ENHANCEMENT: Try to find user with different phone format
-        List<String> possibleFormats = PhoneNumberUtils.getAllPossibleFormats(
-          user.phoneNumber!,
-        );
-        bool foundUser = false;
-
-        for (String format in possibleFormats) {
-          if (format != phoneId) {
-            final fallbackDoc =
-                await _firestore.collection('users').doc(format).get();
-            if (fallbackDoc.exists) {
-              print('🔄 Found user with legacy format, migrating...');
-
-              _userData = fallbackDoc.data();
-              _currentRole = _userData!['role'] ?? 'infoSeeker';
-
-              // Migrate to new format
-              _userData!['cleanedPhone'] = phoneId;
-              await _firestore.collection('users').doc(phoneId).set(_userData!);
-              await fallbackDoc.reference.delete();
-
-              foundUser = true;
-              break;
-            }
-          }
-        }
-
-        if (!foundUser) {
-          print('🆕 Creating new user document');
-          await _createNewUser(phoneId, user.phoneNumber!);
-        }
+        // Create new user with default role
+        print('🆕 Creating new user document');
+        await _createNewUser(phoneId, user.phoneNumber!);
       }
     } catch (e) {
       print('❌ Error checking user role: $e');
+      // Don't set guest state on error - try to continue with cached data
       if (_userData == null) {
         _setGuestState();
       }
@@ -140,13 +104,12 @@ class UserRoleProvider extends ChangeNotifier {
     }
   }
 
-  // Update _createNewUser method:
   Future<void> _createNewUser(String phoneId, String phoneNumber) async {
     final newUserData = {
       'phoneNumber': phoneNumber,
-      'cleanedPhone': phoneId, // ✅ Store cleaned version
-      'role': 'infoSeeker',
-      'userType': 'InfoSeeker',
+      'cleanedPhone': phoneId,
+      'role': 'infoSeeker', // Default role
+      'userType': 'InfoSeeker', // For compatibility
       'createdAt': FieldValue.serverTimestamp(),
       'lastLogin': FieldValue.serverTimestamp(),
       'isActive': true,
@@ -163,9 +126,8 @@ class UserRoleProvider extends ChangeNotifier {
     _userData = null;
   }
 
-  // Remove the old _cleanPhoneNumber method and replace with:
   String _cleanPhoneNumber(String phone) {
-    return PhoneNumberUtils.cleanForDocumentId(phone);
+    return phone.replaceAll(RegExp(r'[^\d]'), '');
   }
 
   // Request researcher upgrade
