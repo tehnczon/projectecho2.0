@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:projecho/main/registration_data.dart';
-import 'package:projecho/login/signup/terms_and_condition.dart';
+import 'package:projecho/login/signup/termsCondition.dart';
 import 'package:projecho/login/signup/UIC.dart';
 import 'package:projecho/login/signup/location.dart';
 import 'package:projecho/login/signup/genID.dart';

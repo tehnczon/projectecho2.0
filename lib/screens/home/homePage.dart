@@ -332,6 +332,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             fontSize: 20,
                           ),
                         ),
+                        TextButton(
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                          },
+                          child: Text(
+                            'See all',
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ).animate().fadeIn(duration: 800.ms, delay: 200.ms),
@@ -439,7 +451,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('${card.title} – Coming Soon'),
+                    content: Text('Opening ${card.title}'),
                     backgroundColor: AppColors.primary,
                     behavior: SnackBarBehavior.floating,
                     shape: RoundedRectangleBorder(
@@ -449,7 +461,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 );
               }
             },
-
             borderRadius: BorderRadius.circular(20),
             child: Container(
               width: 150,

@@ -5,7 +5,7 @@ import 'package:pin_code_fields/pin_code_fields.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projecho/main/app_theme.dart';
-import 'package:projecho/login/signup/terms_and_condition.dart';
+import 'package:projecho/login/signup/termsCondition.dart';
 import 'package:projecho/main/registration_data.dart';
 import 'package:projecho/utils/phone_number_utils.dart'; // ✅ ADD THIS IMPORT
 import 'package:projecho/screens/home/homePage.dart';

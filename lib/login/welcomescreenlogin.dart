@@ -58,7 +58,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
 
   void _navigateToLogin() {
     HapticFeedback.lightImpact();
-    Navigator.push(
+    Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const EnterNumberPage()),
     );
