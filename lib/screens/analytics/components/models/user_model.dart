@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
-  final String phoneNumber; // This is the ID
+  final String uid; // This is the ID
   final String role; // 'basicUser', 'researcher', 'admin'
   final DateTime createdAt;
   final DateTime? lastLogin;
@@ -9,7 +9,7 @@ class UserModel {
   final bool isActive;
 
   UserModel({
-    required this.phoneNumber,
+    required this.uid,
     required this.role,
     required this.createdAt,
     this.lastLogin,
@@ -19,7 +19,7 @@ class UserModel {
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
-      phoneNumber: map['phoneNumber'] ?? '',
+      uid: map['uid'] ?? '',
       role: map['role'] ?? 'basicUser',
       createdAt: (map['createdAt'] as Timestamp).toDate(),
       lastLogin:
@@ -33,7 +33,7 @@ class UserModel {
 
   Map<String, dynamic> toMap() {
     return {
-      'phoneNumber': phoneNumber,
+      'uid': uid,
       'role': role,
       'createdAt': Timestamp.fromDate(createdAt),
       'lastLogin': lastLogin != null ? Timestamp.fromDate(lastLogin!) : null,

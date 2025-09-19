@@ -3,8 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/main/registration_data.dart';
-import 'package:projecho/plhiv_form/profilingOnbrding_1.dart';
 import 'package:projecho/login/registration_flow_manager.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TreatmentHubScreen extends StatefulWidget {
   final RegistrationData registrationData;
@@ -17,13 +17,24 @@ class TreatmentHubScreen extends StatefulWidget {
 
 class _TreatmentHubScreenState extends State<TreatmentHubScreen> {
   final TextEditingController _hubController = TextEditingController();
-  final List<String> _commonHubs = [
-    'Davao Medical Center',
-    'Southern Philippines Medical Center',
-    'Private Clinic',
-    'Community Health Center',
-    'Other',
-  ];
+  Future<List<String>> fetchCenters() async {
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('centers').get();
+
+      final centers =
+          snapshot.docs.map((doc) => doc['name'] as String).toList();
+
+      if (!centers.contains('Prefer not to say')) {
+        centers.insert(0, 'Prefer not to say');
+      }
+
+      return centers;
+    } catch (e) {
+      print("❌ Error fetching centers: $e");
+      return [];
+    }
+  }
 
   void _onContinue() {
     if (_hubController.text.trim().isEmpty) {
@@ -44,11 +55,19 @@ class _TreatmentHubScreenState extends State<TreatmentHubScreen> {
     HapticFeedback.mediumImpact();
     widget.registrationData.treatmentHub = _hubController.text.trim();
 
-    RegistrationFlowManager.navigateToNextStep(
-      context: context,
-      currentStep: 'treatmentHub',
-      registrationData: widget.registrationData,
-    );
+    Future.delayed(const Duration(milliseconds: 100), () async {
+      widget.registrationData.treatmentHub = _hubController.text.trim();
+
+      bool success = await widget.registrationData.saveToProfiles();
+
+      if (success) {
+        RegistrationFlowManager.navigateToNextStep(
+          context: context,
+          currentStep: 'treatmentHub',
+          registrationData: widget.registrationData,
+        );
+      }
+    });
   }
 
   void _selectHub(String hub) {
@@ -191,51 +210,82 @@ class _TreatmentHubScreenState extends State<TreatmentHubScreen> {
 
               const SizedBox(height: 12),
 
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children:
-                    _commonHubs.map((hub) {
-                      final isSelected = _hubController.text == hub;
-                      return InkWell(
-                        onTap: () => _selectHub(hub),
-                        borderRadius: BorderRadius.circular(20),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color:
-                                isSelected
-                                    ? AppColors.primary
-                                    : AppColors.surface,
+              FutureBuilder<List<String>>(
+                future: fetchCenters(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (snapshot.hasError) {
+                    return Text(
+                      "Error loading centers",
+                      style: TextStyle(color: AppColors.error),
+                    );
+                  }
+                  final hubs = snapshot.data ?? [];
+                  if (hubs.isEmpty) {
+                    return Text(
+                      "No centers found.",
+                      style: TextStyle(color: AppColors.textSecondary),
+                    );
+                  }
+
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children:
+                        hubs.map((hub) {
+                          final isSelected = _hubController.text == hub;
+                          final isPreferNotToSay =
+                              hub.toLowerCase() == 'prefer not to say';
+
+                          return InkWell(
+                            onTap: () => _selectHub(hub),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color:
-                                  isSelected
-                                      ? AppColors.primary
-                                      : AppColors.divider,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    isSelected
+                                        ? (isPreferNotToSay
+                                            ? Colors.red
+                                            : AppColors.primary)
+                                        : AppColors.surface,
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color:
+                                      isSelected
+                                          ? (isPreferNotToSay
+                                              ? Colors.red
+                                              : AppColors.primary)
+                                          : AppColors.divider,
+                                ),
+                              ),
+                              child: Text(
+                                hub,
+                                style: TextStyle(
+                                  color:
+                                      isSelected
+                                          ? Colors.white
+                                          : isPreferNotToSay
+                                          ? Colors.red
+                                          : AppColors.textPrimary,
+                                  fontSize: 14,
+                                  fontWeight:
+                                      isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                ),
+                              ),
                             ),
-                          ),
-                          child: Text(
-                            hub,
-                            style: TextStyle(
-                              color:
-                                  isSelected
-                                      ? Colors.white
-                                      : AppColors.textPrimary,
-                              fontSize: 14,
-                              fontWeight:
-                                  isSelected
-                                      ? FontWeight.w600
-                                      : FontWeight.normal,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                          );
+                        }).toList(),
+                  );
+                },
               ).animate().fadeIn(duration: 600.ms, delay: 400.ms),
 
               const SizedBox(height: 24),
@@ -304,6 +354,7 @@ class _TreatmentHubScreenState extends State<TreatmentHubScreen> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: _onContinue,
+
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,

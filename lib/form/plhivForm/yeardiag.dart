@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/main/registration_data.dart';
-import 'package:projecho/plhiv_form/confirmatorycode.dart';
 import 'package:projecho/login/registration_flow_manager.dart';
 
 class YearDiagPage extends StatefulWidget {
@@ -86,7 +85,7 @@ class _YearDiagPageState extends State<YearDiagPage> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    "Your Diagnosis Timeline",
+                    "When were you diagnosed with HIV?",
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,

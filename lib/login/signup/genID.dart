@@ -72,8 +72,11 @@ class _GenderSelectionScreenState extends State<GenderSelectionScreen>
     setState(() => selectedGender = gender);
 
     // Add slight delay for visual feedback
-    Future.delayed(const Duration(milliseconds: 300), () {
+    Future.delayed(const Duration(milliseconds: 300), () async {
       widget.registrationData.genderIdentity = gender;
+
+      // 🔑 Save profile after gender selection (before user type)
+
       RegistrationFlowManager.navigateToNextStep(
         context: context,
         currentStep: 'gender',

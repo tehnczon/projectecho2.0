@@ -3,36 +3,34 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:projecho/main/registration_data.dart';
-import 'package:projecho/login/signup/termsCondition.dart';
 import 'package:projecho/login/signup/UIC.dart';
 import 'package:projecho/login/signup/location.dart';
 import 'package:projecho/login/signup/genID.dart';
 import 'package:projecho/login/signup/userType.dart';
-import 'package:projecho/plhiv_form/yeardiag.dart';
-import 'package:projecho/plhiv_form/confirmatorycode.dart';
-import 'package:projecho/plhiv_form/trtmentHub.dart';
-import 'package:projecho/plhiv_form/profilingOnbrding_1.dart';
-import 'package:projecho/plhiv_form/mainplhivform.dart';
+import 'package:projecho/form/plhivForm/yeardiag.dart';
+import 'package:projecho/form/plhivForm/trtmentHub.dart';
+import 'package:projecho/form/plhivForm/profilingOnbrding_1.dart';
+import 'package:projecho/form/plhivForm/mainplhivform.dart';
 import 'package:projecho/login/signup/wlcmPrjecho.dart';
-import 'package:projecho/main/mainPage.dart';
+import 'package:projecho/form/demographic/demographic.dart';
 
 class RegistrationFlowManager {
   static const String _progressKey = 'registration_progress';
 
   // Registration flow steps
   static const Map<String, int> flowSteps = {
-    'terms': 0,
-    'uic': 1,
-    'location': 2,
-    'gender': 3,
-    'userType': 4,
+    'uic': 0,
+    'location': 1,
+    'gender': 2,
+    'userType': 3,
     // PLHIV specific steps
-    'yearDiag': 5,
-    'confirmCode': 6,
-    'treatmentHub': 7,
-    'plhivOnboarding': 8,
-    'plhivForm': 9,
-    'complete': 10,
+    'yearDiag': 4,
+    'treatmentHub': 5,
+    'plhivOnboarding': 6,
+    'plhivForm': 7,
+    'complete': 8,
+    //infoseeker onboarding
+    'Demographic': 4,
   };
 
   // Save current progress
@@ -234,8 +232,6 @@ class RegistrationFlowManager {
   // Get next step based on current step and user type
   static String _getNextStep(String currentStep, RegistrationData data) {
     switch (currentStep) {
-      case 'terms':
-        return 'uic';
       case 'uic':
         return 'location';
       case 'location':
@@ -247,11 +243,11 @@ class RegistrationFlowManager {
         if (data.userType == 'PLHIV') {
           return 'yearDiag';
         } else {
-          return 'complete'; // Info seekers complete here
+          return 'Demographic'; // Info seekers complete here
         }
+      case 'Demographic':
+        return 'complete';
       case 'yearDiag':
-        return 'confirmCode';
-      case 'confirmCode':
         return 'treatmentHub';
       case 'treatmentHub':
         return 'plhivOnboarding';
@@ -267,8 +263,6 @@ class RegistrationFlowManager {
   // Get previous step
   static String _getPreviousStep(String currentStep) {
     switch (currentStep) {
-      case 'uic':
-        return 'terms';
       case 'location':
         return 'uic';
       case 'gender':
@@ -277,24 +271,22 @@ class RegistrationFlowManager {
         return 'gender';
       case 'yearDiag':
         return 'userType';
-      case 'confirmCode':
-        return 'yearDiag';
+      case 'Demographic':
+        return 'userType';
       case 'treatmentHub':
-        return 'confirmCode';
+        return 'yearDiag';
       case 'plhivOnboarding':
         return 'treatmentHub';
       case 'plhivForm':
         return 'plhivOnboarding';
       default:
-        return 'terms';
+        return 'uic'; // Default to first step
     }
   }
 
   // Get screen widget for step
   static Widget? _getScreenForStep(String step, RegistrationData data) {
     switch (step) {
-      case 'terms':
-        return TermsAndConditionsPage(registrationData: data);
       case 'uic':
         return UICScreen(registrationData: data);
       case 'location':
@@ -305,8 +297,8 @@ class RegistrationFlowManager {
         return UserTypeScreen(registrationData: data);
       case 'yearDiag':
         return YearDiagPage(registrationData: data);
-      case 'confirmCode':
-        return ConfirmatoryCodeScreen(registrationData: data);
+      case 'Demographic':
+        return Demographic(registrationData: data);
       case 'treatmentHub':
         return TreatmentHubScreen(registrationData: data);
       case 'plhivOnboarding':
@@ -350,7 +342,7 @@ class RegistrationFlowManager {
       );
 
       // Save to Firestore
-      bool success = await registrationData.saveToFirestore();
+      bool success = await registrationData.saveToUser();
 
       if (success) {
         // Clear progress
@@ -374,19 +366,6 @@ class RegistrationFlowManager {
         }
 
         // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.celebration, color: Colors.white),
-                SizedBox(width: 8),
-                Text('🎉 Welcome to Project ECHO!'),
-              ],
-            ),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 3),
-          ),
-        );
       } else {
         throw Exception('Failed to save registration data');
       }
@@ -472,8 +451,6 @@ class RegistrationFlowManager {
   // Get display name for step
   static String _getStepDisplayName(String step) {
     switch (step) {
-      case 'terms':
-        return 'Terms & Conditions';
       case 'uic':
         return 'Unique ID Creation';
       case 'location':
@@ -484,8 +461,8 @@ class RegistrationFlowManager {
         return 'User Type Selection';
       case 'yearDiag':
         return 'Diagnosis Year';
-      case 'confirmCode':
-        return 'Confirmatory Code';
+      case 'Demographic':
+        return 'Demographic';
       case 'treatmentHub':
         return 'Treatment Hub';
       case 'plhivOnboarding':
@@ -521,8 +498,6 @@ class RegistrationFlowManager {
   // Validate step completion
   static bool validateStepData(String step, RegistrationData data) {
     switch (step) {
-      case 'terms':
-        return data.acceptedTerms == true;
       case 'uic':
         return data.generatedUIC != null && data.birthDate != null;
       case 'location':
@@ -533,8 +508,6 @@ class RegistrationFlowManager {
         return data.userType != null;
       case 'yearDiag':
         return data.yearDiagnosed != null;
-      case 'confirmCode':
-        return true; // Optional step
       case 'treatmentHub':
         return data.treatmentHub != null;
       case 'plhivOnboarding':
@@ -557,7 +530,7 @@ class RegistrationFlowManager {
 
   // Check if user can go back from current step
   static bool canGoBack(String currentStep) {
-    return currentStep != 'terms' && currentStep != 'complete';
+    return currentStep != 'uic' && currentStep != 'complete';
   }
 
   // Get remaining steps for current flow
@@ -587,7 +560,6 @@ class RegistrationFlowManager {
   static bool _isPLHIVSpecificStep(String step) {
     return [
       'yearDiag',
-      'confirmCode',
       'treatmentHub',
       'plhivOnboarding',
       'plhivForm',

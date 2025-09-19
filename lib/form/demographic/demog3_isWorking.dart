@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
-import '../main/registration_data.dart';
+import '../../main/registration_data.dart';
 
-class Step5WorkStatusForm extends StatefulWidget {
+class demog3Working extends StatefulWidget {
   final RegistrationData registrationData;
   final GlobalKey<FormState> formKey;
 
-  const Step5WorkStatusForm({
+  const demog3Working({
     Key? key,
     required this.registrationData,
     required this.formKey,
   }) : super(key: key);
 
   @override
-  State<Step5WorkStatusForm> createState() => _Step5WorkStatusFormState();
+  State<demog3Working> createState() => _demog3WorkingState();
 }
 
-class _Step5WorkStatusFormState extends State<Step5WorkStatusForm> {
+class _demog3WorkingState extends State<demog3Working> {
   @override
   Widget build(BuildContext context) {
     return Form(

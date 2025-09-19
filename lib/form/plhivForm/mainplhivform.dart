@@ -7,12 +7,12 @@ import 'dart:convert';
 import 'package:projecho/login/signup/wlcmPrjecho.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/main/registration_data.dart';
-import 'package:projecho/plhiv_form/step1_age_identity.dart';
-import 'package:projecho/plhiv_form/step2_education_status.dart';
-import 'package:projecho/plhiv_form/step3_health_pregnancy.dart';
-import 'package:projecho/plhiv_form/step4_sexual_practices.dart';
-import 'package:projecho/plhiv_form/step5_work_status.dart';
-import 'package:projecho/plhiv_form/step6_confirmation.dart';
+import 'package:projecho/form/plhivForm/step1_age_identity.dart';
+import 'package:projecho/form/plhivForm/step2_education_status.dart';
+import 'package:projecho/form/plhivForm/step3_health_pregnancy.dart';
+import 'package:projecho/form/plhivForm/step4_sexual_practices.dart';
+import 'package:projecho/form/plhivForm/step5_work_status.dart';
+import 'package:projecho/form/plhivForm/step6_confirmation.dart';
 import 'package:projecho/login/registration_flow_manager.dart';
 
 class PLHIVStepperScreen extends StatefulWidget {
@@ -137,9 +137,6 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
 
       // Save progress after each step
       await _saveProgressLocally();
-
-      // Show progress feedback
-      _showProgressFeedback();
     } else {
       // Final step - submit form
       await _submitForm();
@@ -155,26 +152,6 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
       // Save progress when going back
       await _saveProgressLocally();
     }
-  }
-
-  void _showProgressFeedback() {
-    final progress = ((_currentStep + 1) / stepTitles.length * 100).round();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Text('Progress saved - $progress% complete'),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: Duration(seconds: 2),
-      ),
-    );
   }
 
   Widget _buildModernTimeline() {
@@ -594,7 +571,7 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
     while (retryCount < maxRetries) {
       try {
         // Attempt to save to Firestore
-        bool success = await widget.registrationData.saveToFirestore();
+        bool success = await widget.registrationData.saveToAnalyticData();
 
         if (success) {
           // Clear local progress after successful save
@@ -609,24 +586,7 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
             registrationData: widget.registrationData,
           );
           // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Icon(Icons.celebration, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "🎉 Registration completed successfully! Welcome to Project ECHO.",
-                    ),
-                  ),
-                ],
-              ),
-              backgroundColor: AppColors.success,
-              behavior: SnackBarBehavior.floating,
-              duration: Duration(seconds: 4),
-            ),
-          );
+
           return;
         } else {
           throw Exception('Save operation returned false');

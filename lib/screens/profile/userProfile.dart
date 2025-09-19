@@ -7,7 +7,8 @@ import 'package:projecho/screens/profile/userSettings.dart';
 import 'package:projecho/login/login/inputNum.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:intl/intl.dart';
-import 'package:projecho/utils/phone_number_utils.dart';
+import 'package:projecho/login/signup/privacyPolicy.dart';
+import 'package:projecho/login/signup/terms.dart';
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -36,18 +37,13 @@ class _UserProfileState extends State<UserProfile> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      final phone = user.phoneNumber;
-      if (phone == null) return;
+      final uid = user.uid;
 
-      // 🔧 FIX: Use standardized phone cleaning
-      final String cleanedPhone = PhoneNumberUtils.cleanForDocumentId(phone);
-      print('📱 Loading profile with cleaned phone: $cleanedPhone');
-
-      // Fetch user document from the "users" collection using cleaned phone
+      // Fetch user document using UID
       final userDoc =
           await FirebaseFirestore.instance
-              .collection('users')
-              .doc(cleanedPhone) // ✅ Now uses cleaned phone number
+              .collection('profiles')
+              .doc(uid)
               .get();
 
       if (userDoc.exists) {
@@ -73,33 +69,8 @@ class _UserProfileState extends State<UserProfile> {
             print("✅ User role: $role");
         }
       } else {
-        print("❌ User not found in Firestore with phone: $cleanedPhone");
-
-        // 🆕 ENHANCEMENT: Try to recover from old phone format
-        final fallbackDoc =
-            await FirebaseFirestore.instance
-                .collection('users')
-                .doc(phone.replaceAll(RegExp(r'[^\d]'), ''))
-                .get();
-
-        if (fallbackDoc.exists) {
-          print("🔄 Found user with fallback format, migrating...");
-          // Migrate to new format
-          final data = fallbackDoc.data()!;
-          data['cleanedPhone'] = cleanedPhone;
-
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(cleanedPhone)
-              .set(data);
-
-          await fallbackDoc.reference.delete();
-
-          setState(() {
-            userData = data;
-            displayName = data['generatedUIC'] ?? 'Anonymous';
-          });
-        }
+        print("⚠️ No user document found for UID: $uid");
+        // You might want to create a new doc here if needed
       }
     } catch (e) {
       print("❌ Failed to load user data: $e");
@@ -194,88 +165,6 @@ class _UserProfileState extends State<UserProfile> {
           ],
         );
       },
-    );
-  }
-
-  void _showBottomSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder:
-          (context) => Container(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: 20),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                _buildBottomSheetItem(
-                  icon: Icons.edit_outlined,
-                  label: 'Edit Profile',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to edit profile
-                  },
-                ),
-                _buildBottomSheetItem(
-                  icon: Icons.description_outlined,
-                  label: 'Terms and Conditions',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to terms
-                  },
-                ),
-                _buildBottomSheetItem(
-                  icon: Icons.lock_outline,
-                  label: 'Privacy Policy',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to privacy policy
-                  },
-                ),
-                _buildBottomSheetItem(
-                  icon: Icons.help_outline,
-                  label: 'Support',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to support
-                  },
-                ),
-                _buildBottomSheetItem(
-                  icon: Icons.settings_outlined,
-                  label: 'Advanced',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => BiometricAuthPage()),
-                    );
-                  },
-                ),
-                Divider(height: 1, color: Colors.grey[200]),
-                _buildBottomSheetItem(
-                  icon: Icons.logout,
-                  label: 'Logout',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showLogoutDialog();
-                  },
-                  isDestructive: true,
-                ),
-                const SizedBox(height: 20),
-              ],
-            ),
-          ),
     );
   }
 
@@ -375,51 +264,11 @@ class _UserProfileState extends State<UserProfile> {
     return '$barangay, $city';
   }
 
-  String _formatBirthDate(dynamic rawDate) {
-    if (rawDate == null) return "Not provided";
-
-    // If from Firestore, it's a Timestamp object
-    if (rawDate is Timestamp) {
-      DateTime date = rawDate.toDate();
-      return DateFormat('MMMM d, y').format(date); // e.g., January 1, 2000
-    }
-
-    // If already a DateTime
-    if (rawDate is DateTime) {
-      return DateFormat('MMMM d, y').format(rawDate);
-    }
-
-    // If string (ISO8601), parse it
-    try {
-      DateTime date = DateTime.parse(rawDate.toString());
-      return DateFormat('MMMM d, y').format(date);
-    } catch (_) {
-      return "Invalid date";
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Text(
-          'Profile',
-          style: GoogleFonts.lato(
-            color: Colors.black87,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert, color: Colors.black87),
-            onPressed: () => _showBottomSheet(context),
-          ),
-        ],
-      ),
+
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.all(20),
@@ -484,29 +333,6 @@ class _UserProfileState extends State<UserProfile> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 20),
-                  // Edit profile button
-                  // SizedBox(
-                  //   width: double.infinity,
-                  //   child: ElevatedButton(
-                  //     onPressed: () {
-                  //       // Navigate to edit profile
-                  //     },
-                  //     style: ElevatedButton.styleFrom(
-                  //       backgroundColor: Colors.indigo,
-                  //       padding: const EdgeInsets.symmetric(vertical: 12),
-                  //       shape: RoundedRectangleBorder(
-                  //         borderRadius: BorderRadius.circular(8),
-                  //       ),
-                  //     ),
-                  //     child: Text(
-                  //       'Edit Profile',
-                  //       style: GoogleFonts.lato(
-                  //         fontSize: 16,
-                  //         fontWeight: FontWeight.w600,
-                  //       ),
-                  //     ),
-                  //   ),
-                  // ),
                 ],
               ),
             ),
@@ -555,10 +381,7 @@ class _UserProfileState extends State<UserProfile> {
                         "Gender Identity",
                         userData!['genderIdentity'],
                       ),
-                      profileItem(
-                        "Birth Date",
-                        _formatBirthDate(userData!['birthDate']),
-                      ),
+
                       profileItem("User Type", userData!['userType']),
                     ] else ...[
                       const Center(child: CircularProgressIndicator()),
@@ -666,10 +489,7 @@ class _UserProfileState extends State<UserProfile> {
                                 "Nationality",
                                 userData!['nationality'],
                               ),
-                              profileItem(
-                                "Phone Number",
-                                userData!['phoneNumber'],
-                              ),
+
                               profileItem(
                                 "Sex Assigned at Birth",
                                 userData!['sexAssignedAtBirth'],
@@ -726,24 +546,6 @@ class _UserProfileState extends State<UserProfile> {
                                 "Generated UIC",
                                 userData!['generatedUIC'],
                               ),
-                              if (userData!['acceptedTerms'] != null)
-                                profileItem(
-                                  "Accepted Terms",
-                                  userData!['acceptedTerms'] ? 'Yes' : 'No',
-                                ),
-                              profileItem(
-                                "Father First Name",
-                                userData!['fatherFirstName'],
-                              ),
-                              profileItem(
-                                "Mother First Name",
-                                userData!['motherFirstName'],
-                              ),
-                              if (userData!['birthOrder'] != null)
-                                profileItem(
-                                  "Birth Order",
-                                  userData!['birthOrder'].toString(),
-                                ),
                               if (userData!['isPregnant'] != null)
                                 profileItem(
                                   "Is Pregnant",
@@ -794,12 +596,24 @@ class _UserProfileState extends State<UserProfile> {
                   _buildQuickAction(
                     icon: Icons.description_outlined,
                     label: 'Terms and Conditions',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => Terms()),
+                      );
+                    },
                   ),
                   _buildQuickAction(
                     icon: Icons.lock_outline,
                     label: 'Privacy Policy',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => Privacypolicy(),
+                        ),
+                      );
+                    },
                   ),
                   _buildQuickAction(
                     icon: Icons.help_outline,

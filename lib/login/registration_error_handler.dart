@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:projecho/main/app_theme.dart';
-import 'registration_flow_manager.dart';
 
 class RegistrationErrorHandler {
   static const int maxRetries = 3;

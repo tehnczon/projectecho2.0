@@ -4,7 +4,6 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:projecho/main/app_theme.dart';
-import 'package:projecho/login/signup/genID.dart';
 import 'package:projecho/main/registration_data.dart';
 import 'package:projecho/login/registration_flow_manager.dart';
 
@@ -317,30 +316,9 @@ class _LocationScreenState extends State<LocationScreen>
       if (placemarks.isNotEmpty) {
         final place = placemarks[0];
         setState(() {
-          // Try to match with available cities
-          if (place.locality?.contains('Davao') ?? false) {
-            selectedCity = 'Davao City';
-          } else if (place.locality?.contains('Samal') ?? false) {
-            selectedCity = 'Island Garden City of Samal';
-          }
-          // Try to match barangay
-          if (selectedCity != null && place.subLocality != null) {
-            final barangayList = barangays[selectedCity];
-            if (barangayList != null) {
-              for (String brgy in barangayList) {
-                if (brgy.toLowerCase().contains(
-                  place.subLocality!.toLowerCase(),
-                )) {
-                  selectedBarangay = brgy;
-                  break;
-                }
-              }
-            }
-          }
+          selectedCity = place.locality; // Example: "Davao City"
+          selectedBarangay = place.subLocality; // Example: "Buhangin"
         });
-
-        HapticFeedback.mediumImpact();
-        _showSuccessSnackBar('Location detected successfully!');
       }
     } catch (e) {
       _showErrorSnackBar('Could not detect location');

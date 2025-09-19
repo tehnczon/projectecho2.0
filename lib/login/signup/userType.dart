@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/main/registration_data.dart';
-import 'package:projecho/plhiv_form/yeardiag.dart';
-import 'package:projecho/login/signup/wlcmPrjecho.dart';
 import 'package:projecho/login/registration_flow_manager.dart';
 
 class UserTypeScreen extends StatefulWidget {
@@ -89,16 +86,6 @@ class _UserTypeScreenState extends State<UserTypeScreen>
     }
   }
 
-  // Clear local progress after successful completion
-  Future<void> _clearLocalProgress() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove('registration_progress');
-    } catch (e) {
-      print('Failed to clear local progress: $e');
-    }
-  }
-
   void _handleSelection(String userType) async {
     if (_isLoading) return;
 
@@ -118,11 +105,14 @@ class _UserTypeScreenState extends State<UserTypeScreen>
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (userType == 'PLHIV') {
+      await widget.registrationData.saveToProfiles();
+      await widget.registrationData.saveToUser();
       // PLHIV flow - navigate to diagnosis year
       _navigateToPLHIVFlow();
     } else {
       // Info Seeker - save immediately and complete
-      await _completeInfoSeekerRegistration();
+      await widget.registrationData.saveToProfiles();
+      _navigateToDemographic();
     }
   }
 
@@ -136,90 +126,17 @@ class _UserTypeScreenState extends State<UserTypeScreen>
     );
   }
 
-  Future<void> _completeInfoSeekerRegistration() async {
-    int retryCount = 0;
-    const maxRetries = 3;
+  void _navigateToDemographic() {
+    setState(() => _isLoading = false);
 
-    while (retryCount < maxRetries) {
-      try {
-        // Attempt to save to Firestore
-        bool success = await widget.registrationData.saveToFirestore();
-
-        if (success) {
-          // Clear local progress after successful save
-          await _clearLocalProgress();
-
-          setState(() => _isLoading = false);
-
-          // Navigate to welcome screen
-          RegistrationFlowManager.navigateToNextStep(
-            context: context,
-            currentStep: 'userType',
-            registrationData: widget.registrationData,
-          );
-
-          _showSuccessSnackBar(
-            'Welcome! Your profile has been created successfully.',
-          );
-          return;
-        } else {
-          throw Exception('Save operation returned false');
-        }
-      } catch (e) {
-        retryCount++;
-        print('Save attempt $retryCount failed: $e');
-
-        if (retryCount < maxRetries) {
-          // Wait before retry with exponential backoff
-          await Future.delayed(Duration(seconds: retryCount * 2));
-        } else {
-          // Max retries reached - show error with retry option
-          _handleSaveError(e.toString());
-          return;
-        }
-      }
-    }
-  }
-
-  void _handleSaveError(String error) {
-    setState(() {
-      _isLoading = false;
-      _showRetryOption = true;
-      _errorMessage =
-          'Failed to save your profile. Please check your internet connection and try again.';
-    });
-
-    _showErrorDialog(
-      title: 'Registration Error',
-      message:
-          'We couldn\'t complete your registration right now. Your progress has been saved locally.',
-      actions: [
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-            _handleSelection(selectedType!); // Retry
-          },
-          child: Text('Retry', style: TextStyle(color: AppColors.primary)),
-        ),
-        TextButton(
-          onPressed: () {
-            Navigator.pop(context);
-            setState(() {
-              selectedType = null;
-              _showRetryOption = false;
-              _errorMessage = null;
-            });
-          },
-          child: Text(
-            'Cancel',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-        ),
-      ],
+    RegistrationFlowManager.navigateToNextStep(
+      context: context,
+      currentStep: 'userType',
+      registrationData: widget.registrationData,
     );
   }
 
-  void _handleNavigationError(String error) {
+  void handleNavigationError(String error) {
     setState(() {
       _isLoading = false;
       selectedType = null;
@@ -260,24 +177,6 @@ class _UserTypeScreenState extends State<UserTypeScreen>
             content: Text(message, style: TextStyle(fontSize: 14, height: 1.4)),
             actions: actions,
           ),
-    );
-  }
-
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        duration: Duration(seconds: 3),
-      ),
     );
   }
 

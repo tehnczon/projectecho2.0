@@ -18,17 +18,17 @@ class RoleManagementService {
       String phoneId = user.phoneNumber!.replaceAll(RegExp(r'[^\d]'), '');
 
       // Check if user document exists
-      final userDoc = await _firestore.collection('users').doc(phoneId).get();
+      final userDoc = await _firestore.collection('user').doc(phoneId).get();
 
       if (userDoc.exists) {
         // Update last login
-        await _firestore.collection('users').doc(phoneId).update({
+        await _firestore.collection('user').doc(phoneId).update({
           'lastLogin': FieldValue.serverTimestamp(),
         });
         return userDoc.data()?['role'] ?? 'basicUser';
       } else {
         // Create new user document with basic role
-        await _firestore.collection('users').doc(phoneId).set({
+        await _firestore.collection('user').doc(phoneId).set({
           'phoneNumber': user.phoneNumber,
           'role': 'basicUser',
           'createdAt': FieldValue.serverTimestamp(),
@@ -47,7 +47,7 @@ class RoleManagementService {
   Future<bool> upgradeUserRole(String phoneNumber, String newRole) async {
     try {
       String phoneId = phoneNumber.replaceAll(RegExp(r'[^\d]'), '');
-      await _firestore.collection('users').doc(phoneId).update({
+      await _firestore.collection('user').doc(phoneId).update({
         'role': newRole,
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -58,10 +58,10 @@ class RoleManagementService {
     }
   }
 
-  // Get all users with researcher role (for admin panel)
+  // Get all user with researcher role (for admin panel)
   Stream<List<UserModel>> getResearchers() {
     return _firestore
-        .collection('users')
+        .collection('user')
         .where('role', isEqualTo: 'researcher')
         .snapshots()
         .map(

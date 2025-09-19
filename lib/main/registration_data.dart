@@ -1,11 +1,9 @@
 // lib/main/registration_data.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../utils/phone_number_utils.dart';
 
 class RegistrationData {
   // Core Registration
-  String? phoneNumber;
-  bool? acceptedTerms;
+  String uid; // ✅ Use Firebase UID instead of phone
 
   // UIC Fields (for local generation only)
   String? motherFirstName;
@@ -19,7 +17,7 @@ class RegistrationData {
   String? ageRange; // Computed from birthDate
   String? genderIdentity;
   String? nationality;
-
+  List<String> hivRelation = []; // Multiple selections allowed
   // Education & Status - Step 2
   String? educationLevel;
   String? civilStatus;
@@ -49,12 +47,10 @@ class RegistrationData {
 
   // PLHIV-specific Fields
   int? yearDiagnosed;
-  String? confirmatoryCode;
   String? treatmentHub;
 
   RegistrationData({
-    this.phoneNumber,
-    this.acceptedTerms,
+    required this.uid, // ✅ required
     this.motherFirstName,
     this.fatherFirstName,
     this.birthOrder,
@@ -79,7 +75,6 @@ class RegistrationData {
     this.barangay,
     this.userType,
     this.yearDiagnosed,
-    this.confirmatoryCode,
     this.treatmentHub,
   });
 
@@ -119,17 +114,6 @@ class RegistrationData {
     }
   }
 
-  // Get cleaned phone number for document ID using PhoneNumberUtils
-  String? get cleanedPhoneNumber {
-    if (phoneNumber == null) return null;
-    try {
-      return PhoneNumberUtils.cleanForDocumentId(phoneNumber!);
-    } catch (e) {
-      print('Error cleaning phone number: $e');
-      return null;
-    }
-  }
-
   // Check if user is MSM (Men who have Sex with Men)
   bool get isMSM {
     return sexAssignedAtBirth == 'Male' &&
@@ -141,25 +125,36 @@ class RegistrationData {
     return ageRange == '18-24';
   }
 
+  //has multiple partner risk
+  bool get hasMultiplePartnerRisk {
+    return sexAssignedAtBirth == 'Male' && (unprotectedSexWith == 'Both') ||
+        sexAssignedAtBirth == 'Female' && ((unprotectedSexWith == 'Both'));
+  }
+
+  //isMSW
+  bool get isMSW {
+    return sexAssignedAtBirth == 'Male' &&
+            (unprotectedSexWith == 'Both' || unprotectedSexWith == 'Female') ||
+        sexAssignedAtBirth == 'Female' &&
+            ((unprotectedSexWith == 'Both' || unprotectedSexWith == 'Male'));
+  }
+
+  //isWSW
+  bool get isWSW {
+    return sexAssignedAtBirth == 'Female' && (unprotectedSexWith == 'Female');
+  }
+
+  //isWSW
+
   // ANALYTICS-READY Firestore conversion - FLATTENED structure
   Map<String, dynamic> toFirestore() {
     // Ensure age range is computed before saving
     computeAgeRange();
 
-    final cleanedPhone = cleanedPhoneNumber;
-    if (cleanedPhone == null) {
-      throw ArgumentError(
-        'Phone number is required and must be valid Philippine mobile number',
-      );
-    }
-
     Map<String, dynamic> data = {
       // ==================== CORE IDENTIFICATION ====================
-      'phoneNumber': phoneNumber,
-      'cleanedPhone': cleanedPhone, // Used as document ID
-      'role': role, // Computed from userType
+      'role': role,
       'userType': userType,
-      'acceptedTerms': acceptedTerms ?? false,
       'createdAt': FieldValue.serverTimestamp(),
       'lastLogin': FieldValue.serverTimestamp(),
       'isActive': true,
@@ -196,27 +191,25 @@ class RegistrationData {
       // ==================== PRE-COMPUTED ANALYTICS ====================
       'isMSM': isMSM,
       'isYouth': isYouth,
+      'isMSW': isMSW,
+      'isWSW': isWSW,
+      'hasMultiplePartnerRisk': hasMultiplePartnerRisk,
     };
 
     // Add PLHIV-specific data if applicable
     if (userType == 'PLHIV') {
       data.addAll({
         'yearDiagnosed': yearDiagnosed,
-        'confirmatoryCode': confirmatoryCode,
         'treatmentHub': treatmentHub,
-        'verifiedPLHIV':
-            confirmatoryCode != null && confirmatoryCode!.isNotEmpty,
       });
     }
-
     return data;
   }
 
   // For local storage/transfer (keeps original structure for UI)
   Map<String, dynamic> toJson() {
     return {
-      'phoneNumber': phoneNumber,
-      'acceptedTerms': acceptedTerms,
+      'uid': uid,
       'motherFirstName': motherFirstName,
       'fatherFirstName': fatherFirstName,
       'birthOrder': birthOrder,
@@ -241,15 +234,13 @@ class RegistrationData {
       'barangay': barangay,
       'userType': userType,
       'yearDiagnosed': yearDiagnosed,
-      'confirmatoryCode': confirmatoryCode,
       'treatmentHub': treatmentHub,
     };
   }
 
   factory RegistrationData.fromJson(Map<String, dynamic> json) {
     return RegistrationData(
-      phoneNumber: json['phoneNumber'],
-      acceptedTerms: json['acceptedTerms'],
+      uid: json['uid'],
       motherFirstName: json['motherFirstName'],
       fatherFirstName: json['fatherFirstName'],
       birthOrder: json['birthOrder'],
@@ -275,17 +266,17 @@ class RegistrationData {
       barangay: json['barangay'],
       userType: json['userType'],
       yearDiagnosed: json['yearDiagnosed'],
-      confirmatoryCode: json['confirmatoryCode'],
       treatmentHub: json['treatmentHub'],
     );
   }
 
   // Create from Firestore document (handles flattened structure)
-  factory RegistrationData.fromFirestore(Map<String, dynamic> data) {
+  factory RegistrationData.fromFirestore(
+    Map<String, dynamic> data,
+    String uid,
+  ) {
     return RegistrationData(
-      phoneNumber: data['phoneNumber'],
-      acceptedTerms: data['acceptedTerms'],
-      // Note: UIC components not stored in Firestore for privacy
+      uid: uid,
       generatedUIC: data['generatedUIC'],
       birthDate:
           data['birthDate'] != null
@@ -310,25 +301,30 @@ class RegistrationData {
       barangay: data['barangay'],
       userType: data['userType'],
       yearDiagnosed: data['yearDiagnosed'],
-      confirmatoryCode: data['confirmatoryCode'],
       treatmentHub: data['treatmentHub'],
     );
   }
 
-  // Save to Firestore using the cleaned phone as document ID
-  Future<bool> saveToFirestore() async {
+  Future<bool> saveToUserDemographic() async {
     try {
-      final cleanedPhone = cleanedPhoneNumber;
-      if (cleanedPhone == null) {
-        throw ArgumentError('Valid Philippine mobile number is required');
-      }
-
       await FirebaseFirestore.instance
-          .collection('users') // PRIMARY COLLECTION
-          .doc(cleanedPhone)
-          .set(toFirestore(), SetOptions(merge: true));
+          .collection('userDemographic') // PRIMARY COLLECTION
+          .doc(uid) // ✅ UID instead of phone
+          .set({
+            'ageRange': ageRange,
+            'location': {'city': city, 'barangay': barangay},
+            'genderIdentity': genderIdentity,
+            'hivRelation': hivRelation,
+            'civilStatus': civilStatus,
+            'isOFW': isOFW,
+            'islivingWithPartner': livingWithPartner,
+            'isStudying': isStudying,
+            'studyingLevel': educationLevel,
+            'createdAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
 
-      print('✅ User profile saved to Firestore: $cleanedPhone');
+      print('✅ User profile saved to Firestore: $uid');
       return true;
     } catch (e) {
       print('❌ Error saving to Firestore: $e');
@@ -336,9 +332,113 @@ class RegistrationData {
     }
   }
 
+  // Save to Firestore using UID as document ID
+  Future<bool> saveToUser() async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('user') // PRIMARY COLLECTION
+          .doc(uid) // ✅ UID instead of phone
+          .set({
+            'role': role,
+            'createdAt': FieldValue.serverTimestamp(),
+            'lastLogin': FieldValue.serverTimestamp(),
+            'isActive': true,
+          }, SetOptions(merge: true));
+
+      print('✅ User profile saved to Firestore: $uid');
+      return true;
+    } catch (e) {
+      print('❌ Error saving to Firestore: $e');
+      return false;
+    }
+  }
+
+  // Save minimal profile info to "profiles" collection
+  Future<bool> saveToProfiles() async {
+    try {
+      computeAgeRange();
+
+      await FirebaseFirestore.instance.collection('profiles').doc(uid).set({
+        'generatedUIC': generatedUIC,
+        'ageRange': ageRange,
+        'location': {'city': city, 'barangay': barangay},
+        'genderIdentity': genderIdentity,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      if (role != 'infoSeeker') {
+        Map<String, dynamic> roleData = {};
+        if (role == 'plhiv') {
+          roleData = {
+            'yearDiagnosed': yearDiagnosed,
+            'treatmentHub': treatmentHub,
+          };
+        } else if (role == 'admin') {
+          roleData = {
+            'org': null, // Replace with actual org variable if available
+            'contactInfo':
+                null, // Replace with actual contact info variable if available
+            'isValidated':
+                false, // Replace with actual validation status if available
+          };
+        }
+
+        // Save role data in subcollection
+        await FirebaseFirestore.instance
+            .collection('profiles')
+            .doc(uid)
+            .collection('roleData')
+            .doc(role)
+            .set(roleData, SetOptions(merge: true));
+      }
+
+      print('✅ Profile saved to Firestore: $uid');
+      return true;
+    } catch (e) {
+      print('❌ Error saving profile to Firestore: $e');
+      return false;
+    }
+  }
+
+  // save to analytic data
+  Future<bool> saveToAnalyticData() async {
+    try {
+      computeAgeRange();
+
+      await FirebaseFirestore.instance.collection('analyticData').doc(uid).set({
+        'ageRange': ageRange,
+        'location': {'city': city, 'barangay': barangay},
+        'civilStatus': civilStatus,
+        'diagnosedWithSTI': diagnosedSTI,
+        'educationalLevel': educationLevel,
+        'sexAtBirth': sexAssignedAtBirth,
+        'genderIdentity': genderIdentity,
+        'hasHepatitis': hasHepatitis,
+        'hasTuberculosis': hasTuberculosis,
+        'isMSM': isMSM,
+        'isMSW': isMSW,
+        'isWSW': isWSW,
+        'nationality': nationality,
+        'hasMultiplePartnerRisk': hasMultiplePartnerRisk,
+        'isOFW': isOFW,
+        'isStudying': isStudying,
+        'livingWithPartner': livingWithPartner,
+        'motherHadHIV': motherHadHIV,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      print('');
+      return true;
+    } catch (e) {
+      print('');
+      return false;
+    }
+  }
+
   RegistrationData copyWith({
-    String? phoneNumber,
-    bool? acceptedTerms,
+    String? uid,
     String? motherFirstName,
     String? fatherFirstName,
     int? birthOrder,
@@ -367,8 +467,7 @@ class RegistrationData {
     String? treatmentHub,
   }) {
     return RegistrationData(
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      acceptedTerms: acceptedTerms ?? this.acceptedTerms,
+      uid: uid ?? this.uid,
       motherFirstName: motherFirstName ?? this.motherFirstName,
       fatherFirstName: fatherFirstName ?? this.fatherFirstName,
       birthOrder: birthOrder ?? this.birthOrder,
@@ -393,7 +492,6 @@ class RegistrationData {
       barangay: barangay ?? this.barangay,
       userType: userType ?? this.userType,
       yearDiagnosed: yearDiagnosed ?? this.yearDiagnosed,
-      confirmatoryCode: confirmatoryCode ?? this.confirmatoryCode,
       treatmentHub: treatmentHub ?? this.treatmentHub,
     );
   }

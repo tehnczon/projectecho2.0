@@ -6,8 +6,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/login/signup/termsCondition.dart';
-import 'package:projecho/main/registration_data.dart';
-import 'package:projecho/utils/phone_number_utils.dart'; // ✅ ADD THIS IMPORT
 import 'package:projecho/screens/home/homePage.dart';
 
 class OTPScreen extends StatefulWidget {
@@ -74,55 +72,35 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
       );
       await _auth.signInWithCredential(credential);
 
-      // 🔧 FIX: Use cleaned phone number for Firestore lookup
-      final String cleanedPhone = PhoneNumberUtils.cleanForDocumentId(
-        widget.phoneNumber,
-      );
-
-      print('📱 Original phone: ${widget.phoneNumber}');
-      print('📱 Cleaned phone for lookup: $cleanedPhone');
+      final String uid = _auth.currentUser?.uid ?? '';
+      if (uid.isEmpty) {
+        throw Exception("Failed to get Firebase UID");
+      }
 
       final firestore = FirebaseFirestore.instance;
-      final userDoc =
-          await firestore.collection('users').doc(cleanedPhone).get();
-
-      print('📱 Document exists: ${userDoc.exists}');
-      if (userDoc.exists) {
-        print('📱 User data: ${userDoc.data()}');
-      }
+      final userDoc = await firestore.collection('user').doc(uid).get();
 
       setState(() => _isLoading = false);
 
       if (userDoc.exists) {
         // ✅ Existing user found - go to home
-        print('✅ Existing user found - navigating to home');
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(builder: (_) => const HomePage()),
-          (Route<dynamic> route) => false, // remove everything before home
+          (Route<dynamic> route) => false,
         );
       } else {
         // ✅ New user - start registration flow
-        print('✅ New user - starting registration flow');
         Navigator.push(
           context,
-          MaterialPageRoute(
-            builder:
-                (_) => TermsAndConditionsPage(
-                  registrationData: RegistrationData(
-                    phoneNumber: widget.phoneNumber,
-                  ),
-                ),
-          ),
+          MaterialPageRoute(builder: (_) => TermsAndConditionsPage(uid: uid)),
         );
       }
     } on FirebaseAuthException catch (e) {
       setState(() => _isLoading = false);
-      print('❌ Firebase Auth Error: ${e.code} - ${e.message}');
       _showErrorSnackBar('Verification failed: ${e.message}');
     } catch (e) {
       setState(() => _isLoading = false);
-      print('❌ General Error: $e');
       _showErrorSnackBar('Something went wrong. Please try again.');
     }
   }
@@ -141,14 +119,9 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
         codeSent: (String verificationId, int? resendToken) {
           setState(() => _isLoading = false);
           _showSuccessSnackBar('New verification code sent!');
-          // You might want to update the verificationId here
         },
-        codeAutoRetrievalTimeout: (String verificationId) {
-          // This callback is triggered when SMS auto-retrieval times out
-          print('Auto-retrieval timeout for verification ID: $verificationId');
-        },
+        codeAutoRetrievalTimeout: (String verificationId) {},
         timeout: const Duration(seconds: 60),
-        forceResendingToken: null, // You can store and use resend token
       );
     } catch (e) {
       setState(() => _isLoading = false);
@@ -410,39 +383,6 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
                         ),
                       ),
             ).animate().fadeIn(duration: 800.ms, delay: 700.ms),
-
-            const SizedBox(height: 32),
-
-            // Debug info (remove in production)
-            // if (true) // Set to false in production
-            //   Container(
-            //     padding: EdgeInsets.all(12),
-            //     decoration: BoxDecoration(
-            //       color: Colors.grey.withOpacity(0.1),
-            //       borderRadius: BorderRadius.circular(8),
-            //     ),
-            //     child: Column(
-            //       crossAxisAlignment: CrossAxisAlignment.start,
-            //       children: [
-            //         Text(
-            //           'Debug Info:',
-            //           style: TextStyle(
-            //             fontWeight: FontWeight.bold,
-            //             fontSize: 12,
-            //           ),
-            //         ),
-            //         SizedBox(height: 4),
-            //         Text(
-            //           'Original: ${widget.phoneNumber}',
-            //           style: TextStyle(fontSize: 11),
-            //         ),
-            //         Text(
-            //           'Cleaned: ${PhoneNumberUtils.cleanForDocumentId(widget.phoneNumber)}',
-            //           style: TextStyle(fontSize: 11),
-            //         ),
-            //       ],
-            //     ),
-            //   ),
           ],
         ),
       ),

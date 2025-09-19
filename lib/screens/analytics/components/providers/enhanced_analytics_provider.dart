@@ -6,7 +6,6 @@ import '../models/analytics_data.dart';
 import 'package:csv/csv.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 import 'dart:typed_data';
 
 class EnhancedAnalyticsProvider extends ChangeNotifier {
@@ -75,18 +74,45 @@ class EnhancedAnalyticsProvider extends ChangeNotifier {
   // For basic users - general insights without personal data
   Future<void> _fetchGeneralInsights() async {
     try {
-      final snapshot = await _firestore.collection('users').get();
-      final profiles = snapshot.docs.map((doc) => doc.data()).toList();
+      // 1️⃣ Get all profiles
+      final profilesSnapshot =
+          await FirebaseFirestore.instance.collection('profiles').get();
+      final profiles = profilesSnapshot.docs.map((doc) => doc.data()).toList();
 
+      // 2️⃣ Collect treatment hubs from 'plhiv' roleData subcollection
+      final hubsMap = <String, int>{};
+
+      for (var doc in profilesSnapshot.docs) {
+        final roleDoc =
+            await doc.reference.collection('roleData').doc('plhiv').get();
+        if (roleDoc.exists) {
+          final hub = roleDoc.data()?['treatmentHub']?.toString().trim();
+
+          // ✅ Only count valid hubs, ignore "Prefer not to say" or empty values
+          if (hub != null &&
+              hub.isNotEmpty &&
+              hub.toLowerCase() != 'prefer not to say') {
+            hubsMap[hub] = (hubsMap[hub] ?? 0) + 1;
+          }
+        }
+      }
+
+      // 3️⃣ Get top 3 most popular hubs
+      final sortedHubs =
+          hubsMap.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
+      final topHubs = sortedHubs.take(3).map((e) => e.key).toList();
+
+      // 4️⃣ Populate general insights
       _generalInsights = GeneralInsights(
         totalCommunityMembers: profiles.length,
         supportiveMessage: _getRandomSupportiveMessage(),
-        communityGrowth: _calculateGrowthRate(profiles),
-        popularTreatmentHubs: _getTopTreatmentHubs(profiles, 3),
+        communityGrowth: _calculateMonthlyGrowth(profilesSnapshot.docs),
+        popularTreatmentHubs: topHubs,
         generalHealthTips: _getGeneralHealthTips(),
         availableResources: _getAvailableResources(),
       );
     } catch (e) {
+      print('❌ Failed to fetch general insights: $e');
       throw Exception('Failed to fetch general insights: $e');
     }
   }
@@ -125,36 +151,48 @@ class EnhancedAnalyticsProvider extends ChangeNotifier {
     return messages.first;
   }
 
-  double _calculateGrowthRate(List<Map<String, dynamic>> profiles) {
-    // Calculate monthly growth rate
-    DateTime oneMonthAgo = DateTime.now().subtract(Duration(days: 30));
-    int newMembers =
+  double _calculateMonthlyGrowth(List<QueryDocumentSnapshot> profiles) {
+    final now = DateTime.now();
+    final startOfMonth = DateTime(now.year, now.month, 1);
+
+    final previousCount =
         profiles.where((p) {
-          if (p['createdAt'] != null) {
-            DateTime created = (p['createdAt'] as Timestamp).toDate();
-            return created.isAfter(oneMonthAgo);
-          }
-          return false;
+          final created = (p['createdAt'] as Timestamp).toDate();
+          return created.isBefore(startOfMonth);
         }).length;
 
-    return profiles.isNotEmpty ? (newMembers / profiles.length * 100) : 0;
+    final currentMonthCount =
+        profiles.where((p) {
+          final created = (p['createdAt'] as Timestamp).toDate();
+          return created.isAfter(
+            startOfMonth.subtract(const Duration(seconds: 1)),
+          );
+        }).length;
+
+    if (previousCount == 0) return currentMonthCount.toDouble();
+
+    return (currentMonthCount / previousCount) * 100;
   }
 
-  List<String> _getTopTreatmentHubs(
-    List<Map<String, dynamic>> profiles,
-    int count,
-  ) {
+  Future<List<String>> getTopTreatmentHubs(int count) async {
+    // Step 1: query all `plhiv` roleData docs across ALL users
+    final querySnapshot =
+        await FirebaseFirestore.instance.collectionGroup('plhiv').get();
+
+    // Step 2: count hubs
     Map<String, int> hubCounts = {};
-    for (var profile in profiles) {
-      String? hub = profile['treatmentHub'];
+    for (var doc in querySnapshot.docs) {
+      String? hub = doc.data()['treatmentHub'];
       if (hub != null) {
         hubCounts[hub] = (hubCounts[hub] ?? 0) + 1;
       }
     }
 
+    // Step 3: sort by frequency
     var sorted =
         hubCounts.entries.toList()..sort((a, b) => b.value.compareTo(a.value));
 
+    // Step 4: return top hubs
     return sorted.take(count).map((e) => e.key).toList();
   }
 

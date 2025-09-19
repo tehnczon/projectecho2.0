@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../main/registration_data.dart';
+import '../../main/registration_data.dart';
 
 class Step6FinalConfirmation extends StatefulWidget {
   final RegistrationData registrationData;

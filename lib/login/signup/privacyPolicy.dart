@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/main/app_theme.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class Privacypolicy extends StatefulWidget {
   const Privacypolicy({super.key});
