@@ -11,11 +11,13 @@ class UserRoleProvider extends ChangeNotifier {
   bool _isAuthenticated = false;
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
+  bool _isInitialized = false; // NEW: Track if provider has been initialized
 
   // Getters
   String get currentRole => _currentRole;
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
+  bool get isInitialized => _isInitialized; // NEW
   Map<String, dynamic>? get userData => _userData;
 
   // Role helpers
@@ -58,8 +60,10 @@ class UserRoleProvider extends ChangeNotifier {
         await _firestore.collection('user').doc(user.uid).update({
           'lastLogin': FieldValue.serverTimestamp(),
         });
+
+        _isInitialized = true; // NEW: Mark as initialized
       } else {
-        // No doc found — treat as guest
+        // No doc found – treat as guest
         print('⚠️ No user doc found for ${user.uid}');
         _setGuestState();
       }
@@ -84,10 +88,10 @@ class UserRoleProvider extends ChangeNotifier {
       final user = _auth.currentUser;
       if (user == null) return false;
 
-      final uid = user.uid; // ✅ Use UID instead of phone
+      final uid = user.uid;
 
       await _firestore.collection('requests').add({
-        'userId': uid, // ✅ store UID
+        'userId': uid,
         'fullName': fullName,
         'licenseNumber': licenseNumber,
         'institution': institution,
@@ -110,13 +114,12 @@ class UserRoleProvider extends ChangeNotifier {
       final user = _auth.currentUser;
       if (user == null) return null;
 
-      // Use Firebase UID instead of phoneId for safety
       final uid = user.uid;
 
       final query =
           await _firestore
               .collection('researcher_requests')
-              .where('userId', isEqualTo: uid) // match on UID
+              .where('userId', isEqualTo: uid)
               .where('status', isEqualTo: 'pending')
               .limit(1)
               .get();
@@ -135,10 +138,21 @@ class UserRoleProvider extends ChangeNotifier {
     _currentRole = 'infoSeeker';
     _isAuthenticated = false;
     _userData = null;
+    _isInitialized = true; // NEW: Even guest state counts as initialized
   }
 
   void logout() {
     _setGuestState();
+    _isLoading = false; // NEW: Ensure loading is false
+    notifyListeners();
+  }
+
+  void reset() {
+    _isLoading = false;
+    _currentRole = 'infoSeeker';
+    _isAuthenticated = false;
+    _userData = null;
+    _isInitialized = false; // NEW: Reset initialization flag
     notifyListeners();
   }
 }

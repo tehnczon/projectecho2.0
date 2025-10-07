@@ -1,5 +1,4 @@
 class AnalyticsData {
-  // Core metrics
   final int totalRespondents;
   final int totalPLHIV;
   final int msmCount;
@@ -37,31 +36,62 @@ class AnalyticsData {
     required this.topMSMCities,
     required this.msmAgeBreakdown,
   });
+
+  /// ✅ Safe conversion from Firestore
+  factory AnalyticsData.fromFirestore(Map<String, dynamic> data) {
+    return AnalyticsData(
+      totalRespondents: (data['totalRespondents'] ?? 0) as int,
+      totalPLHIV: (data['totalPLHIV'] ?? 0) as int,
+      msmCount: (data['msmCount'] ?? 0) as int,
+      youthCount: (data['youthCount'] ?? 0) as int,
+
+      ageDistribution: _convertToIntMap(data['ageDistribution']),
+      genderBreakdown: _convertToIntMap(data['genderBreakdown']),
+      cityDistribution: _convertToIntMap(data['cityDistribution']),
+      treatmentHubs: _convertToIntMap(data['treatmentHubs']),
+      diagnosisTrend: _convertToIntIntMap(data['diagnosisTrend']),
+      educationLevels: _convertToIntMap(data['educationLevels']),
+      riskFactors: _convertToIntMap(data['riskFactors']),
+      coinfections: _convertToIntMap(data['coinfections']),
+
+      avgYearsSinceDiagnosis: (data['avgYearsSinceDiagnosis'] ?? 0).toDouble(),
+      topMSMCities:
+          (data['topMSMCities'] as List<dynamic>? ?? [])
+              .map((e) => CityData.fromMap(Map<String, dynamic>.from(e)))
+              .toList(),
+      msmAgeBreakdown: _convertToIntMap(data['msmAgeBreakdown']),
+    );
+  }
+
+  /// Helper to cast Map<String, dynamic> → Map<String, int>
+  static Map<String, int> _convertToIntMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value.map((k, v) => MapEntry(k, (v as num).toInt()));
+    }
+    return {};
+  }
+
+  /// Helper to cast Map<String, dynamic> → Map<int, int>
+  static Map<int, int> _convertToIntIntMap(dynamic value) {
+    if (value is Map<String, dynamic>) {
+      return value.map(
+        (k, v) => MapEntry(int.tryParse(k) ?? 0, (v as num).toInt()),
+      );
+    }
+    return {};
+  }
 }
 
 class CityData {
   final String city;
   final int count;
   final double percentage;
-
   CityData({required this.city, required this.count, required this.percentage});
-}
-
-// lib/models/personal_insights.dart
-class PersonalInsights {
-  final String supportiveMessage;
-  final String treatmentHub;
-  final int yearDiagnosed;
-  final String ageRange;
-  final List<String> healthTips;
-  final String nextSteps;
-
-  PersonalInsights({
-    required this.supportiveMessage,
-    required this.treatmentHub,
-    required this.yearDiagnosed,
-    required this.ageRange,
-    required this.healthTips,
-    required this.nextSteps,
-  });
+  factory CityData.fromMap(Map<String, dynamic> map) {
+    return CityData(
+      city: map['city'] ?? '',
+      count: (map['count'] as num?)?.toInt() ?? 0,
+      percentage: (map['percentage'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
 }

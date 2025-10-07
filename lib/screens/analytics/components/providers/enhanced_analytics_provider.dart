@@ -120,7 +120,7 @@ class EnhancedAnalyticsProvider extends ChangeNotifier {
   // For researchers - full anonymized analytics
   Future<void> _fetchFullAnalytics() async {
     try {
-      Query query = _firestore.collection('users');
+      Query query = _firestore.collection('analyticData');
       // Apply date filter if needed
       if (_startDate != null && _endDate != null) {
         // Filter based on yearDiagnosed

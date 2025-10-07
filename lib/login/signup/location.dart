@@ -315,9 +315,25 @@ class _LocationScreenState extends State<LocationScreen>
 
       if (placemarks.isNotEmpty) {
         final place = placemarks[0];
+        print("Detected locality: ${place.locality}");
+        print("Detected subLocality: ${place.subLocality}");
+
         setState(() {
-          selectedCity = place.locality; // Example: "Davao City"
-          selectedBarangay = place.subLocality; // Example: "Buhangin"
+          final normalizedCity = normalizeCity(place.locality);
+          if (normalizedCity != null && cities.contains(normalizedCity)) {
+            selectedCity = normalizedCity;
+          } else {
+            selectedCity = null; // don’t assign invalid city
+          }
+
+          final normalizedBrgy = normalizeBarangay(place.subLocality);
+          if (selectedCity != null &&
+              normalizedBrgy != null &&
+              barangays[selectedCity]!.contains(normalizedBrgy)) {
+            selectedBarangay = normalizedBrgy;
+          } else {
+            selectedBarangay = null;
+          }
         });
       }
     } catch (e) {
@@ -325,6 +341,19 @@ class _LocationScreenState extends State<LocationScreen>
     } finally {
       setState(() => isDetectingLocation = false);
     }
+  }
+
+  String? normalizeCity(String? city) {
+    if (city == null) return null;
+    if (city.contains("Samal")) return "Island Garden City of Samal";
+    if (city.contains("Davao")) return "Davao City";
+    return null; // return null if no match so dropdown won't break
+  }
+
+  String? normalizeBarangay(String? brgy) {
+    if (brgy == null) return null;
+    if (brgy.contains("Buhangin")) return "Buhangin";
+    return brgy;
   }
 
   void _proceed() {

@@ -168,12 +168,9 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: Text(
           'Phone Verification',
           style: TextStyle(
@@ -183,6 +180,7 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
           ),
         ),
       ),
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Column(

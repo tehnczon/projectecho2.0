@@ -9,6 +9,9 @@ import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:intl/intl.dart';
 import 'package:projecho/login/signup/privacyPolicy.dart';
 import 'package:projecho/login/signup/terms.dart';
+import 'package:provider/provider.dart';
+import 'package:projecho/screens/analytics/components/providers/user_role_provider.dart';
+import 'package:projecho/screens/analytics/components/providers/researcher_analytics_provider.dart';
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -39,39 +42,79 @@ class _UserProfileState extends State<UserProfile> {
 
       final uid = user.uid;
 
-      // Fetch user document using UID
+      // 1. Always fetch the base user document
       final userDoc =
+          await FirebaseFirestore.instance.collection('user').doc(uid).get();
+
+      if (!userDoc.exists) {
+        print("⚠️ No base user document found for UID: $uid");
+        return;
+      }
+
+      final baseData = userDoc.data() ?? {};
+      final role = baseData['role'];
+      print("✅ Role loaded: $role");
+      print("📊 Base user data: $baseData");
+
+      // 2. Fetch role-specific extra data
+      Map<String, dynamic> extraData = {};
+
+      if (role == 'plhiv') {
+        final analyticDoc =
+            await FirebaseFirestore.instance
+                .collection('analyticData')
+                .doc(uid)
+                .get();
+
+        if (analyticDoc.exists) {
+          extraData = analyticDoc.data() ?? {};
+          print("📊 Loaded analyticData for PLHIV: $extraData");
+        } else {
+          print("⚠️ No analyticData found for UID: $uid");
+        }
+      } else if (role == 'researcher' || role == 'infoSeeker') {
+        final demoDoc =
+            await FirebaseFirestore.instance
+                .collection('userDemographic')
+                .doc(uid)
+                .get();
+
+        if (demoDoc.exists) {
+          extraData = demoDoc.data() ?? {};
+          print("📊 Loaded userDemographic for $role: $extraData");
+        } else {
+          print("⚠️ No userDemographic found for UID: $uid");
+        }
+      }
+
+      // 3. Fetch profile doc (for UIC)
+      String? generatedUIC;
+      final profileDoc =
           await FirebaseFirestore.instance
               .collection('profiles')
               .doc(uid)
               .get();
 
-      if (userDoc.exists) {
-        final data = userDoc.data();
-        setState(() {
-          userData = data;
-          displayName = data?['generatedUIC'] ?? 'Anonymous';
-        });
-
-        // Optional: handle role-specific logic
-        final role = data?['role'];
-        switch (role) {
-          case 'plhiv':
-            print("✅ User is PLHIV");
-            break;
-          case 'infoSeeker':
-            print("✅ User is Info Seeker");
-            break;
-          case 'researcher':
-            print("✅ User is Researcher");
-            break;
-          default:
-            print("✅ User role: $role");
-        }
+      if (profileDoc.exists) {
+        generatedUIC = profileDoc.data()?['generatedUIC'];
+        print("✅ UIC fetched: $generatedUIC");
       } else {
-        print("⚠️ No user document found for UID: $uid");
-        // You might want to create a new doc here if needed
+        print("⚠️ No profile doc found for UID: $uid");
       }
+
+      // 4. Merge all sources
+      final combinedData = {
+        ...baseData,
+        ...extraData,
+        if (generatedUIC != null) 'generatedUIC': generatedUIC,
+      };
+
+      setState(() {
+        userData = combinedData;
+        displayName = combinedData['generatedUIC'] ?? 'Anonymous';
+      });
+
+      print("✅ Final merged user data: $combinedData");
     } catch (e) {
       print("❌ Failed to load user data: $e");
     }
@@ -181,14 +224,24 @@ class _UserProfileState extends State<UserProfile> {
                 child: const Text('Cancel'),
               ),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
+                  // Reset providers first
+                  Provider.of<UserRoleProvider>(context, listen: false).reset();
+                  Provider.of<ResearcherAnalyticsProvider>(
+                    context,
+                    listen: false,
+                  ).reset();
+
                   Navigator.pop(context);
-                  FirebaseAuth.instance.signOut();
+
+                  await FirebaseAuth.instance.signOut();
+
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (_) => const EnterNumberPage()),
                   );
                 },
+
                 child: const Text(
                   'Logout',
                   style: TextStyle(color: Colors.red),
@@ -376,13 +429,18 @@ class _UserProfileState extends State<UserProfile> {
                     ),
                     const SizedBox(height: 16),
                     if (userData != null) ...[
-                      profileItem("Location", _formatLocation()),
+                      profileItem(
+                        "Location",
+                        (userData!['location'] is Map &&
+                                userData!['location']['city'] != null)
+                            ? userData!['location']['city']
+                            : _formatLocation(),
+                      ),
+
                       profileItem(
                         "Gender Identity",
                         userData!['genderIdentity'],
                       ),
-
-                      profileItem("User Type", userData!['userType']),
                     ] else ...[
                       const Center(child: CircularProgressIndicator()),
                     ],
@@ -475,7 +533,10 @@ class _UserProfileState extends State<UserProfile> {
                                 ],
                               ),
                               const SizedBox(height: 12),
+
                               // All other profile data
+                              profileItem("User Type", userData!['role']),
+
                               profileItem("Age Range", userData!['ageRange']),
                               profileItem(
                                 "Civil Status",
@@ -538,14 +599,7 @@ class _UserProfileState extends State<UserProfile> {
                                 userData!['unprotectedSexWith'],
                               ),
                               const Divider(height: 24),
-                              profileItem(
-                                "Confirmatory Code",
-                                userData!['confirmatoryCode'],
-                              ),
-                              profileItem(
-                                "Generated UIC",
-                                userData!['generatedUIC'],
-                              ),
+
                               if (userData!['isPregnant'] != null)
                                 profileItem(
                                   "Is Pregnant",

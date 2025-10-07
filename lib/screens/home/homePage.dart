@@ -18,7 +18,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _fadeController;
   late AnimationController _scaleController;
-  int _notificationCount = 3; // Sample notification count
+  // int _notificationCount = 3; // Sample notification count
 
   @override
   void initState() {
@@ -77,24 +77,24 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           slivers: [
             // Modern App Bar
             SliverAppBar(
-              expandedHeight: 120,
+              expandedHeight: 100,
               floating: false,
               pinned: true,
-              backgroundColor: AppColors.surface,
+              backgroundColor: AppColors.background,
               elevation: 0,
               automaticallyImplyLeading: false,
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      colors: [
-                        AppColors.primary.withOpacity(0.1),
-                        AppColors.surface,
-                      ],
-                    ),
-                  ),
+                  // decoration: BoxDecoration(
+                  //   gradient: LinearGradient(
+                  //     begin: Alignment.topCenter,
+                  //     end: Alignment.bottomCenter,
+                  //     colors: [
+                  //       AppColors.primary.withOpacity(0.1),
+                  //       AppColors.surface,
+                  //     ],
+                  //   ),
+                  // ),
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 20,
@@ -128,64 +128,57 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               .fadeIn(duration: 800.ms)
                               .slideX(begin: -0.1, end: 0),
                           const SizedBox(height: 4),
-                          Text(
-                            'Welcome back!',
-                            style: GoogleFonts.poppins(
-                              color: AppColors.textSecondary,
-                              fontSize: 14,
-                            ),
-                          ).animate().fadeIn(duration: 800.ms, delay: 200.ms),
                         ],
                       ),
-                      Stack(
-                        children: [
-                          Container(
-                            decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.notifications_outlined,
-                                color: AppColors.primary,
-                                size: 28,
-                              ),
-                              onPressed: () {
-                                HapticFeedback.lightImpact();
-                                // Navigate to notifications
-                              },
-                            ),
-                          ),
-                          if (_notificationCount > 0)
-                            Positioned(
-                              right: 8,
-                              top: 8,
-                              child: Container(
-                                padding: const EdgeInsets.all(4),
-                                decoration: BoxDecoration(
-                                  color: AppColors.error,
-                                  shape: BoxShape.circle,
-                                ),
-                                constraints: const BoxConstraints(
-                                  minWidth: 18,
-                                  minHeight: 18,
-                                ),
-                                child: Text(
-                                  '$_notificationCount',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ).animate().scale(
-                        duration: 600.ms,
-                        curve: Curves.elasticOut,
-                      ),
+                      // Stack(
+                      //   children: [
+                      //     Container(
+                      //       decoration: BoxDecoration(
+                      //         color: AppColors.primary.withOpacity(0.1),
+                      //         shape: BoxShape.circle,
+                      //       ),
+                      //       child: IconButton(
+                      //         icon: Icon(
+                      //           Icons.notifications_outlined,
+                      //           color: AppColors.primary,
+                      //           size: 28,
+                      //         ),
+                      //         onPressed: () {
+                      //           HapticFeedback.lightImpact();
+                      //           // Navigate to notifications
+                      //         },
+                      //       ),
+                      //     ),
+                      //     if (_notificationCount > 0)
+                      //       Positioned(
+                      //         right: 8,
+                      //         top: 8,
+                      //         child: Container(
+                      //           padding: const EdgeInsets.all(4),
+                      //           decoration: BoxDecoration(
+                      //             color: AppColors.error,
+                      //             shape: BoxShape.circle,
+                      //           ),
+                      //           constraints: const BoxConstraints(
+                      //             minWidth: 18,
+                      //             minHeight: 18,
+                      //           ),
+                      //           child: Text(
+                      //             '$_notificationCount',
+                      //             style: const TextStyle(
+                      //               color: Colors.white,
+                      //               fontSize: 10,
+                      //               fontWeight: FontWeight.bold,
+                      //             ),
+                      //             textAlign: TextAlign.center,
+                      //           ),
+                      //         ),
+                      //       ),
+                      //   ],
+                      // ).animate().scale(
+                      //   duration: 600.ms,
+                      //   curve: Curves.elasticOut,
+                      // ),
                     ],
                   ),
                 ),
@@ -202,20 +195,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         margin: const EdgeInsets.all(20),
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.primary.withOpacity(0.1),
-                              AppColors.secondary.withOpacity(0.05),
-                            ],
-                          ),
+                          color: AppColors.primary.withOpacity(0.1),
+
                           borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primary.withOpacity(0.1),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
+                          // boxShadow: [
+                          //   BoxShadow(
+                          //     color: AppColors.primary.withOpacity(0.1),
+                          //     offset: const Offset(0, 10),
+                          //   ),
+                          // ],
                         ),
                         child: Row(
                           children: [
@@ -317,6 +305,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       .animate()
                       .fadeIn(duration: 800.ms)
                       .slideY(begin: 0.1, end: 0),
+                  const SizedBox(height: 20),
 
                   // Featured Section
                   Padding(
@@ -332,52 +321,42 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                             fontSize: 20,
                           ),
                         ),
-                        TextButton(
-                          onPressed: () {
-                            HapticFeedback.lightImpact();
-                          },
-                          child: Text(
-                            'See all',
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   ).animate().fadeIn(duration: 800.ms, delay: 200.ms),
 
+                  const SizedBox(height: 20),
+
                   // Carousel Slider
                   const ModernCarouselSlider(),
 
-                  // Services Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      'Services',
-                      style: GoogleFonts.poppins(
-                        color: AppColors.textPrimary,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                      ),
-                    ),
-                  ).animate().fadeIn(duration: 800.ms, delay: 400.ms),
+                  // // Services Section
+                  // Padding(
+                  //   padding: const EdgeInsets.symmetric(horizontal: 20),
+                  //   child: Text(
+                  //     'Services',
+                  //     style: GoogleFonts.poppins(
+                  //       color: AppColors.textPrimary,
+                  //       fontWeight: FontWeight.bold,
+                  //       fontSize: 20,
+                  //     ),
+                  //   ),
+                  // ).animate().fadeIn(duration: 800.ms, delay: 400.ms),
 
-                  // Service Cards
-                  Container(
-                    height: 180,
-                    padding: const EdgeInsets.only(top: 16),
-                    child: ListView.builder(
-                      physics: const BouncingScrollPhysics(),
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      itemCount: Cards.length,
-                      itemBuilder: (context, index) {
-                        return _buildServiceCard(Cards[index], index);
-                      },
-                    ),
-                  ),
+                  // // Service Cards
+                  // Container(
+                  //   height: 180,
+                  //   padding: const EdgeInsets.only(top: 16),
+                  //   child: ListView.builder(
+                  //     physics: const BouncingScrollPhysics(),
+                  //     scrollDirection: Axis.horizontal,
+                  //     padding: const EdgeInsets.symmetric(horizontal: 20),
+                  //     itemCount: Cards.length,
+                  //     itemBuilder: (context, index) {
+                  //       return _buildServiceCard(Cards[index], index);
+                  //     },
+                  //   ),
+                  // ),
 
                   // Recommended Section
                   const SizedBox(height: 30),
@@ -472,13 +451,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   colors: card.gradient,
                 ),
                 borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: card.gradient[0].withOpacity(0.3),
-                    blurRadius: 15,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+                // boxShadow: [
+                //   BoxShadow(
+                //     color: card.gradient[0].withOpacity(0.3),
+                //     offset: const Offset(0, 8),
+                //   ),
+                // ],
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

@@ -8,6 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'dart:ui';
 import 'package:projecho/screens/analytics/components/providers/user_role_provider.dart';
+import 'package:projecho/screens/analytics/components/providers/researcher_analytics_provider.dart';
+import 'package:projecho/map/map_screen.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -23,8 +25,20 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
+    _initializeUserRole();
+  }
+
+  // NEW: Separated initialization method
+  void _initializeUserRole() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<UserRoleProvider>(context, listen: false).checkUserRole();
+      final roleProvider = Provider.of<UserRoleProvider>(
+        context,
+        listen: false,
+      );
+      // Only check role if not already initialized
+      if (!roleProvider.isInitialized || !roleProvider.isAuthenticated) {
+        roleProvider.checkUserRole();
+      }
     });
   }
 
@@ -32,16 +46,17 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     return Consumer<UserRoleProvider>(
       builder: (context, roleProvider, child) {
-        // Show loading state while checking role
-        if (roleProvider.isLoading) {
+        // Show loading state while checking role AND not yet initialized
+        if (roleProvider.isLoading || !roleProvider.isInitialized) {
           return _buildLoadingScreen();
         }
 
         // Build pages based on role
         final List<Widget> pages = [
           HomePage(),
-          _buildAnalyticsDashboard(roleProvider), // Dynamic dashboard
+          _buildAnalyticsDashboard(roleProvider),
           UserProfile(),
+          MapScreen(),
         ];
 
         // Build navigation items based on role
@@ -61,10 +76,15 @@ class _MainPageState extends State<MainPage> {
             activeIcon: Icon(Icons.person),
             label: 'Profile',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.location_on_outlined),
+            activeIcon: Icon(Icons.location_on),
+            label: 'Centers',
+          ),
         ];
 
         return Container(
-          color: Color(0xFFF0F2F5), // Match GeneralBasicDashboard background
+          color: Color(0xFFF0F2F5),
           child: Scaffold(
             backgroundColor: Colors.transparent,
             key: _scaffoldKey,
@@ -102,9 +122,20 @@ class _MainPageState extends State<MainPage> {
 
   Widget _buildAnalyticsDashboard(UserRoleProvider roleProvider) {
     if (roleProvider.shouldShowResearcherDashboard) {
-      return ResearcherDashboard();
+      return Consumer<ResearcherAnalyticsProvider>(
+        builder: (context, researcherProvider, child) {
+          // Auto-initialize when dashboard loads
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!researcherProvider.isLoading &&
+                researcherProvider.analyticsData == null) {
+              researcherProvider.initialize();
+            }
+          });
+
+          return ResearcherDashboard();
+        },
+      );
     } else {
-      // Both infoSeeker and plhiv use GeneralBasicDashboard
       return GeneralBasicDashboard();
     }
   }

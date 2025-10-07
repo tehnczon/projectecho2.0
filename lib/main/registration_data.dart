@@ -1,9 +1,10 @@
-// lib/main/registration_data.dart
+import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projecho/screens/analytics/components/services/analytics_processing_service.dart';
 
 class RegistrationData {
   // Core Registration
-  String uid; // ✅ Use Firebase UID instead of phone
+  String uid; // Firebase UID
 
   // UIC Fields (for local generation only)
   String? motherFirstName;
@@ -12,30 +13,30 @@ class RegistrationData {
   DateTime? birthDate;
   String? generatedUIC;
 
-  // Demographics - Step 1
+  // Demographics
   String? sexAssignedAtBirth;
   String? ageRange; // Computed from birthDate
   String? genderIdentity;
   String? nationality;
   List<String> hivRelation = []; // Multiple selections allowed
-  // Education & Status - Step 2
+
+  // Education & Social
   String? educationLevel;
   String? civilStatus;
   bool? isStudying;
   bool? livingWithPartner;
 
-  // Health & Pregnancy - Step 3
+  // Health & Pregnancy
   bool? isPregnant;
   bool? motherHadHIV;
   bool? diagnosedSTI;
   bool? hasHepatitis;
   bool? hasTuberculosis;
 
-  // Sexual Practices - Step 4
-  String?
-  unprotectedSexWith; // Values: Male, Female, Both, Never, Prefer not to say
+  // Sexual Practices
+  String? unprotectedSexWith; // Male, Female, Both, Never, Prefer not to say
 
-  // Work Status - Step 5
+  // Work Status
   bool? isOFW;
 
   // Location
@@ -50,7 +51,7 @@ class RegistrationData {
   String? treatmentHub;
 
   RegistrationData({
-    required this.uid, // ✅ required
+    required this.uid,
     this.motherFirstName,
     this.fatherFirstName,
     this.birthOrder,
@@ -78,7 +79,7 @@ class RegistrationData {
     this.treatmentHub,
   });
 
-  // Helper method to compute age range from birth date
+  // Compute age range from birth date
   void computeAgeRange() {
     if (birthDate != null) {
       final now = DateTime.now();
@@ -88,221 +89,230 @@ class RegistrationData {
         age--;
       }
 
-      if (age < 18) {
+      if (age < 18)
         ageRange = 'Under 18';
-      } else if (age <= 24) {
+      else if (age <= 24)
         ageRange = '18-24';
-      } else if (age <= 34) {
+      else if (age <= 34)
         ageRange = '25-34';
-      } else if (age <= 44) {
+      else if (age <= 44)
         ageRange = '35-44';
-      } else {
+      else
         ageRange = '45+';
-      }
     }
   }
 
-  // Convert user type to role for Firestore
+  // User role based on type
   String get role {
     switch (userType) {
       case 'PLHIV':
         return 'plhiv';
       case 'Health Information Seeker':
-        return 'infoSeeker';
       default:
         return 'infoSeeker';
     }
   }
 
-  // Check if user is MSM (Men who have Sex with Men)
-  bool get isMSM {
-    return sexAssignedAtBirth == 'Male' &&
-        (unprotectedSexWith == 'Male' || unprotectedSexWith == 'Both');
-  }
+  // Analytics booleans
+  bool get isMSM =>
+      sexAssignedAtBirth == 'Male' &&
+      (unprotectedSexWith == 'Male' || unprotectedSexWith == 'Both');
 
-  // Check if user is youth (18-24)
-  bool get isYouth {
-    return ageRange == '18-24';
-  }
+  bool get isMSW =>
+      sexAssignedAtBirth == 'Male' &&
+          (unprotectedSexWith == 'Female' || unprotectedSexWith == 'Both') ||
+      sexAssignedAtBirth == 'Female' &&
+          (unprotectedSexWith == 'Male' || unprotectedSexWith == 'Both');
 
-  //has multiple partner risk
-  bool get hasMultiplePartnerRisk {
-    return sexAssignedAtBirth == 'Male' && (unprotectedSexWith == 'Both') ||
-        sexAssignedAtBirth == 'Female' && ((unprotectedSexWith == 'Both'));
-  }
+  bool get isWSW =>
+      sexAssignedAtBirth == 'Female' && unprotectedSexWith == 'Female';
 
-  //isMSW
-  bool get isMSW {
-    return sexAssignedAtBirth == 'Male' &&
-            (unprotectedSexWith == 'Both' || unprotectedSexWith == 'Female') ||
-        sexAssignedAtBirth == 'Female' &&
-            ((unprotectedSexWith == 'Both' || unprotectedSexWith == 'Male'));
-  }
+  bool get hasMultiplePartnerRisk => unprotectedSexWith == 'Both';
 
-  //isWSW
-  bool get isWSW {
-    return sexAssignedAtBirth == 'Female' && (unprotectedSexWith == 'Female');
-  }
+  bool get isYouth => ageRange == '18-24';
 
-  //isWSW
-
-  // ANALYTICS-READY Firestore conversion - FLATTENED structure
+  // Firestore-ready map
   Map<String, dynamic> toFirestore() {
-    // Ensure age range is computed before saving
     computeAgeRange();
 
     Map<String, dynamic> data = {
-      // ==================== CORE IDENTIFICATION ====================
       'role': role,
       'userType': userType,
       'createdAt': FieldValue.serverTimestamp(),
       'lastLogin': FieldValue.serverTimestamp(),
       'isActive': true,
-
-      // ==================== UIC DATA ====================
       'generatedUIC': generatedUIC,
       'birthDate': birthDate != null ? Timestamp.fromDate(birthDate!) : null,
       'ageRange': ageRange,
-
-      // ==================== DEMOGRAPHICS (FLATTENED) ====================
       'sexAssignedAtBirth': sexAssignedAtBirth,
       'genderIdentity': genderIdentity,
       'nationality': nationality,
-
-      // ==================== EDUCATION & SOCIAL ====================
       'educationLevel': educationLevel,
       'civilStatus': civilStatus,
       'isStudying': isStudying ?? false,
       'livingWithPartner': livingWithPartner ?? false,
-
-      // ==================== HEALTH INFORMATION ====================
       'isPregnant': isPregnant ?? false,
       'motherHadHIV': motherHadHIV ?? false,
       'diagnosedSTI': diagnosedSTI ?? false,
       'hasHepatitis': hasHepatitis ?? false,
       'hasTuberculosis': hasTuberculosis ?? false,
       'unprotectedSexWith': unprotectedSexWith,
-
-      // ==================== LOCATION & WORK ====================
       'city': city,
       'barangay': barangay,
       'isOFW': isOFW ?? false,
-
-      // ==================== PRE-COMPUTED ANALYTICS ====================
       'isMSM': isMSM,
-      'isYouth': isYouth,
       'isMSW': isMSW,
       'isWSW': isWSW,
       'hasMultiplePartnerRisk': hasMultiplePartnerRisk,
+      'isYouth': isYouth,
     };
 
-    // Add PLHIV-specific data if applicable
     if (userType == 'PLHIV') {
       data.addAll({
         'yearDiagnosed': yearDiagnosed,
         'treatmentHub': treatmentHub,
       });
     }
+
     return data;
   }
 
-  // For local storage/transfer (keeps original structure for UI)
-  Map<String, dynamic> toJson() {
-    return {
-      'uid': uid,
-      'motherFirstName': motherFirstName,
-      'fatherFirstName': fatherFirstName,
-      'birthOrder': birthOrder,
-      'birthDate': birthDate?.toIso8601String(),
-      'generatedUIC': generatedUIC,
-      'sexAssignedAtBirth': sexAssignedAtBirth,
-      'ageRange': ageRange,
-      'genderIdentity': genderIdentity,
-      'nationality': nationality,
-      'educationLevel': educationLevel,
-      'civilStatus': civilStatus,
-      'isStudying': isStudying,
-      'livingWithPartner': livingWithPartner,
-      'isPregnant': isPregnant,
-      'motherHadHIV': motherHadHIV,
-      'diagnosedSTI': diagnosedSTI,
-      'hasHepatitis': hasHepatitis,
-      'hasTuberculosis': hasTuberculosis,
-      'unprotectedSexWith': unprotectedSexWith,
-      'isOFW': isOFW,
-      'city': city,
-      'barangay': barangay,
-      'userType': userType,
-      'yearDiagnosed': yearDiagnosed,
-      'treatmentHub': treatmentHub,
-    };
-  }
+  // JSON for local storage or UI
+  Map<String, dynamic> toJson() => {
+    'uid': uid,
+    'motherFirstName': motherFirstName,
+    'fatherFirstName': fatherFirstName,
+    'birthOrder': birthOrder,
+    'birthDate': birthDate?.toIso8601String(),
+    'generatedUIC': generatedUIC,
+    'sexAssignedAtBirth': sexAssignedAtBirth,
+    'ageRange': ageRange,
+    'genderIdentity': genderIdentity,
+    'nationality': nationality,
+    'educationLevel': educationLevel,
+    'civilStatus': civilStatus,
+    'isStudying': isStudying,
+    'livingWithPartner': livingWithPartner,
+    'isPregnant': isPregnant,
+    'motherHadHIV': motherHadHIV,
+    'diagnosedSTI': diagnosedSTI,
+    'hasHepatitis': hasHepatitis,
+    'hasTuberculosis': hasTuberculosis,
+    'unprotectedSexWith': unprotectedSexWith,
+    'isOFW': isOFW,
+    'city': city,
+    'barangay': barangay,
+    'userType': userType,
+    'yearDiagnosed': yearDiagnosed,
+    'treatmentHub': treatmentHub,
+  };
 
-  factory RegistrationData.fromJson(Map<String, dynamic> json) {
-    return RegistrationData(
-      uid: json['uid'],
-      motherFirstName: json['motherFirstName'],
-      fatherFirstName: json['fatherFirstName'],
-      birthOrder: json['birthOrder'],
-      birthDate:
-          json['birthDate'] != null ? DateTime.parse(json['birthDate']) : null,
-      generatedUIC: json['generatedUIC'],
-      sexAssignedAtBirth: json['sexAssignedAtBirth'],
-      ageRange: json['ageRange'],
-      genderIdentity: json['genderIdentity'],
-      nationality: json['nationality'],
-      educationLevel: json['educationLevel'],
-      civilStatus: json['civilStatus'],
-      isStudying: json['isStudying'],
-      livingWithPartner: json['livingWithPartner'],
-      isPregnant: json['isPregnant'],
-      motherHadHIV: json['motherHadHIV'],
-      diagnosedSTI: json['diagnosedSTI'],
-      hasHepatitis: json['hasHepatitis'],
-      hasTuberculosis: json['hasTuberculosis'],
-      unprotectedSexWith: json['unprotectedSexWith'],
-      isOFW: json['isOFW'],
-      city: json['city'],
-      barangay: json['barangay'],
-      userType: json['userType'],
-      yearDiagnosed: json['yearDiagnosed'],
-      treatmentHub: json['treatmentHub'],
-    );
-  }
+  factory RegistrationData.fromJson(Map<String, dynamic> json) =>
+      RegistrationData(
+        uid: json['uid'],
+        motherFirstName: json['motherFirstName'],
+        fatherFirstName: json['fatherFirstName'],
+        birthOrder: json['birthOrder'],
+        birthDate:
+            json['birthDate'] != null
+                ? DateTime.parse(json['birthDate'])
+                : null,
+        generatedUIC: json['generatedUIC'],
+        sexAssignedAtBirth: json['sexAssignedAtBirth'],
+        ageRange: json['ageRange'],
+        genderIdentity: json['genderIdentity'],
+        nationality: json['nationality'],
+        educationLevel: json['educationLevel'],
+        civilStatus: json['civilStatus'],
+        isStudying: json['isStudying'],
+        livingWithPartner: json['livingWithPartner'],
+        isPregnant: json['isPregnant'],
+        motherHadHIV: json['motherHadHIV'],
+        diagnosedSTI: json['diagnosedSTI'],
+        hasHepatitis: json['hasHepatitis'],
+        hasTuberculosis: json['hasTuberculosis'],
+        unprotectedSexWith: json['unprotectedSexWith'],
+        isOFW: json['isOFW'],
+        city: json['city'],
+        barangay: json['barangay'],
+        userType: json['userType'],
+        yearDiagnosed: json['yearDiagnosed'],
+        treatmentHub: json['treatmentHub'],
+      );
 
-  // Create from Firestore document (handles flattened structure)
   factory RegistrationData.fromFirestore(
     Map<String, dynamic> data,
     String uid,
-  ) {
-    return RegistrationData(
-      uid: uid,
-      generatedUIC: data['generatedUIC'],
-      birthDate:
-          data['birthDate'] != null
-              ? (data['birthDate'] as Timestamp).toDate()
-              : null,
-      sexAssignedAtBirth: data['sexAssignedAtBirth'],
-      ageRange: data['ageRange'],
-      genderIdentity: data['genderIdentity'],
-      nationality: data['nationality'],
-      educationLevel: data['educationLevel'],
-      civilStatus: data['civilStatus'],
-      isStudying: data['isStudying'],
-      livingWithPartner: data['livingWithPartner'],
-      isPregnant: data['isPregnant'],
-      motherHadHIV: data['motherHadHIV'],
-      diagnosedSTI: data['diagnosedSTI'],
-      hasHepatitis: data['hasHepatitis'],
-      hasTuberculosis: data['hasTuberculosis'],
-      unprotectedSexWith: data['unprotectedSexWith'],
-      isOFW: data['isOFW'],
-      city: data['city'],
-      barangay: data['barangay'],
-      userType: data['userType'],
-      yearDiagnosed: data['yearDiagnosed'],
-      treatmentHub: data['treatmentHub'],
-    );
+  ) => RegistrationData(
+    uid: uid,
+    generatedUIC: data['generatedUIC'],
+    birthDate:
+        data['birthDate'] != null
+            ? (data['birthDate'] as Timestamp).toDate()
+            : null,
+    sexAssignedAtBirth: data['sexAssignedAtBirth'],
+    ageRange: data['ageRange'],
+    genderIdentity: data['genderIdentity'],
+    nationality: data['nationality'],
+    educationLevel: data['educationLevel'],
+    civilStatus: data['civilStatus'],
+    isStudying: data['isStudying'],
+    livingWithPartner: data['livingWithPartner'],
+    isPregnant: data['isPregnant'],
+    motherHadHIV: data['motherHadHIV'],
+    diagnosedSTI: data['diagnosedSTI'],
+    hasHepatitis: data['hasHepatitis'],
+    hasTuberculosis: data['hasTuberculosis'],
+    unprotectedSexWith: data['unprotectedSexWith'],
+    isOFW: data['isOFW'],
+    city: data['city'],
+    barangay: data['barangay'],
+    userType: data['userType'],
+    yearDiagnosed: data['yearDiagnosed'],
+    treatmentHub: data['treatmentHub'],
+  );
+
+  // Save to analytic data
+  Future<bool> saveToAnalyticData() async {
+    try {
+      computeAgeRange();
+
+      await FirebaseFirestore.instance
+          .collection('analyticData')
+          .doc(uid)
+          .set(toFirestore(), SetOptions(merge: true));
+
+      // Debounced analytics summary update
+      await _scheduleAnalyticsUpdate();
+
+      print('✅ Analytics data saved for user: $uid');
+      return true;
+    } catch (e) {
+      print('❌ Error saving analytics data: $e');
+      return false;
+    }
+  }
+
+  // Debounced analytics update
+  static DateTime? _lastAnalyticsUpdate;
+  static Timer? _analyticsTimer;
+
+  Future<void> _scheduleAnalyticsUpdate() async {
+    _analyticsTimer?.cancel();
+
+    _analyticsTimer = Timer(Duration(seconds: 30), () async {
+      final now = DateTime.now();
+      if (_lastAnalyticsUpdate == null ||
+          now.difference(_lastAnalyticsUpdate!).inMinutes > 2) {
+        try {
+          await AnalyticsProcessingService.updateAnalyticsSummary();
+          _lastAnalyticsUpdate = now;
+          print('Analytics summary updated at ${now.toIso8601String()}');
+        } catch (e) {
+          print('❌ Failed to update analytics summary: $e');
+        }
+      }
+    });
   }
 
   Future<bool> saveToUserDemographic() async {
@@ -401,42 +411,6 @@ class RegistrationData {
     }
   }
 
-  // save to analytic data
-  Future<bool> saveToAnalyticData() async {
-    try {
-      computeAgeRange();
-
-      await FirebaseFirestore.instance.collection('analyticData').doc(uid).set({
-        'ageRange': ageRange,
-        'location': {'city': city, 'barangay': barangay},
-        'civilStatus': civilStatus,
-        'diagnosedWithSTI': diagnosedSTI,
-        'educationalLevel': educationLevel,
-        'sexAtBirth': sexAssignedAtBirth,
-        'genderIdentity': genderIdentity,
-        'hasHepatitis': hasHepatitis,
-        'hasTuberculosis': hasTuberculosis,
-        'isMSM': isMSM,
-        'isMSW': isMSW,
-        'isWSW': isWSW,
-        'nationality': nationality,
-        'hasMultiplePartnerRisk': hasMultiplePartnerRisk,
-        'isOFW': isOFW,
-        'isStudying': isStudying,
-        'livingWithPartner': livingWithPartner,
-        'motherHadHIV': motherHadHIV,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      print('');
-      return true;
-    } catch (e) {
-      print('');
-      return false;
-    }
-  }
-
   RegistrationData copyWith({
     String? uid,
     String? motherFirstName,
@@ -463,36 +437,33 @@ class RegistrationData {
     String? barangay,
     String? userType,
     int? yearDiagnosed,
-    String? confirmatoryCode,
     String? treatmentHub,
-  }) {
-    return RegistrationData(
-      uid: uid ?? this.uid,
-      motherFirstName: motherFirstName ?? this.motherFirstName,
-      fatherFirstName: fatherFirstName ?? this.fatherFirstName,
-      birthOrder: birthOrder ?? this.birthOrder,
-      birthDate: birthDate ?? this.birthDate,
-      generatedUIC: generatedUIC ?? this.generatedUIC,
-      sexAssignedAtBirth: sexAssignedAtBirth ?? this.sexAssignedAtBirth,
-      ageRange: ageRange ?? this.ageRange,
-      genderIdentity: genderIdentity ?? this.genderIdentity,
-      nationality: nationality ?? this.nationality,
-      educationLevel: educationLevel ?? this.educationLevel,
-      civilStatus: civilStatus ?? this.civilStatus,
-      isStudying: isStudying ?? this.isStudying,
-      livingWithPartner: livingWithPartner ?? this.livingWithPartner,
-      isPregnant: isPregnant ?? this.isPregnant,
-      motherHadHIV: motherHadHIV ?? this.motherHadHIV,
-      diagnosedSTI: diagnosedSTI ?? this.diagnosedSTI,
-      hasHepatitis: hasHepatitis ?? this.hasHepatitis,
-      hasTuberculosis: hasTuberculosis ?? this.hasTuberculosis,
-      unprotectedSexWith: unprotectedSexWith ?? this.unprotectedSexWith,
-      isOFW: isOFW ?? this.isOFW,
-      city: city ?? this.city,
-      barangay: barangay ?? this.barangay,
-      userType: userType ?? this.userType,
-      yearDiagnosed: yearDiagnosed ?? this.yearDiagnosed,
-      treatmentHub: treatmentHub ?? this.treatmentHub,
-    );
-  }
+  }) => RegistrationData(
+    uid: uid ?? this.uid,
+    motherFirstName: motherFirstName ?? this.motherFirstName,
+    fatherFirstName: fatherFirstName ?? this.fatherFirstName,
+    birthOrder: birthOrder ?? this.birthOrder,
+    birthDate: birthDate ?? this.birthDate,
+    generatedUIC: generatedUIC ?? this.generatedUIC,
+    sexAssignedAtBirth: sexAssignedAtBirth ?? this.sexAssignedAtBirth,
+    ageRange: ageRange ?? this.ageRange,
+    genderIdentity: genderIdentity ?? this.genderIdentity,
+    nationality: nationality ?? this.nationality,
+    educationLevel: educationLevel ?? this.educationLevel,
+    civilStatus: civilStatus ?? this.civilStatus,
+    isStudying: isStudying ?? this.isStudying,
+    livingWithPartner: livingWithPartner ?? this.livingWithPartner,
+    isPregnant: isPregnant ?? this.isPregnant,
+    motherHadHIV: motherHadHIV ?? this.motherHadHIV,
+    diagnosedSTI: diagnosedSTI ?? this.diagnosedSTI,
+    hasHepatitis: hasHepatitis ?? this.hasHepatitis,
+    hasTuberculosis: hasTuberculosis ?? this.hasTuberculosis,
+    unprotectedSexWith: unprotectedSexWith ?? this.unprotectedSexWith,
+    isOFW: isOFW ?? this.isOFW,
+    city: city ?? this.city,
+    barangay: barangay ?? this.barangay,
+    userType: userType ?? this.userType,
+    yearDiagnosed: yearDiagnosed ?? this.yearDiagnosed,
+    treatmentHub: treatmentHub ?? this.treatmentHub,
+  );
 }
