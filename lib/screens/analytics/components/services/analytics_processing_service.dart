@@ -50,52 +50,83 @@ class AnalyticsProcessingService {
   static Map<String, dynamic> _calculateSummary(
     List<Map<String, dynamic>> records,
   ) {
-    // Initialize counters and maps
     Map<String, int> ageDistribution = {};
     Map<String, int> genderBreakdown = {};
     Map<String, int> cityDistribution = {};
     Map<String, int> educationLevels = {};
+    Map<String, int> civilStatusDist = {};
+    Map<String, int> treatmentHubs = {};
+    Map<String, int> unprotectedSexTypes = {};
+    Map<String, int> roles = {};
+    Map<String, int> sexAtBirth = {};
     Map<String, int> coinfections = {};
     Map<String, int> riskFactors = {};
 
     int msmCount = 0;
+    int mswCount = 0;
+    int wswCount = 0;
+    int ofwCount = 0;
+    int studyingCount = 0;
     int youthCount = 0;
     int stiCount = 0;
     int hepatitisCount = 0;
     int tbCount = 0;
     int multiplePartnerRisk = 0;
-    int ofwCount = 0;
-    int studyingCount = 0;
+    int pregnantCount = 0;
+    int livingWithPartnerCount = 0;
+    int activeCount = 0;
 
     for (var record in records) {
-      // Age distribution
+      // --- Age distribution
       String ageRange = record['ageRange'] ?? 'Unknown';
       ageDistribution[ageRange] = (ageDistribution[ageRange] ?? 0) + 1;
-
       if (ageRange == '18-24') youthCount++;
 
-      // Gender breakdown
+      // --- Gender identity
       String gender = record['genderIdentity'] ?? 'Unknown';
       genderBreakdown[gender] = (genderBreakdown[gender] ?? 0) + 1;
 
-      // City distribution - FIXED: Handle nested location structure
-      String city = 'Unknown';
-      if (record['location'] != null && record['location']['city'] != null) {
-        city = record['location']['city'];
-      } else if (record['city'] != null) {
-        city = record['city'];
-      }
+      // --- Sex assigned at birth
+      String sab = record['sexAssignedAtBirth'] ?? 'Unknown';
+      sexAtBirth[sab] = (sexAtBirth[sab] ?? 0) + 1;
+
+      // --- City distribution
+      String city = record['city'] ?? record['location']?['city'] ?? 'Unknown';
       cityDistribution[city] = (cityDistribution[city] ?? 0) + 1;
 
-      // Education levels - FIXED: Handle both field names
+      // --- Education levels
       String education =
           record['educationalLevel'] ?? record['educationLevel'] ?? 'Unknown';
       educationLevels[education] = (educationLevels[education] ?? 0) + 1;
 
-      // MSM identification
-      if (record['isMSM'] == true) msmCount++;
+      // --- Civil status
+      String civilStatus = record['civilStatus'] ?? 'Unknown';
+      civilStatusDist[civilStatus] = (civilStatusDist[civilStatus] ?? 0) + 1;
 
-      // STI and co-infections - FIXED: Handle both field names
+      // --- Treatment hub
+      String hub = record['treatmentHub'] ?? 'Unknown';
+      treatmentHubs[hub] = (treatmentHubs[hub] ?? 0) + 1;
+
+      // --- Unprotected sex type
+      String unprotected = record['unprotectedSexWith'] ?? 'Unknown';
+      unprotectedSexTypes[unprotected] =
+          (unprotectedSexTypes[unprotected] ?? 0) + 1;
+
+      // --- Role / user type
+      String role = record['role'] ?? record['userType'] ?? 'Unknown';
+      roles[role] = (roles[role] ?? 0) + 1;
+
+      // --- Flags and risk categories
+      if (record['isMSM'] == true) msmCount++;
+      if (record['isMSW'] == true) mswCount++;
+      if (record['isWSW'] == true) wswCount++;
+      if (record['isOFW'] == true) ofwCount++;
+      if (record['isStudying'] == true) studyingCount++;
+      if (record['isPregnant'] == true) pregnantCount++;
+      if (record['livingWithPartner'] == true) livingWithPartnerCount++;
+      if (record['isActive'] == true) activeCount++;
+
+      // --- Coinfections
       bool hasSTI =
           record['diagnosedWithSTI'] == true || record['diagnosedSTI'] == true;
       if (hasSTI) {
@@ -111,40 +142,44 @@ class AnalyticsProcessingService {
         coinfections['Tuberculosis'] = (coinfections['Tuberculosis'] ?? 0) + 1;
       }
 
-      // Risk factors
+      // --- Risk factors
       if (record['hasMultiplePartnerRisk'] == true) {
         multiplePartnerRisk++;
         riskFactors['Multiple Partners'] =
             (riskFactors['Multiple Partners'] ?? 0) + 1;
       }
-      if (record['isOFW'] == true) {
-        ofwCount++;
-        riskFactors['OFW'] = (riskFactors['OFW'] ?? 0) + 1;
-      }
       if (record['motherHadHIV'] == true) {
         riskFactors['Mother had HIV'] =
             (riskFactors['Mother had HIV'] ?? 0) + 1;
       }
-
-      if (record['isStudying'] == true) studyingCount++;
     }
 
     return {
       'totalPLHIV': records.length,
       'msmCount': msmCount,
+      'mswCount': mswCount,
+      'wswCount': wswCount,
+      'ofwCount': ofwCount,
+      'studyingCount': studyingCount,
+      'pregnantCount': pregnantCount,
+      'livingWithPartnerCount': livingWithPartnerCount,
+      'activeCount': activeCount,
       'youthCount': youthCount,
       'ageDistribution': ageDistribution,
       'genderBreakdown': genderBreakdown,
+      'sexAtBirth': sexAtBirth,
       'cityDistribution': cityDistribution,
       'educationLevels': educationLevels,
+      'civilStatusDistribution': civilStatusDist,
+      'treatmentHubs': treatmentHubs,
+      'unprotectedSexTypes': unprotectedSexTypes,
+      'roles': roles,
       'coinfections': coinfections,
       'riskFactors': riskFactors,
       'stiCount': stiCount,
       'hepatitisCount': hepatitisCount,
       'tbCount': tbCount,
       'multiplePartnerRisk': multiplePartnerRisk,
-      'ofwCount': ofwCount,
-      'studyingCount': studyingCount,
       'processedAt': DateTime.now().toIso8601String(),
     };
   }

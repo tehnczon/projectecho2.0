@@ -3,15 +3,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:local_auth/local_auth.dart';
+import 'package:projecho/form/plhivForm/app_colors.dart';
 import 'package:projecho/screens/profile/userSettings.dart';
 import 'package:projecho/login/login/inputNum.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
-import 'package:intl/intl.dart';
 import 'package:projecho/login/signup/privacyPolicy.dart';
 import 'package:projecho/login/signup/terms.dart';
 import 'package:provider/provider.dart';
 import 'package:projecho/screens/analytics/components/providers/user_role_provider.dart';
 import 'package:projecho/screens/analytics/components/providers/researcher_analytics_provider.dart';
+import './support.dart';
 
 class UserProfile extends StatefulWidget {
   const UserProfile({super.key});
@@ -131,7 +132,7 @@ class _UserProfileState extends State<UserProfile> {
             content: Text(
               'Device security not available. Please enable screen lock in your device settings.',
             ),
-            backgroundColor: Colors.orange,
+            backgroundColor: AppColors.primary,
           ),
         );
         return;
@@ -267,6 +268,7 @@ class _UserProfileState extends State<UserProfile> {
       title: Text(
         label,
         style: TextStyle(
+          fontFamily: 'Poppins',
           fontSize: 16,
           color: isDestructive ? Colors.red : Colors.black87,
         ),
@@ -288,17 +290,13 @@ class _UserProfileState extends State<UserProfile> {
             width: 140,
             child: Text(
               label,
-              style: GoogleFonts.lato(
-                fontSize: 14,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
-              ),
+              style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey[600]),
             ),
           ),
           Expanded(
             child: Text(
               value.toString(),
-              style: GoogleFonts.lato(fontSize: 14, color: Colors.black87),
+              style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
             ),
           ),
         ],
@@ -320,7 +318,7 @@ class _UserProfileState extends State<UserProfile> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.background,
 
       body: SafeArea(
         child: ListView(
@@ -330,7 +328,8 @@ class _UserProfileState extends State<UserProfile> {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.primary.withOpacity(0.1),
+
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -342,7 +341,6 @@ class _UserProfileState extends State<UserProfile> {
               ),
               child: Column(
                 children: [
-                  // Profile picture
                   Container(
                     width: 100,
                     height: 100,
@@ -359,29 +357,35 @@ class _UserProfileState extends State<UserProfile> {
                         text: displayName,
                         backgroundColor: Colors.transparent,
                         size: 100,
-                        style: const TextStyle(
+                        style: GoogleFonts.poppins(
                           color: Colors.white,
-                          fontSize: 32,
+                          fontSize: 42,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    displayName,
-                    style: GoogleFonts.lato(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
+                  ShaderMask(
+                    shaderCallback:
+                        (bounds) => LinearGradient(
+                          colors: [AppColors.primary, AppColors.primaryLight],
+                        ).createShader(bounds),
+                    child: Text(
+                      displayName,
+                      style: GoogleFonts.poppins(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     bio,
-                    style: GoogleFonts.lato(
-                      fontSize: 14,
-                      color: Colors.grey[600],
+                    style: GoogleFonts.poppins(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -394,7 +398,7 @@ class _UserProfileState extends State<UserProfile> {
             // Basic Information
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
@@ -413,14 +417,14 @@ class _UserProfileState extends State<UserProfile> {
                       children: [
                         Icon(
                           Icons.info_outline,
-                          color: Colors.indigo,
+                          color: AppColors.primary,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'Basic Information',
-                          style: GoogleFonts.lato(
-                            fontSize: 18,
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
                             fontWeight: FontWeight.w600,
                             color: Colors.black87,
                           ),
@@ -439,6 +443,7 @@ class _UserProfileState extends State<UserProfile> {
 
                       profileItem(
                         "Gender Identity",
+
                         userData!['genderIdentity'],
                       ),
                     ] else ...[
@@ -470,18 +475,18 @@ class _UserProfileState extends State<UserProfile> {
                 child: ExpansionTile(
                   leading: Icon(
                     Icons.lock_outline,
-                    color: showSensitive ? Colors.red : Colors.orange,
+                    color: showSensitive ? Colors.red : AppColors.primary,
                   ),
                   title: Text(
                     'Sensitive Information',
-                    style: GoogleFonts.lato(
+                    style: GoogleFonts.poppins(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   subtitle: Text(
                     showSensitive ? 'Tap to hide' : 'Requires authentication',
-                    style: GoogleFonts.lato(
+                    style: GoogleFonts.poppins(
                       fontSize: 12,
                       color: Colors.grey[600],
                     ),
@@ -524,7 +529,7 @@ class _UserProfileState extends State<UserProfile> {
                                   const SizedBox(width: 8),
                                   Text(
                                     'Confidential Information',
-                                    style: GoogleFonts.lato(
+                                    style: GoogleFonts.poppins(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.red[700],
@@ -640,10 +645,10 @@ class _UserProfileState extends State<UserProfile> {
                 children: [
                   Text(
                     'Quick Actions',
-                    style: GoogleFonts.lato(
-                      fontSize: 18,
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: Colors.black87,
+                      color: AppColors.textPrimary,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -672,7 +677,12 @@ class _UserProfileState extends State<UserProfile> {
                   _buildQuickAction(
                     icon: Icons.help_outline,
                     label: 'Support',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => SupportContactPage()),
+                      );
+                    },
                   ),
                   _buildQuickAction(
                     icon: Icons.settings_outlined,
@@ -680,7 +690,9 @@ class _UserProfileState extends State<UserProfile> {
                     onTap: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => BiometricAuthPage()),
+                        MaterialPageRoute(
+                          builder: (_) => AdvancedSettingsPage(),
+                        ),
                       );
                     },
                   ),
@@ -706,15 +718,14 @@ class _UserProfileState extends State<UserProfile> {
                 leading: Icon(Icons.logout, color: Colors.red[400]),
                 title: Text(
                   'Logout',
-                  style: GoogleFonts.lato(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
                     color: Colors.red[400],
                   ),
                 ),
                 trailing: Icon(
                   Icons.arrow_forward_ios,
-                  size: 16,
+                  size: 12,
                   color: Colors.red[400],
                 ),
                 onTap: _showLogoutDialog,
@@ -726,7 +737,10 @@ class _UserProfileState extends State<UserProfile> {
             Center(
               child: Text(
                 "v1.0.0 • ECHO",
-                style: GoogleFonts.lato(fontSize: 12, color: Colors.grey[500]),
+                style: GoogleFonts.poppins(
+                  fontSize: 12,
+                  color: Colors.grey[500],
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -748,12 +762,12 @@ class _UserProfileState extends State<UserProfile> {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         child: Row(
           children: [
-            Icon(icon, size: 22, color: Colors.indigo),
+            Icon(icon, size: 22, color: AppColors.primary),
             const SizedBox(width: 16),
             Expanded(
               child: Text(
                 label,
-                style: GoogleFonts.lato(fontSize: 15, color: Colors.black87),
+                style: GoogleFonts.poppins(fontSize: 12, color: Colors.black87),
               ),
             ),
             Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey[400]),

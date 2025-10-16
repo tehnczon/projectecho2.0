@@ -26,7 +26,7 @@ class _Step6FinalConfirmationState extends State<Step6FinalConfirmation> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Step 6 - Final Confirmation",
+            "Final Confirmation",
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),

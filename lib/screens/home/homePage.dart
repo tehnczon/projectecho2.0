@@ -18,7 +18,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _fadeController;
   late AnimationController _scaleController;
-  // int _notificationCount = 3; // Sample notification count
+  int _notificationCount = 3; // Sample notification count
 
   @override
   void initState() {
@@ -117,8 +117,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                   Text(
                                     message,
                                     style: GoogleFonts.poppins(
-                                      color: AppColors.textPrimary,
-                                      fontSize: 24,
+                                      color: const Color.fromARGB(
+                                        255,
+                                        48,
+                                        51,
+                                        56,
+                                      ),
+                                      fontSize: 20,
                                       fontWeight: FontWeight.w600,
                                     ),
                                   ),
@@ -130,55 +135,55 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           const SizedBox(height: 4),
                         ],
                       ),
-                      // Stack(
-                      //   children: [
-                      //     Container(
-                      //       decoration: BoxDecoration(
-                      //         color: AppColors.primary.withOpacity(0.1),
-                      //         shape: BoxShape.circle,
-                      //       ),
-                      //       child: IconButton(
-                      //         icon: Icon(
-                      //           Icons.notifications_outlined,
-                      //           color: AppColors.primary,
-                      //           size: 28,
-                      //         ),
-                      //         onPressed: () {
-                      //           HapticFeedback.lightImpact();
-                      //           // Navigate to notifications
-                      //         },
-                      //       ),
-                      //     ),
-                      //     if (_notificationCount > 0)
-                      //       Positioned(
-                      //         right: 8,
-                      //         top: 8,
-                      //         child: Container(
-                      //           padding: const EdgeInsets.all(4),
-                      //           decoration: BoxDecoration(
-                      //             color: AppColors.error,
-                      //             shape: BoxShape.circle,
-                      //           ),
-                      //           constraints: const BoxConstraints(
-                      //             minWidth: 18,
-                      //             minHeight: 18,
-                      //           ),
-                      //           child: Text(
-                      //             '$_notificationCount',
-                      //             style: const TextStyle(
-                      //               color: Colors.white,
-                      //               fontSize: 10,
-                      //               fontWeight: FontWeight.bold,
-                      //             ),
-                      //             textAlign: TextAlign.center,
-                      //           ),
-                      //         ),
-                      //       ),
-                      //   ],
-                      // ).animate().scale(
-                      //   duration: 600.ms,
-                      //   curve: Curves.elasticOut,
-                      // ),
+                      Stack(
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.notifications_outlined,
+                                color: AppColors.primary,
+                                size: 28,
+                              ),
+                              onPressed: () {
+                                HapticFeedback.lightImpact();
+                                // Navigate to notifications
+                              },
+                            ),
+                          ),
+                          if (_notificationCount > 0)
+                            Positioned(
+                              right: 8,
+                              top: 8,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: BoxDecoration(
+                                  color: AppColors.error,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 18,
+                                  minHeight: 18,
+                                ),
+                                child: Text(
+                                  '$_notificationCount',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                            ),
+                        ],
+                      ).animate().scale(
+                        duration: 600.ms,
+                        curve: Curves.elasticOut,
+                      ),
                     ],
                   ),
                 ),
@@ -233,7 +238,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                                     'We care for you',
                                     style: GoogleFonts.poppins(
                                       color: AppColors.textSecondary,
-                                      fontSize: 16,
+                                      fontSize: 12,
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -318,7 +323,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           style: GoogleFonts.poppins(
                             color: AppColors.textPrimary,
                             fontWeight: FontWeight.bold,
-                            fontSize: 20,
+                            fontSize: 16,
                           ),
                         ),
                       ],
@@ -367,7 +372,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       style: GoogleFonts.poppins(
                         color: AppColors.textPrimary,
                         fontWeight: FontWeight.bold,
-                        fontSize: 20,
+                        fontSize: 16,
                       ),
                     ),
                   ).animate().fadeIn(duration: 800.ms, delay: 600.ms),
@@ -392,7 +397,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                               'Personalized recommendations coming soon',
                               style: GoogleFonts.poppins(
                                 color: AppColors.textSecondary,
-                                fontSize: 14,
+                                fontSize: 12,
                               ),
                               textAlign: TextAlign.center,
                             ),

@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:projecho/screens/analytics/components/providers/user_role_provider.dart';
 import 'package:projecho/screens/analytics/components/services/analytics_processing_service.dart';
 import 'package:csv/csv.dart';
 import 'package:pdf/pdf.dart';

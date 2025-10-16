@@ -24,7 +24,7 @@ class _demog3WorkingState extends State<demog3Working> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            "Step 5 - Work Status",
+            "Step 3 - Work Status",
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 20),

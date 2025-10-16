@@ -4,7 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import './components/providers/enhanced_analytics_provider.dart';
 import 'package:projecho/screens/analytics/components/providers/user_role_provider.dart';
-import './researcher_request_screen.dart';
+import '../researcher_request_screen.dart';
 
 class GeneralBasicDashboard extends StatelessWidget {
   @override

@@ -103,7 +103,7 @@ class AppColors {
   static const Color accent = Color(0xFF9C27B0);
   static const Color background = Color(0xFFF0F2F5);
   static const Color surface = Colors.white;
-  static const Color textPrimary = Color(0xFF1C1E21);
+  static const Color textPrimary = Color.fromARGB(255, 29, 31, 34);
   static const Color textSecondary = Color(0xFF65676B);
   static const Color textLight = Color(0xFF90949C);
   static const Color divider = Color(0xFFDADDE1);
