@@ -11,7 +11,7 @@ class UserRoleProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  String _currentRole = 'infoSeeker'; // fallback
+  String _currentRole = 'infoSeeker';
   bool _isAuthenticated = false;
   Map<String, dynamic>? _userData;
   bool _isLoading = false;
@@ -34,27 +34,35 @@ class UserRoleProvider extends ChangeNotifier {
   bool get shouldShowResearcherDashboard => isResearcher;
 
   Future<void> checkUserRole() async {
+    // Prevent multiple simultaneous calls
+    if (_isLoading) {
+      print('⏳ Already loading, skipping duplicate call');
+      return;
+    }
+
     _isLoading = true;
     notifyListeners();
 
     try {
       final user = _auth.currentUser;
       if (user == null) {
+        print('❌ No current user');
         _setGuestState();
         return;
       }
 
+      print('🔍 Checking role for user: ${user.uid}');
       _isAuthenticated = true;
+
       final userDoc = await _firestore.collection('user').doc(user.uid).get();
 
       if (userDoc.exists) {
         _userData = userDoc.data();
 
-        // ✅ role should always be set by usertype page
         if (_userData!.containsKey('role')) {
           _currentRole = _userData!['role'];
         } else {
-          _currentRole = 'infoSeeker'; // fallback
+          _currentRole = 'infoSeeker';
         }
 
         print('✅ Role loaded: $_currentRole');
@@ -66,8 +74,8 @@ class UserRoleProvider extends ChangeNotifier {
         });
 
         _isInitialized = true;
+        print('✅ Provider initialized successfully');
       } else {
-        // No doc found – treat as guest
         print('⚠️ No user doc found for ${user.uid}');
         _setGuestState();
       }
@@ -79,6 +87,9 @@ class UserRoleProvider extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+      print(
+        '🏁 checkUserRole completed. isInitialized: $_isInitialized, role: $_currentRole',
+      );
     }
   }
 
@@ -99,18 +110,14 @@ class UserRoleProvider extends ChangeNotifier {
       final uid = user.uid;
       print('📤 Starting researcher request for user: $uid');
 
-      // Convert PDF to base64 for email attachment
       String? pdfBase64;
       List<int> pdfBytes;
 
       try {
-        // Check if bytes are available (web platform)
         if (pdfFile.bytes != null) {
           pdfBytes = pdfFile.bytes!;
           print('✅ PDF bytes from web platform');
-        }
-        // Otherwise read from file path (mobile/desktop platform)
-        else if (pdfFile.path != null) {
+        } else if (pdfFile.path != null) {
           final file = File(pdfFile.path!);
           if (!await file.exists()) {
             print('❌ PDF file does not exist at path: ${pdfFile.path}');
@@ -123,7 +130,6 @@ class UserRoleProvider extends ChangeNotifier {
           return false;
         }
 
-        // Convert to base64
         pdfBase64 = base64Encode(pdfBytes);
         print(
           '✅ PDF converted to base64: ${pdfFile.name} (${pdfBytes.length} bytes)',
@@ -133,7 +139,6 @@ class UserRoleProvider extends ChangeNotifier {
         return false;
       }
 
-      // Save request to Firestore (without PDF)
       try {
         final requestData = {
           'userId': uid,
@@ -155,7 +160,6 @@ class UserRoleProvider extends ChangeNotifier {
         final docRef = await _firestore.collection('requests').add(requestData);
         print('✅ Request document created: ${docRef.id}');
 
-        // Send email with PDF attachment via Firebase Email Extension
         await _sendEmailWithPdfAttachment(
           requestId: docRef.id,
           userId: uid,
@@ -188,18 +192,16 @@ class UserRoleProvider extends ChangeNotifier {
     required String pdfBase64,
   }) async {
     try {
-      // Create a mail document for Firebase Email Extension with attachment
       await _firestore.collection('mail').add({
         'to': ['tehnczonlanticse@gmail.com'],
-        'from':
-            'Project ECHO <tehnczonlanticse@gmail.com>', // ✅ Changed to your Gmail
+        'from': 'Project ECHO <tehnczonlanticse@gmail.com>',
         'replyTo': email,
         'message': {
           'subject': '🔬 New Researcher Access Request - $fullName',
           'text': '''
 New Researcher Access Request Received
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 👤 Applicant Details:
    Name: $fullName
@@ -212,13 +214,13 @@ New Researcher Access Request Received
 📄 Research Proposal:
    Please see the attached PDF document.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Request ID: $requestId
 
 To approve or reject this request, please log in to the Project ECHO admin panel.
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Project ECHO - Healthcare Analytics Platform
           ''',
           'html': '''
@@ -313,7 +315,6 @@ Project ECHO - Healthcare Analytics Platform
       print('✅ Email with PDF attachment queued');
     } catch (e) {
       print('⚠️ Error sending email: $e');
-      // Don't fail the request if email fails
     }
   }
 
@@ -324,7 +325,6 @@ Project ECHO - Healthcare Analytics Platform
 
       final uid = user.uid;
 
-      // Check in 'requests' collection
       final query =
           await _firestore
               .collection('requests')
@@ -343,17 +343,14 @@ Project ECHO - Healthcare Analytics Platform
     }
   }
 
-  // Admin function to approve researcher request
   Future<bool> approveResearcherRequest(String requestId, String userId) async {
     try {
-      // Update request status
       await _firestore.collection('requests').doc(requestId).update({
         'status': 'approved',
         'reviewedAt': FieldValue.serverTimestamp(),
         'reviewedBy': _auth.currentUser?.uid,
       });
 
-      // Update user role to researcher
       await _firestore.collection('user').doc(userId).update({
         'role': 'researcher',
         'researcherApprovedAt': FieldValue.serverTimestamp(),
@@ -367,7 +364,6 @@ Project ECHO - Healthcare Analytics Platform
     }
   }
 
-  // Admin function to reject researcher request
   Future<bool> rejectResearcherRequest(
     String requestId,
     String rejectionReason,
@@ -393,20 +389,23 @@ Project ECHO - Healthcare Analytics Platform
     _isAuthenticated = false;
     _userData = null;
     _isInitialized = true;
+    print('👤 Guest state set');
   }
 
   void logout() {
+    print('🚪 Logout called');
     _setGuestState();
     _isLoading = false;
     notifyListeners();
   }
 
   void reset() {
+    print('🔄 Reset called - clearing all state');
     _isLoading = false;
     _currentRole = 'infoSeeker';
     _isAuthenticated = false;
     _userData = null;
-    _isInitialized = false;
+    _isInitialized = false; // This is the key - allows re-initialization
     notifyListeners();
   }
 }

@@ -212,6 +212,8 @@ class _UserProfileState extends State<UserProfile> {
     );
   }
 
+  // Just replace the _showLogoutDialog method in userProfile.dart
+
   void _showLogoutDialog() {
     showDialog(
       context: context,
@@ -226,23 +228,17 @@ class _UserProfileState extends State<UserProfile> {
               ),
               TextButton(
                 onPressed: () async {
-                  // Reset providers first
-                  Provider.of<UserRoleProvider>(context, listen: false).reset();
-                  Provider.of<ResearcherAnalyticsProvider>(
-                    context,
-                    listen: false,
-                  ).reset();
+                  print('🚪 Logout initiated');
 
-                  Navigator.pop(context);
+                  Navigator.pop(context); // Close dialog
+
+                  // ✅ DON'T reset providers here - let main.dart handle it
+                  // The StreamBuilder in main.dart will detect the auth change
+                  // and reset the providers automatically
 
                   await FirebaseAuth.instance.signOut();
-
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const EnterNumberPage()),
-                  );
+                  print('✅ FirebaseAuth.signOut() completed');
                 },
-
                 child: const Text(
                   'Logout',
                   style: TextStyle(color: Colors.red),

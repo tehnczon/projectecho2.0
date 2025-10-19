@@ -42,17 +42,21 @@ class AnalyticsProcessingService {
         'timestamp': FieldValue.serverTimestamp(),
         'totalRecords': records.length,
       });
+
+      print('✅ Analytics summary updated successfully');
     } catch (e) {
-      print('Error processing analytics: $e');
+      print('❌ Error processing analytics: $e');
     }
   }
 
   static Map<String, dynamic> _calculateSummary(
     List<Map<String, dynamic>> records,
   ) {
+    // Basic distributions
     Map<String, int> ageDistribution = {};
     Map<String, int> genderBreakdown = {};
     Map<String, int> cityDistribution = {};
+    Map<String, Map<String, int>> barangayByCity = {};
     Map<String, int> educationLevels = {};
     Map<String, int> civilStatusDist = {};
     Map<String, int> treatmentHubs = {};
@@ -62,6 +66,10 @@ class AnalyticsProcessingService {
     Map<String, int> coinfections = {};
     Map<String, int> riskFactors = {};
 
+    // Counters
+    int totalUsers = records.length;
+    int plhivCount = 0;
+    int infoSeekerCount = 0;
     int msmCount = 0;
     int mswCount = 0;
     int wswCount = 0;
@@ -76,7 +84,33 @@ class AnalyticsProcessingService {
     int livingWithPartnerCount = 0;
     int activeCount = 0;
 
+    // Cross-tabulation tracking
+    Map<String, Map<String, dynamic>> crossTabData = {};
+
+    // MSM by age groups
+    Map<String, List<Map<String, dynamic>>> msmByAge = {};
+    Map<String, List<Map<String, dynamic>>> mswByAge = {};
+    Map<String, List<Map<String, dynamic>>> wswByAge = {};
+
+    // City + Age + Risk behavior
+    Map<String, Map<String, List<Map<String, dynamic>>>> cityAgeUsers = {};
+
+    // Gender + Health
+    Map<String, List<Map<String, dynamic>>> genderUsers = {};
+
+    // Education + Risk
+    Map<String, List<Map<String, dynamic>>> educationUsers = {};
+
     for (var record in records) {
+      // --- User Type Classification
+      String userType = record['userType'] ?? record['role'] ?? 'Unknown';
+      if (userType == 'PLHIV' || userType == 'plhiv') {
+        plhivCount++;
+      } else if (userType == 'Health Information Seeker' ||
+          userType == 'infoSeeker') {
+        infoSeekerCount++;
+      }
+
       // --- Age distribution
       String ageRange = record['ageRange'] ?? 'Unknown';
       ageDistribution[ageRange] = (ageDistribution[ageRange] ?? 0) + 1;
@@ -86,26 +120,57 @@ class AnalyticsProcessingService {
       String gender = record['genderIdentity'] ?? 'Unknown';
       genderBreakdown[gender] = (genderBreakdown[gender] ?? 0) + 1;
 
+      // Track for cross-tab
+      if (!genderUsers.containsKey(gender)) {
+        genderUsers[gender] = [];
+      }
+      genderUsers[gender]!.add(record);
+
       // --- Sex assigned at birth
       String sab = record['sexAssignedAtBirth'] ?? 'Unknown';
       sexAtBirth[sab] = (sexAtBirth[sab] ?? 0) + 1;
 
-      // --- City distribution
+      // --- City and Barangay distribution
       String city = record['city'] ?? record['location']?['city'] ?? 'Unknown';
+      String barangay =
+          record['barangay'] ?? record['location']?['barangay'] ?? 'Unknown';
+
       cityDistribution[city] = (cityDistribution[city] ?? 0) + 1;
 
+      if (!barangayByCity.containsKey(city)) {
+        barangayByCity[city] = {};
+      }
+      barangayByCity[city]![barangay] =
+          (barangayByCity[city]![barangay] ?? 0) + 1;
+
+      // Track city-age combinations
+      if (!cityAgeUsers.containsKey(city)) {
+        cityAgeUsers[city] = {};
+      }
+      if (!cityAgeUsers[city]!.containsKey(ageRange)) {
+        cityAgeUsers[city]![ageRange] = [];
+      }
+      cityAgeUsers[city]![ageRange]!.add(record);
+
       // --- Education levels
-      String education =
-          record['educationalLevel'] ?? record['educationLevel'] ?? 'Unknown';
+      String education = record['educationLevel'] ?? 'Unknown';
       educationLevels[education] = (educationLevels[education] ?? 0) + 1;
+
+      // Track for cross-tab
+      if (!educationUsers.containsKey(education)) {
+        educationUsers[education] = [];
+      }
+      educationUsers[education]!.add(record);
 
       // --- Civil status
       String civilStatus = record['civilStatus'] ?? 'Unknown';
       civilStatusDist[civilStatus] = (civilStatusDist[civilStatus] ?? 0) + 1;
 
-      // --- Treatment hub
-      String hub = record['treatmentHub'] ?? 'Unknown';
-      treatmentHubs[hub] = (treatmentHubs[hub] ?? 0) + 1;
+      // --- Treatment hub (for PLHIV)
+      String hub = record['treatmentHub'] ?? 'N/A';
+      if (hub != 'N/A') {
+        treatmentHubs[hub] = (treatmentHubs[hub] ?? 0) + 1;
+      }
 
       // --- Unprotected sex type
       String unprotected = record['unprotectedSexWith'] ?? 'Unknown';
@@ -113,22 +178,45 @@ class AnalyticsProcessingService {
           (unprotectedSexTypes[unprotected] ?? 0) + 1;
 
       // --- Role / user type
-      String role = record['role'] ?? record['userType'] ?? 'Unknown';
+      String role = record['role'] ?? 'Unknown';
       roles[role] = (roles[role] ?? 0) + 1;
 
-      // --- Flags and risk categories
-      if (record['isMSM'] == true) msmCount++;
-      if (record['isMSW'] == true) mswCount++;
-      if (record['isWSW'] == true) wswCount++;
+      // --- Sexual behavior flags
+      bool isMSM = record['isMSM'] == true;
+      bool isMSW = record['isMSW'] == true;
+      bool isWSW = record['isWSW'] == true;
+
+      if (isMSM) {
+        msmCount++;
+        if (!msmByAge.containsKey(ageRange)) {
+          msmByAge[ageRange] = [];
+        }
+        msmByAge[ageRange]!.add(record);
+      }
+      if (isMSW) {
+        mswCount++;
+        if (!mswByAge.containsKey(ageRange)) {
+          mswByAge[ageRange] = [];
+        }
+        mswByAge[ageRange]!.add(record);
+      }
+      if (isWSW) {
+        wswCount++;
+        if (!wswByAge.containsKey(ageRange)) {
+          wswByAge[ageRange] = [];
+        }
+        wswByAge[ageRange]!.add(record);
+      }
+
+      // --- Other flags
       if (record['isOFW'] == true) ofwCount++;
       if (record['isStudying'] == true) studyingCount++;
       if (record['isPregnant'] == true) pregnantCount++;
       if (record['livingWithPartner'] == true) livingWithPartnerCount++;
       if (record['isActive'] == true) activeCount++;
 
-      // --- Coinfections
-      bool hasSTI =
-          record['diagnosedWithSTI'] == true || record['diagnosedSTI'] == true;
+      // --- Health conditions
+      bool hasSTI = record['diagnosedSTI'] == true;
       if (hasSTI) {
         stiCount++;
         coinfections['STI'] = (coinfections['STI'] ?? 0) + 1;
@@ -152,10 +240,270 @@ class AnalyticsProcessingService {
         riskFactors['Mother had HIV'] =
             (riskFactors['Mother had HIV'] ?? 0) + 1;
       }
+      if (unprotected != 'Never' && unprotected != 'Unknown') {
+        riskFactors['Unprotected Sex'] =
+            (riskFactors['Unprotected Sex'] ?? 0) + 1;
+      }
     }
 
+    // ============================================
+    // CROSS-TABULATION ANALYSIS
+    // ============================================
+
+    // 1. MSM users aged 18-24 with STI
+    final msm1824 = msmByAge['18-24'] ?? [];
+    final msm1824STI = msm1824.where((r) => r['diagnosedSTI'] == true).length;
+    crossTabData['msm_18_24_sti'] = {
+      'total': msm1824.length,
+      'positive': msm1824STI,
+      'percentage':
+          msm1824.isNotEmpty
+              ? (msm1824STI / msm1824.length * 100).toStringAsFixed(1)
+              : '0.0',
+    };
+
+    // 2. Gender × STI diagnosis
+    Map<String, dynamic> genderSTI = {};
+    genderUsers.forEach((gender, users) {
+      final withSTI = users.where((r) => r['diagnosedSTI'] == true).length;
+      genderSTI[gender] = {
+        'total': users.length,
+        'positive': withSTI,
+        'percentage':
+            users.isNotEmpty
+                ? (withSTI / users.length * 100).toStringAsFixed(1)
+                : '0.0',
+      };
+    });
+    crossTabData['gender_sti'] = genderSTI;
+
+    // 3. Education × Risk Factors
+    Map<String, dynamic> educationRisk = {};
+    educationUsers.forEach((education, users) {
+      final multiplePartners =
+          users.where((r) => r['hasMultiplePartnerRisk'] == true).length;
+      final unprotected =
+          users
+              .where(
+                (r) =>
+                    r['unprotectedSexWith'] != null &&
+                    r['unprotectedSexWith'] != 'Never' &&
+                    r['unprotectedSexWith'] != 'Prefer not to say',
+              )
+              .length;
+
+      educationRisk[education] = {
+        'total': users.length,
+        'multiplePartners': multiplePartners,
+        'unprotectedSex': unprotected,
+        'multiplePartnersPercentage':
+            users.isNotEmpty
+                ? (multiplePartners / users.length * 100).toStringAsFixed(1)
+                : '0.0',
+        'unprotectedSexPercentage':
+            users.isNotEmpty
+                ? (unprotected / users.length * 100).toStringAsFixed(1)
+                : '0.0',
+      };
+    });
+    crossTabData['education_risk'] = educationRisk;
+
+    // 4. City × Age × High-risk behavior
+    Map<String, dynamic> cityAgeRisk = {};
+    cityAgeUsers.forEach((city, ageGroups) {
+      cityAgeRisk[city] = {};
+      ageGroups.forEach((age, users) {
+        final unprotectedMultiple =
+            users
+                .where(
+                  (r) =>
+                      r['unprotectedSexWith'] == 'Both' ||
+                      r['hasMultiplePartnerRisk'] == true,
+                )
+                .length;
+
+        cityAgeRisk[city][age] = {
+          'total': users.length,
+          'unprotectedMultiple': unprotectedMultiple,
+          'percentage':
+              users.isNotEmpty
+                  ? (unprotectedMultiple / users.length * 100).toStringAsFixed(
+                    1,
+                  )
+                  : '0.0',
+        };
+      });
+    });
+    crossTabData['city_age_risk'] = cityAgeRisk;
+
+    // 5. MSM vs MSW vs WSW health outcomes
+    final msmAll = records.where((r) => r['isMSM'] == true).toList();
+    final mswAll = records.where((r) => r['isMSW'] == true).toList();
+    final wswAll = records.where((r) => r['isWSW'] == true).toList();
+
+    Map<String, dynamic> sexualBehaviorHealth = {
+      'MSM': {
+        'count': msmAll.length,
+        'stiCount': msmAll.where((r) => r['diagnosedSTI'] == true).length,
+        'hepatitisCount': msmAll.where((r) => r['hasHepatitis'] == true).length,
+        'stiRate':
+            msmAll.isNotEmpty
+                ? (msmAll.where((r) => r['diagnosedSTI'] == true).length /
+                        msmAll.length *
+                        100)
+                    .toStringAsFixed(1)
+                : '0.0',
+        'hepatitisRate':
+            msmAll.isNotEmpty
+                ? (msmAll.where((r) => r['hasHepatitis'] == true).length /
+                        msmAll.length *
+                        100)
+                    .toStringAsFixed(1)
+                : '0.0',
+      },
+      'MSW': {
+        'count': mswAll.length,
+        'stiCount': mswAll.where((r) => r['diagnosedSTI'] == true).length,
+        'hepatitisCount': mswAll.where((r) => r['hasHepatitis'] == true).length,
+        'stiRate':
+            mswAll.isNotEmpty
+                ? (mswAll.where((r) => r['diagnosedSTI'] == true).length /
+                        mswAll.length *
+                        100)
+                    .toStringAsFixed(1)
+                : '0.0',
+        'hepatitisRate':
+            mswAll.isNotEmpty
+                ? (mswAll.where((r) => r['hasHepatitis'] == true).length /
+                        mswAll.length *
+                        100)
+                    .toStringAsFixed(1)
+                : '0.0',
+      },
+      'WSW': {
+        'count': wswAll.length,
+        'stiCount': wswAll.where((r) => r['diagnosedSTI'] == true).length,
+        'hepatitisCount': wswAll.where((r) => r['hasHepatitis'] == true).length,
+        'stiRate':
+            wswAll.isNotEmpty
+                ? (wswAll.where((r) => r['diagnosedSTI'] == true).length /
+                        wswAll.length *
+                        100)
+                    .toStringAsFixed(1)
+                : '0.0',
+        'hepatitisRate':
+            wswAll.isNotEmpty
+                ? (wswAll.where((r) => r['hasHepatitis'] == true).length /
+                        wswAll.length *
+                        100)
+                    .toStringAsFixed(1)
+                : '0.0',
+      },
+    };
+    crossTabData['sexual_behavior_health'] = sexualBehaviorHealth;
+
+    // 6. Civil Status × Pregnancy
+    Map<String, dynamic> civilStatusPregnancy = {};
+    civilStatusDist.keys.forEach((status) {
+      final statusUsers =
+          records.where((r) => r['civilStatus'] == status).toList();
+      final pregnantCount =
+          statusUsers.where((r) => r['isPregnant'] == true).length;
+      civilStatusPregnancy[status] = {
+        'total': statusUsers.length,
+        'pregnant': pregnantCount,
+        'percentage':
+            statusUsers.isNotEmpty
+                ? (pregnantCount / statusUsers.length * 100).toStringAsFixed(1)
+                : '0.0',
+      };
+    });
+    crossTabData['civil_status_pregnancy'] = civilStatusPregnancy;
+
+    // ============================================
+    // PERCENTAGES (Pre-calculated)
+    // ============================================
+    Map<String, dynamic> percentages = {
+      'plhivPercentage':
+          totalUsers > 0
+              ? (plhivCount / totalUsers * 100).toStringAsFixed(1)
+              : '0.0',
+      'infoSeekerPercentage':
+          totalUsers > 0
+              ? (infoSeekerCount / totalUsers * 100).toStringAsFixed(1)
+              : '0.0',
+      'youthPercentage':
+          totalUsers > 0
+              ? (youthCount / totalUsers * 100).toStringAsFixed(1)
+              : '0.0',
+      'stiPercentage':
+          totalUsers > 0
+              ? (stiCount / totalUsers * 100).toStringAsFixed(1)
+              : '0.0',
+      'hepatitisPercentage':
+          totalUsers > 0
+              ? (hepatitisCount / totalUsers * 100).toStringAsFixed(1)
+              : '0.0',
+      'tbPercentage':
+          totalUsers > 0
+              ? (tbCount / totalUsers * 100).toStringAsFixed(1)
+              : '0.0',
+      'pregnantPercentage':
+          totalUsers > 0
+              ? (pregnantCount / totalUsers * 100).toStringAsFixed(1)
+              : '0.0',
+      'msmPercentage':
+          totalUsers > 0
+              ? (msmCount / totalUsers * 100).toStringAsFixed(1)
+              : '0.0',
+      'multiplePartnerRiskPercentage':
+          totalUsers > 0
+              ? (multiplePartnerRisk / totalUsers * 100).toStringAsFixed(1)
+              : '0.0',
+    };
+
     return {
-      'totalPLHIV': records.length,
+      // Overview
+      'totalUsers': totalUsers,
+      'totalPLHIV': plhivCount,
+      'totalInfoSeekers': infoSeekerCount,
+      'activeCount': activeCount,
+
+      // Demographics
+      'ageDistribution': ageDistribution,
+      'genderBreakdown': genderBreakdown,
+      'sexAtBirth': sexAtBirth,
+      'cityDistribution': cityDistribution,
+      'barangayDistribution': barangayByCity,
+      'educationLevels': educationLevels,
+      'civilStatusDistribution': civilStatusDist,
+
+      // Health Status
+      'healthConditions': {
+        'stiCount': stiCount,
+        'hepatitisCount': hepatitisCount,
+        'tbCount': tbCount,
+        'pregnantCount': pregnantCount,
+      },
+
+      // Risk Factors
+      'riskFactorStats': {
+        'msmCount': msmCount,
+        'mswCount': mswCount,
+        'wswCount': wswCount,
+        'multiplePartnerRisk': multiplePartnerRisk,
+        'youthCount': youthCount,
+        'ofwCount': ofwCount,
+      },
+
+      // Additional Breakdowns
+      'treatmentHubs': treatmentHubs,
+      'unprotectedSexTypes': unprotectedSexTypes,
+      'roles': roles,
+      'coinfections': coinfections,
+      'riskFactors': riskFactors,
+
+      // Counts (for backward compatibility)
       'msmCount': msmCount,
       'mswCount': mswCount,
       'wswCount': wswCount,
@@ -163,23 +511,19 @@ class AnalyticsProcessingService {
       'studyingCount': studyingCount,
       'pregnantCount': pregnantCount,
       'livingWithPartnerCount': livingWithPartnerCount,
-      'activeCount': activeCount,
       'youthCount': youthCount,
-      'ageDistribution': ageDistribution,
-      'genderBreakdown': genderBreakdown,
-      'sexAtBirth': sexAtBirth,
-      'cityDistribution': cityDistribution,
-      'educationLevels': educationLevels,
-      'civilStatusDistribution': civilStatusDist,
-      'treatmentHubs': treatmentHubs,
-      'unprotectedSexTypes': unprotectedSexTypes,
-      'roles': roles,
-      'coinfections': coinfections,
-      'riskFactors': riskFactors,
       'stiCount': stiCount,
       'hepatitisCount': hepatitisCount,
       'tbCount': tbCount,
       'multiplePartnerRisk': multiplePartnerRisk,
+
+      // Cross-tabulation Data
+      'crossTabs': crossTabData,
+
+      // Percentages
+      'percentages': percentages,
+
+      // Metadata
       'processedAt': DateTime.now().toIso8601String(),
     };
   }
@@ -226,6 +570,130 @@ class AnalyticsProcessingService {
     } catch (e) {
       print('Error getting analytics history: $e');
       return [];
+    }
+  }
+
+  // Get filtered analytics (for dashboard filters)
+  static Future<Map<String, dynamic>?> getFilteredAnalytics({
+    String? riskFactor,
+    String? ageGroup,
+    String? location,
+  }) async {
+    try {
+      Query query = _firestore.collection('analyticData');
+
+      // Apply filters
+      if (riskFactor != null && riskFactor != 'all') {
+        switch (riskFactor.toLowerCase()) {
+          case 'msm':
+            query = query.where('isMSM', isEqualTo: true);
+            break;
+          case 'wsm':
+            query = query.where('isMSW', isEqualTo: true);
+            break;
+          case 'multiple':
+            query = query.where('hasMultiplePartnerRisk', isEqualTo: true);
+            break;
+        }
+      }
+
+      if (ageGroup != null && ageGroup != 'all') {
+        query = query.where('ageRange', isEqualTo: ageGroup);
+      }
+
+      if (location != null && location != 'all') {
+        query = query.where('city', isEqualTo: location);
+      }
+
+      final snapshot = await query.get();
+      final records =
+          snapshot.docs
+              .map((doc) => doc.data() as Map<String, dynamic>)
+              .toList();
+
+      if (records.isEmpty) {
+        return null;
+      }
+
+      return _calculateSummary(records);
+    } catch (e) {
+      print('Error getting filtered analytics: $e');
+      return null;
+    }
+  }
+
+  // Query specific cross-tab data
+  static Future<Map<String, dynamic>?> getCustomQuery({
+    required String populationGroup, // "MSM", "WSM", "PLHIV"
+    required String ageRange,
+    required String healthOutcome, // "STI", "Hepatitis", "Risk Behavior"
+  }) async {
+    try {
+      Query query = _firestore.collection('analyticData');
+
+      // Apply population group filter
+      switch (populationGroup.toUpperCase()) {
+        case 'MSM':
+          query = query.where('isMSM', isEqualTo: true);
+          break;
+        case 'WSM':
+          query = query.where('isMSW', isEqualTo: true);
+          break;
+        case 'PLHIV':
+          query = query.where('userType', isEqualTo: 'PLHIV');
+          break;
+      }
+
+      // Apply age filter
+      query = query.where('ageRange', isEqualTo: ageRange);
+
+      final snapshot = await query.get();
+      final users =
+          snapshot.docs
+              .map((doc) => doc.data() as Map<String, dynamic>)
+              .toList();
+
+      if (users.isEmpty) {
+        return {
+          'total': 0,
+          'outcome': 0,
+          'percentage': '0.0',
+          'message': 'No data available for this combination',
+        };
+      }
+
+      int outcomeCount = 0;
+      switch (healthOutcome) {
+        case 'STI':
+          outcomeCount = users.where((u) => u['diagnosedSTI'] == true).length;
+          break;
+        case 'Hepatitis':
+          outcomeCount = users.where((u) => u['hasHepatitis'] == true).length;
+          break;
+        case 'Risk Behavior':
+          outcomeCount =
+              users
+                  .where(
+                    (u) =>
+                        u['hasMultiplePartnerRisk'] == true ||
+                        (u['unprotectedSexWith'] != 'Never' &&
+                            u['unprotectedSexWith'] != null),
+                  )
+                  .length;
+          break;
+      }
+
+      return {
+        'populationGroup': populationGroup,
+        'ageRange': ageRange,
+        'healthOutcome': healthOutcome,
+        'total': users.length,
+        'outcome': outcomeCount,
+        'percentage': (outcomeCount / users.length * 100).toStringAsFixed(1),
+      };
+    } catch (e) {
+      print('Error executing custom query: $e');
+      return null;
     }
   }
 }

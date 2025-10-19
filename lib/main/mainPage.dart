@@ -25,30 +25,47 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
+    print('🏗️ MainPage initState called');
     _initializeUserRole();
   }
 
-  // NEW: Separated initialization method
   void _initializeUserRole() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
       final roleProvider = Provider.of<UserRoleProvider>(
         context,
         listen: false,
       );
-      // Only check role if not already initialized
-      if (!roleProvider.isInitialized || !roleProvider.isAuthenticated) {
-        roleProvider.checkUserRole();
-      }
+
+      print(
+        '📍 MainPage postFrameCallback - isInitialized: ${roleProvider.isInitialized}, isLoading: ${roleProvider.isLoading}',
+      );
+
+      // Always check role when MainPage mounts
+      roleProvider.checkUserRole();
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    print('🎨 MainPage build called');
+
     return Consumer<UserRoleProvider>(
       builder: (context, roleProvider, child) {
-        // Show loading state while checking role AND not yet initialized
-        if (roleProvider.isLoading || !roleProvider.isInitialized) {
+        print(
+          '👀 Consumer rebuild - isLoading: ${roleProvider.isLoading}, isInitialized: ${roleProvider.isInitialized}, role: ${roleProvider.currentRole}',
+        );
+
+        // Show loading ONLY while actively loading
+        if (roleProvider.isLoading) {
           return _buildLoadingScreen();
+        }
+
+        // If not initialized and not loading, something went wrong
+        // But still show the UI with default role
+        if (!roleProvider.isInitialized) {
+          print('⚠️ Not initialized but not loading - showing default UI');
         }
 
         // Build pages based on role
@@ -108,7 +125,7 @@ class _MainPageState extends State<MainPage> {
             ),
             SizedBox(height: 20),
             Text(
-              'Loading...',
+              'Loading your profile...',
               style: GoogleFonts.workSans(
                 fontSize: 16,
                 color: Color(0xFF65676B),
@@ -124,7 +141,6 @@ class _MainPageState extends State<MainPage> {
     if (roleProvider.shouldShowResearcherDashboard) {
       return Consumer<ResearcherAnalyticsProvider>(
         builder: (context, researcherProvider, child) {
-          // Auto-initialize when dashboard loads
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!researcherProvider.isLoading &&
                 researcherProvider.analyticsData == null) {

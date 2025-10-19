@@ -104,36 +104,92 @@ class _MyAppState extends State<MyApp> {
       ),
     );
 
-    return MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => MapProvider()),
-        ChangeNotifierProvider(create: (_) => LocationProvider()),
-        ChangeNotifierProvider(create: (_) => FilterProvider()),
+    return StreamBuilder<User?>(
+      stream: FirebaseAuth.instance.authStateChanges(),
+      builder: (context, snapshot) {
+        // Show splash while waiting
+        if (_showSplash) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: _currentScreen ?? const SizedBox.shrink(),
+          );
+        }
 
-        ChangeNotifierProvider(create: (_) => EnhancedAnalyticsProvider()),
-        ChangeNotifierProvider(create: (_) => ResearcherAnalyticsProvider()),
+        // Show registration check screen
+        if (_isCheckingRegistration) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: _buildRegistrationCheckScreen(),
+          );
+        }
 
-        ChangeNotifierProvider(create: (_) => UserRoleProvider()),
-      ],
-      child: MaterialApp(
-        title: 'ProjEcho',
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          textTheme: AppTheme.textTheme,
-          platform: TargetPlatform.iOS,
-        ),
-        home:
-            _isCheckingRegistration
-                ? _buildRegistrationCheckScreen()
-                : _currentScreen,
-        routes: {
-          '/onboarding': (context) => onboarding.MyOnboardingScreen(),
-          '/enternumber': (context) => EnterNumberPage(),
-          '/home': (context) => MainPage(),
-          '/profile': (context) => UserProfile(),
-        },
-      ),
+        // Show loading while Firebase checks auth state
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            ),
+          );
+        }
+
+        // 🟢 User logged in - Create fresh providers
+        if (snapshot.hasData) {
+          final user = snapshot.data!;
+          print('🟢 User logged in: ${user.uid}');
+
+          // ✅ Create NEW providers for each user session
+          return MultiProvider(
+            key: ValueKey(user.uid), // Force rebuild when user changes
+            providers: [
+              ChangeNotifierProvider(create: (_) => MapProvider()),
+              ChangeNotifierProvider(create: (_) => LocationProvider()),
+              ChangeNotifierProvider(create: (_) => FilterProvider()),
+              ChangeNotifierProvider(
+                create: (_) => EnhancedAnalyticsProvider(),
+              ),
+              ChangeNotifierProvider(
+                create: (_) => ResearcherAnalyticsProvider(),
+              ),
+              ChangeNotifierProvider(create: (_) => UserRoleProvider()),
+            ],
+            child: MaterialApp(
+              title: 'ProjEcho',
+              debugShowCheckedModeBanner: false,
+              theme: ThemeData(
+                primarySwatch: Colors.blue,
+                textTheme: AppTheme.textTheme,
+                platform: TargetPlatform.iOS,
+              ),
+              home: const MainPage(),
+              routes: {
+                '/onboarding': (context) => onboarding.MyOnboardingScreen(),
+                '/enternumber': (context) => EnterNumberPage(),
+                '/home': (context) => MainPage(),
+                '/profile': (context) => UserProfile(),
+              },
+            ),
+          );
+        }
+
+        // 🔴 User logged out
+        print('🔴 User logged out');
+
+        return MaterialApp(
+          title: 'ProjEcho',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            primarySwatch: Colors.blue,
+            textTheme: AppTheme.textTheme,
+            platform: TargetPlatform.iOS,
+          ),
+          home: const EnterNumberPage(),
+          routes: {
+            '/onboarding': (context) => onboarding.MyOnboardingScreen(),
+            '/enternumber': (context) => EnterNumberPage(),
+          },
+        );
+      },
     );
   }
 
