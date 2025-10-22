@@ -33,7 +33,7 @@ class _demog4CivilStatusState extends State<demog4CivilStatus> {
         children: [
           const SizedBox(height: 16),
           const Text(
-            'Step 4 – Education & Status',
+            'Step 4 – Civil Status',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
 

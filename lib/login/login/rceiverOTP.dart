@@ -6,7 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/login/signup/termsCondition.dart';
-import 'package:projecho/screens/home/homePage.dart';
+import 'package:projecho/main/mainPage.dart';
 
 class OTPScreen extends StatefulWidget {
   final String phoneNumber;
@@ -56,6 +56,9 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
     super.dispose();
   }
 
+  // Replace the _verifyOTP method in receiverOTP.dart
+  // This version checks for deleted users and prevents duplicate analytics counting
+
   void _verifyOTP() async {
     if (currentOTP.length != 6) {
       _showErrorSnackBar('Please enter a valid 6-digit OTP');
@@ -70,39 +73,135 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
         verificationId: widget.verificationId,
         smsCode: currentOTP,
       );
-      await _auth.signInWithCredential(credential);
 
-      final String uid = _auth.currentUser?.uid ?? '';
-      if (uid.isEmpty) {
-        throw Exception("Failed to get Firebase UID");
+      final userCredential = await _auth.signInWithCredential(credential);
+      final user = userCredential.user;
+
+      if (user == null) {
+        throw Exception("Failed to authenticate user");
       }
+
+      final uid = user.uid;
+      final phoneNumber = user.phoneNumber;
+      print('🔐 User authenticated with UID: $uid');
 
       final firestore = FirebaseFirestore.instance;
+
+      // ==================================================
+      // CHECK 1: Is this a new Firebase Auth user?
+      // ==================================================
+      final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+      print('📝 Firebase says new user: $isNewUser');
+
+      // ==================================================
+      // CHECK 2: Does user document exist in Firestore?
+      // ==================================================
       final userDoc = await firestore.collection('user').doc(uid).get();
+      final userExists = userDoc.exists;
+      print('📄 User document exists: $userExists');
+
+      // ==================================================
+      // CHECK 3: Was this phone number previously deleted?
+      // ==================================================
+      final phoneHash = _hashPhoneNumber(phoneNumber ?? '');
+      final deletedUserQuery =
+          await firestore
+              .collection('deletedUsers')
+              .where('phoneHash', isEqualTo: phoneHash)
+              .orderBy('deletedAt', descending: true)
+              .limit(1)
+              .get();
+
+      final wasDeleted = deletedUserQuery.docs.isNotEmpty;
+      String? previousUid;
+
+      if (wasDeleted) {
+        previousUid = deletedUserQuery.docs.first.data()['originalUid'];
+        print('⚠️ Phone number was previously deleted (UID: $previousUid)');
+      }
 
       setState(() => _isLoading = false);
 
-      if (userDoc.exists) {
-        // ✅ Existing user found - go to home
+      // ==================================================
+      // DECISION LOGIC
+      // ==================================================
+
+      // Scenario 1: Existing user with active account
+      if (!isNewUser && userExists) {
+        print('✅ Existing active user - navigating to home');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainPage()),
+        );
+
+        return;
+      }
+
+      // Scenario 2: Returning deleted user (re-registration)
+      if (wasDeleted) {
+        print('🔄 Deleted user re-registering - will link to analytics');
+
+        // Create marker to prevent duplicate analytics counting
+        await firestore.collection('user').doc(uid).set({
+          'linkedToPreviousAccount': true,
+          'previousUid': previousUid,
+          'phoneHash': phoneHash,
+          'doNotCountInAnalytics': true, // ⚠️ Flag to skip analytics increment
+          'isReturningUser': true,
+          'createdAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        // Update deletion record
+        await firestore.collection('deletedUsers').doc(previousUid).update({
+          'reregisteredAt': FieldValue.serverTimestamp(),
+          'newUid': uid,
+          'status': 'reregistered',
+        });
+
+        print(
+          '✅ Marked as returning user - starting registration (analytics protected)',
+        );
         Navigator.pushAndRemoveUntil(
           context,
-          MaterialPageRoute(builder: (_) => const HomePage()),
+          MaterialPageRoute(builder: (_) => TermsAndConditionsPage(uid: uid)),
           (Route<dynamic> route) => false,
         );
-      } else {
-        // ✅ New user - start registration flow
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => TermsAndConditionsPage(uid: uid)),
-        );
+        return;
       }
+
+      // Scenario 3: Truly new user
+      print('✅ New user - starting registration flow');
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => TermsAndConditionsPage(uid: uid)),
+        (Route<dynamic> route) => false,
+      );
     } on FirebaseAuthException catch (e) {
       setState(() => _isLoading = false);
-      _showErrorSnackBar('Verification failed: ${e.message}');
+      print('❌ Firebase Auth error: ${e.code} - ${e.message}');
+
+      String errorMessage = 'Verification failed';
+      if (e.code == 'invalid-verification-code') {
+        errorMessage = 'Invalid verification code. Please try again.';
+      } else if (e.code == 'session-expired') {
+        errorMessage =
+            'Verification session expired. Please request a new code.';
+      } else if (e.message != null) {
+        errorMessage = 'Verification failed: ${e.message}';
+      }
+
+      _showErrorSnackBar(errorMessage);
     } catch (e) {
       setState(() => _isLoading = false);
+      print('❌ Unexpected error: $e');
       _showErrorSnackBar('Something went wrong. Please try again.');
     }
+  }
+
+  // Helper: Hash phone number for privacy-preserving linking
+  String _hashPhoneNumber(String phoneNumber) {
+    // Simple hash - in production use crypto package
+    return phoneNumber.hashCode.toString();
   }
 
   void _resendOTP() async {

@@ -20,14 +20,63 @@ class AnalyticsProcessingService {
   // Client-side processing (for development/fallback)
   static Future<void> _processAnalyticsClientSide() async {
     try {
+      // Get all users from users collection
+      final usersSnapshot = await _firestore.collection('user').get();
+      final allUsers = usersSnapshot.docs.map((doc) => doc.data()).toList();
+      final totalUsers = allUsers.length;
+
+      // Count user types from users collection
+      int plhivCountFromUsers = 0;
+      int infoSeekerCountFromUsers = 0;
+      int researcherCountFromUsers = 0;
+      Map<String, int> userRoleDistribution = {};
+
+      for (var user in allUsers) {
+        String role = (user['role'] ?? 'Unknown').toString().toLowerCase();
+
+        // Count by role
+        String roleKey = user['role'] ?? 'Unknown';
+        userRoleDistribution[roleKey] =
+            (userRoleDistribution[roleKey] ?? 0) + 1;
+
+        if (role == 'plhiv') {
+          plhivCountFromUsers++;
+        } else if (role == 'infoseeker' ||
+            role == 'health information seeker') {
+          infoSeekerCountFromUsers++;
+        } else if (role == 'researcher') {
+          researcherCountFromUsers++;
+        }
+      }
+
       // Get all analytic data records
       final snapshot = await _firestore.collection('analyticData').get();
       final records = snapshot.docs.map((doc) => doc.data()).toList();
 
-      if (records.isEmpty) return;
+      if (records.isEmpty) {
+        // Even if no analytics data, save total users count
+        await _firestore.collection('analytics_summary').doc('current').set({
+          'totalUsers': totalUsers,
+          'totalPLHIV': plhivCountFromUsers,
+          'totalInfoSeekers': infoSeekerCountFromUsers,
+          'totalResearchers': researcherCountFromUsers,
+          'userRoleDistribution': userRoleDistribution,
+          'totalRecords': 0,
+          'lastUpdated': FieldValue.serverTimestamp(),
+          'message': 'No analytics data available yet',
+        }, SetOptions(merge: true));
+        return;
+      }
 
-      // Process the data
-      final summary = _calculateSummary(records);
+      // Process the data (pass user counts)
+      final summary = _calculateSummary(
+        records,
+        totalUsers,
+        plhivCountFromUsers,
+        infoSeekerCountFromUsers,
+        researcherCountFromUsers,
+        userRoleDistribution,
+      );
 
       // Save to analytics_summary collection
       await _firestore.collection('analytics_summary').doc('current').set({
@@ -44,6 +93,9 @@ class AnalyticsProcessingService {
       });
 
       print('✅ Analytics summary updated successfully');
+      print(
+        '📊 Total Users: $totalUsers (PLHIV: $plhivCountFromUsers, InfoSeekers: $infoSeekerCountFromUsers, Researchers: $researcherCountFromUsers) | Analytics Records: ${records.length}',
+      );
     } catch (e) {
       print('❌ Error processing analytics: $e');
     }
@@ -51,6 +103,11 @@ class AnalyticsProcessingService {
 
   static Map<String, dynamic> _calculateSummary(
     List<Map<String, dynamic>> records,
+    int totalUsers, // From users collection
+    int plhivCountFromUsers, // PLHIV count from users collection
+    int infoSeekerCountFromUsers, // InfoSeeker count from users collection
+    int researcherCountFromUsers, // Researcher count from users collection
+    Map<String, int> userRoleDistribution, // All roles distribution
   ) {
     // Basic distributions
     Map<String, int> ageDistribution = {};
@@ -66,10 +123,10 @@ class AnalyticsProcessingService {
     Map<String, int> coinfections = {};
     Map<String, int> riskFactors = {};
 
-    // Counters
-    int totalUsers = records.length;
-    int plhivCount = 0;
-    int infoSeekerCount = 0;
+    // Counters (from analytics data only - for detailed breakdown)
+    int analyticsRecordCount = records.length; // People with analytics data
+    int plhivWithAnalytics = 0; // PLHIV who filled analytics
+    int infoSeekerWithAnalytics = 0; // InfoSeekers who filled analytics
     int msmCount = 0;
     int mswCount = 0;
     int wswCount = 0;
@@ -102,13 +159,15 @@ class AnalyticsProcessingService {
     Map<String, List<Map<String, dynamic>>> educationUsers = {};
 
     for (var record in records) {
-      // --- User Type Classification
+      // --- User Type Classification (from analytics data for cross-referencing)
       String userType = record['userType'] ?? record['role'] ?? 'Unknown';
-      if (userType == 'PLHIV' || userType == 'plhiv') {
-        plhivCount++;
-      } else if (userType == 'Health Information Seeker' ||
-          userType == 'infoSeeker') {
-        infoSeekerCount++;
+      String userTypeLower = userType.toLowerCase();
+
+      if (userTypeLower == 'plhiv') {
+        plhivWithAnalytics++;
+      } else if (userTypeLower == 'health information seeker' ||
+          userTypeLower == 'infoseeker') {
+        infoSeekerWithAnalytics++;
       }
 
       // --- Age distribution
@@ -421,52 +480,75 @@ class AnalyticsProcessingService {
     crossTabData['civil_status_pregnancy'] = civilStatusPregnancy;
 
     // ============================================
-    // PERCENTAGES (Pre-calculated)
+    // PERCENTAGES (Based on TOTAL USERS from users collection)
     // ============================================
     Map<String, dynamic> percentages = {
+      // User type percentages (from users collection)
       'plhivPercentage':
           totalUsers > 0
-              ? (plhivCount / totalUsers * 100).toStringAsFixed(1)
+              ? (plhivCountFromUsers / totalUsers * 100).toStringAsFixed(1)
               : '0.0',
       'infoSeekerPercentage':
           totalUsers > 0
-              ? (infoSeekerCount / totalUsers * 100).toStringAsFixed(1)
+              ? (infoSeekerCountFromUsers / totalUsers * 100).toStringAsFixed(1)
               : '0.0',
-      'youthPercentage':
+      'researcherPercentage':
           totalUsers > 0
-              ? (youthCount / totalUsers * 100).toStringAsFixed(1)
+              ? (researcherCountFromUsers / totalUsers * 100).toStringAsFixed(1)
+              : '0.0',
+
+      // Analytics data percentages (from analytics records)
+      'youthPercentage':
+          analyticsRecordCount > 0
+              ? (youthCount / analyticsRecordCount * 100).toStringAsFixed(1)
               : '0.0',
       'stiPercentage':
-          totalUsers > 0
-              ? (stiCount / totalUsers * 100).toStringAsFixed(1)
+          analyticsRecordCount > 0
+              ? (stiCount / analyticsRecordCount * 100).toStringAsFixed(1)
               : '0.0',
       'hepatitisPercentage':
-          totalUsers > 0
-              ? (hepatitisCount / totalUsers * 100).toStringAsFixed(1)
+          analyticsRecordCount > 0
+              ? (hepatitisCount / analyticsRecordCount * 100).toStringAsFixed(1)
               : '0.0',
       'tbPercentage':
-          totalUsers > 0
-              ? (tbCount / totalUsers * 100).toStringAsFixed(1)
+          analyticsRecordCount > 0
+              ? (tbCount / analyticsRecordCount * 100).toStringAsFixed(1)
               : '0.0',
       'pregnantPercentage':
-          totalUsers > 0
-              ? (pregnantCount / totalUsers * 100).toStringAsFixed(1)
+          analyticsRecordCount > 0
+              ? (pregnantCount / analyticsRecordCount * 100).toStringAsFixed(1)
               : '0.0',
       'msmPercentage':
-          totalUsers > 0
-              ? (msmCount / totalUsers * 100).toStringAsFixed(1)
+          analyticsRecordCount > 0
+              ? (msmCount / analyticsRecordCount * 100).toStringAsFixed(1)
               : '0.0',
       'multiplePartnerRiskPercentage':
+          analyticsRecordCount > 0
+              ? (multiplePartnerRisk / analyticsRecordCount * 100)
+                  .toStringAsFixed(1)
+              : '0.0',
+      'analyticsCompletionPercentage':
           totalUsers > 0
-              ? (multiplePartnerRisk / totalUsers * 100).toStringAsFixed(1)
+              ? (analyticsRecordCount / totalUsers * 100).toStringAsFixed(1)
               : '0.0',
     };
 
     return {
-      // Overview
-      'totalUsers': totalUsers,
-      'totalPLHIV': plhivCount,
-      'totalInfoSeekers': infoSeekerCount,
+      // Overview - User counts from users collection
+      'totalUsers': totalUsers, // From users collection
+      'totalPLHIV': plhivCountFromUsers, // From users collection role field
+      'totalInfoSeekers':
+          infoSeekerCountFromUsers, // From users collection role field
+      'totalResearchers':
+          researcherCountFromUsers, // From users collection role field
+      'userRoleDistribution':
+          userRoleDistribution, // All roles from users collection
+      // Analytics data tracking
+      'totalWithAnalytics':
+          analyticsRecordCount, // From analyticData collection
+      'plhivWithAnalytics': plhivWithAnalytics, // PLHIV who completed analytics
+      'infoSeekersWithAnalytics':
+          infoSeekerWithAnalytics, // InfoSeekers who completed analytics
       'activeCount': activeCount,
 
       // Demographics
@@ -520,7 +602,7 @@ class AnalyticsProcessingService {
       // Cross-tabulation Data
       'crossTabs': crossTabData,
 
-      // Percentages
+      // Percentages (now correctly based on total users!)
       'percentages': percentages,
 
       // Metadata
@@ -580,6 +662,34 @@ class AnalyticsProcessingService {
     String? location,
   }) async {
     try {
+      // Get all users from users collection
+      final usersSnapshot = await _firestore.collection('users').get();
+      final allUsers = usersSnapshot.docs.map((doc) => doc.data()).toList();
+      final totalUsers = allUsers.length;
+
+      // Count user types from users collection
+      int plhivCountFromUsers = 0;
+      int infoSeekerCountFromUsers = 0;
+      int researcherCountFromUsers = 0;
+      Map<String, int> userRoleDistribution = {};
+
+      for (var user in allUsers) {
+        String role = (user['role'] ?? 'Unknown').toString().toLowerCase();
+
+        String roleKey = user['role'] ?? 'Unknown';
+        userRoleDistribution[roleKey] =
+            (userRoleDistribution[roleKey] ?? 0) + 1;
+
+        if (role == 'plhiv') {
+          plhivCountFromUsers++;
+        } else if (role == 'infoseeker' ||
+            role == 'health information seeker') {
+          infoSeekerCountFromUsers++;
+        } else if (role == 'researcher') {
+          researcherCountFromUsers++;
+        }
+      }
+
       Query query = _firestore.collection('analyticData');
 
       // Apply filters
@@ -615,7 +725,14 @@ class AnalyticsProcessingService {
         return null;
       }
 
-      return _calculateSummary(records);
+      return _calculateSummary(
+        records,
+        totalUsers,
+        plhivCountFromUsers,
+        infoSeekerCountFromUsers,
+        researcherCountFromUsers,
+        userRoleDistribution,
+      );
     } catch (e) {
       print('Error getting filtered analytics: $e');
       return null;

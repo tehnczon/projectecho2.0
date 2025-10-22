@@ -9,9 +9,8 @@ import 'package:projecho/login/login/inputNum.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
 import 'package:projecho/login/signup/privacyPolicy.dart';
 import 'package:projecho/login/signup/terms.dart';
-import 'package:provider/provider.dart';
-import 'package:projecho/screens/analytics/components/providers/user_role_provider.dart';
-import 'package:projecho/screens/analytics/components/providers/researcher_analytics_provider.dart';
+import '../contentCreation/createContentScreen.dart';
+
 import './support.dart';
 
 class UserProfile extends StatefulWidget {
@@ -230,14 +229,14 @@ class _UserProfileState extends State<UserProfile> {
                 onPressed: () async {
                   print('🚪 Logout initiated');
 
-                  Navigator.pop(context); // Close dialog
-
-                  // ✅ DON'T reset providers here - let main.dart handle it
-                  // The StreamBuilder in main.dart will detect the auth change
-                  // and reset the providers automatically
-
-                  await FirebaseAuth.instance.signOut();
-                  print('✅ FirebaseAuth.signOut() completed');
+                  if (mounted) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const EnterNumberPage(),
+                      ),
+                    );
+                  }
                 },
                 child: const Text(
                   'Logout',
@@ -688,6 +687,19 @@ class _UserProfileState extends State<UserProfile> {
                         context,
                         MaterialPageRoute(
                           builder: (_) => AdvancedSettingsPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildQuickAction(
+                    icon: Icons.settings_outlined,
+                    label: 'sample dart',
+                    onTap: () {
+                      // Navigate to create content screen
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const CreateContentScreen(),
                         ),
                       );
                     },

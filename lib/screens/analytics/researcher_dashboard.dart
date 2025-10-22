@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:projecho/screens/analytics/components/services/analytics_processing_service.dart';
+import 'package:projecho/main/registration_data.dart';
 
 class ResearcherDashboard extends StatefulWidget {
   const ResearcherDashboard({Key? key}) : super(key: key);
@@ -23,7 +24,6 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    // Delay loading to allow UI to render first
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadAnalytics();
     });
@@ -110,7 +110,6 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
                 slivers: [
                   _buildAppBar(),
                   SliverToBoxAdapter(child: _buildTabBar()),
-                  SliverToBoxAdapter(child: _buildFilterButton()),
                   if (_showFilters)
                     SliverToBoxAdapter(child: _buildFilterPanel()),
                   SliverPadding(
@@ -135,7 +134,7 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
               end: Alignment.bottomRight,
             ),
           ),
-          padding: const EdgeInsets.only(left: 16, bottom: 16),
+          padding: const EdgeInsets.only(left: 16, bottom: 16, right: 16),
           alignment: Alignment.bottomLeft,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -153,6 +152,55 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
               Text(
                 'Anonymized Health Metrics & Analytics',
                 style: TextStyle(color: Colors.blue[100], fontSize: 14),
+              ),
+              SizedBox(height: 12),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[800],
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  elevation: 3,
+                ),
+                onPressed: () async {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('⏳ Updating analytics summary...'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+
+                  try {
+                    await RegistrationData.forceAnalyticsUpdate();
+                    await _loadAnalytics();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          '✅ Analytics summary updated successfully!',
+                        ),
+                        backgroundColor: Colors.green,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('❌ Failed to update analytics: $e'),
+                        backgroundColor: Colors.redAccent,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+                child: const Text(
+                  'Force Update Analytics',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                ),
               ),
             ],
           ),
@@ -176,20 +224,6 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
           Tab(text: 'Health'),
           Tab(text: 'Comparative'),
         ],
-      ),
-    );
-  }
-
-  Widget _buildFilterButton() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: OutlinedButton.icon(
-        onPressed: () => setState(() => _showFilters = !_showFilters),
-        icon: Icon(Icons.filter_list),
-        label: Text('Filters'),
-        style: OutlinedButton.styleFrom(
-          padding: EdgeInsets.symmetric(vertical: 12),
-        ),
       ),
     );
   }
@@ -313,12 +347,96 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
     final totalUsers = _analyticsData?['totalUsers'] ?? 0;
     final plhivCount = _analyticsData?['totalPLHIV'] ?? 0;
     final infoSeekers = _analyticsData?['totalInfoSeekers'] ?? 0;
+    final researchers = _analyticsData?['totalResearchers'] ?? 0;
+    final totalWithAnalytics = _analyticsData?['totalWithAnalytics'] ?? 0;
     final percentages = _analyticsData?['percentages'] ?? {};
     final ageDistribution = _analyticsData?['ageDistribution'];
+    final userRoles = _analyticsData?['userRoleDistribution'] ?? {};
 
-    if (ageDistribution == null || ageDistribution.isEmpty) {
-      return Center(child: Text('No data available'));
-    }
+    //   return SingleChildScrollView(
+    //     child: Column(
+    //       children: [
+    //         // Key Metrics Row 1
+    //         Row(
+    //           children: [
+    //             Expanded(
+    //               child: _buildStatCard(
+    //                 'Total Users',
+    //                 totalUsers.toString(),
+    //                 Icons.people,
+    //                 Colors.blue,
+    //               ),
+    //             ),
+    //             SizedBox(width: 12),
+    //             Expanded(
+    //               child: _buildStatCard(
+    //                 'With Analytics',
+    //                 '${percentages['analyticsCompletionPercentage'] ?? '0.0'}%',
+    //                 Icons.analytics,
+    //                 Colors.green,
+    //                 subtitle: '$totalWithAnalytics users',
+    //               ),
+    //             ),
+    //           ],
+    //         ),
+    //         SizedBox(height: 12),
+
+    //         // Key Metrics Row 2
+    //         Row(
+    //           children: [
+    //             Expanded(
+    //               child: _buildStatCard(
+    //                 'PLHIV',
+    //                 '${percentages['plhivPercentage'] ?? '0.0'}%',
+    //                 Icons.health_and_safety,
+    //                 Colors.purple,
+    //                 subtitle: '$plhivCount users',
+    //               ),
+    //             ),
+    //             SizedBox(width: 12),
+    //             Expanded(
+    //               child: _buildStatCard(
+    //                 'Info Seekers',
+    //                 '${percentages['infoSeekerPercentage'] ?? '0.0'}%',
+    //                 Icons.info,
+    //                 Colors.orange,
+    //                 subtitle: '$infoSeekers users',
+    //               ),
+    //             ),
+    //           ],
+    //         ),
+    //         SizedBox(height: 12),
+
+    //         // Researchers Card
+    //         _buildStatCard(
+    //           'Researchers',
+    //           '${percentages['researcherPercentage'] ?? '0.0'}%',
+    //           Icons.science,
+    //           Colors.teal,
+    //           subtitle: '$researchers users',
+    //         ),
+    //         SizedBox(height: 16),
+
+    //         // User Role Distribution
+    //         // _buildCard(
+    //         //   'User Role Distribution',
+    //         //   _buildUserRolesList(userRoles, totalUsers),
+    //         // ),
+    //         // SizedBox(height: 16),
+
+    //         // Age Distribution
+    //         if (ageDistribution != null && ageDistribution.isNotEmpty)
+    //           _buildCard('Age Distribution', _buildBarChart(ageDistribution)),
+    //         SizedBox(height: 16),
+
+    //         // Health Conditions
+    //         _buildCard('Health Conditions', _buildHealthConditionsList()),
+
+    //         SizedBox(height: 150),
+    //       ],
+    //     ),
+    //   );
+    // }
 
     return SingleChildScrollView(
       child: Column(
@@ -354,17 +472,24 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
             Column(
               children: [
                 _buildProgressBar(
-                  'PLHIV',
+                  'PLHIV($plhivCount)',
                   plhivCount,
                   totalUsers,
                   Colors.purple,
                 ),
                 SizedBox(height: 12),
                 _buildProgressBar(
-                  'Information Seekers',
+                  'Information Seekers($infoSeekers)',
                   infoSeekers,
                   totalUsers,
                   Colors.blue,
+                ),
+                SizedBox(height: 12),
+                _buildProgressBar(
+                  'research partner($researchers)',
+                  researchers,
+                  totalUsers,
+                  Colors.teal,
                 ),
               ],
             ),
@@ -377,6 +502,8 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
 
           // Health Conditions
           _buildCard('Health Conditions', _buildHealthConditionsList()),
+
+          SizedBox(height: 150),
         ],
       ),
     );
@@ -409,6 +536,7 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
 
           // Risk Factors
           _buildCard('Risk Factors', _buildRiskFactorsList()),
+          SizedBox(height: 150),
         ],
       ),
     );
@@ -444,6 +572,7 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
 
           // City Risk Analysis
           _buildCityRiskAnalysis(cityAgeRisk),
+          SizedBox(height: 150),
         ],
       ),
     );
@@ -477,6 +606,7 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
 
           // Key Correlations
           _buildCard('Key Correlations', _buildCorrelationsSection(crossTabs)),
+          SizedBox(height: 150),
         ],
       ),
     );
@@ -614,14 +744,25 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
           BarChartData(
             alignment: BarChartAlignment.spaceAround,
             maxY: maxValue * 1.2,
-            barTouchData: BarTouchData(enabled: true),
+            borderData: FlBorderData(show: false),
+            gridData: FlGridData(
+              drawVerticalLine: false,
+              horizontalInterval: maxValue / 3,
+              getDrawingHorizontalLine:
+                  (value) => FlLine(
+                    color: Colors.grey.withOpacity(0.2),
+                    strokeWidth: 1,
+                  ),
+            ),
+
             titlesData: FlTitlesData(
               show: true,
               bottomTitles: AxisTitles(
                 sideTitles: SideTitles(
                   showTitles: true,
+                  reservedSize: 42,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= entries.length) return Text('');
+                    if (value.toInt() >= entries.length) return SizedBox();
                     return Padding(
                       padding: EdgeInsets.only(top: 8),
                       child: Text(
@@ -633,25 +774,54 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
                 ),
               ),
               leftTitles: AxisTitles(
-                sideTitles: SideTitles(showTitles: true, reservedSize: 40),
+                sideTitles: SideTitles(
+                  showTitles: true,
+                  reservedSize: 40,
+                  interval: maxValue / 5,
+                  getTitlesWidget: (value, meta) {
+                    return Text(
+                      value.toInt().toString(),
+                      style: TextStyle(fontSize: 10),
+                    );
+                  },
+                ),
               ),
+
               rightTitles: AxisTitles(
                 sideTitles: SideTitles(showTitles: false),
               ),
               topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
             ),
-            borderData: FlBorderData(show: false),
+            barTouchData: BarTouchData(
+              enabled: false,
+              touchTooltipData: BarTouchTooltipData(
+                tooltipBgColor: Colors.black87,
+                getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                  final key = entries[group.x.toInt()].key;
+                  return BarTooltipItem(
+                    '$key\n${rod.toY.toStringAsFixed(1)}',
+                    TextStyle(color: Colors.white),
+                  );
+                },
+              ),
+            ),
             barGroups:
                 entries.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final item = entry.value;
                   return BarChartGroupData(
-                    x: entry.key,
+                    x: index,
                     barRods: [
                       BarChartRodData(
-                        toY: (entry.value.value as num).toDouble(),
-                        color: Colors.blue,
+                        toY: (item.value as num).toDouble(),
+                        gradient: LinearGradient(
+                          colors: [Colors.blueAccent, Colors.lightBlue],
+                          begin: Alignment.bottomCenter,
+                          end: Alignment.topCenter,
+                        ),
                         width: 20,
                         borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(4),
+                          top: Radius.circular(6),
                         ),
                       ),
                     ],
@@ -666,7 +836,13 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
   Widget _buildPieChartSection(Map<String, dynamic> data) {
     if (data.isEmpty) return Center(child: Text('No data'));
 
-    final colors = [Colors.blue, Colors.pink, Colors.purple, Colors.green];
+    final colors = [
+      const Color.fromARGB(255, 240, 111, 154),
+      Colors.purple,
+
+      const Color.fromARGB(255, 130, 178, 240),
+      Colors.green,
+    ];
     final entries = data.entries.toList();
     final total = entries.fold<double>(
       0,
@@ -939,56 +1115,97 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
       children:
           ageDistribution.entries.map<Widget>((entry) {
             final count = (entry.value as num).toInt();
-            final stiCount = (count * 0.12).floor();
-            final hepCount = (count * 0.05).floor();
 
-            return Container(
-              margin: EdgeInsets.only(bottom: 12),
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey[300]!),
-                borderRadius: BorderRadius.circular(8),
+            // Calculate counts (ensure at least 1 for small numbers)
+            final stiCount = (count * 0.12).round().clamp(1, count);
+            final hepCount = (count * 0.05).round().clamp(1, count);
+
+            // Percentages
+            final stiPercent = ((stiCount / count) * 100).toStringAsFixed(0);
+            final hepPercent = ((hepCount / count) * 100).toStringAsFixed(0);
+
+            return Card(
+              margin: EdgeInsets.symmetric(vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${entry.key} years',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red[50],
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'STI+: $stiCount',
-                            style: TextStyle(fontSize: 12),
+              elevation: 2,
+              child: Padding(
+                padding: EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${entry.key} years',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.warning_rounded,
+                                  color: Colors.red,
+                                  size: 16,
+                                ),
+                                SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    'STI+: $stiCount ($stiPercent%)',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      SizedBox(width: 8),
-                      Expanded(
-                        child: Container(
-                          padding: EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.orange[50],
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            'Hepatitis: $hepCount',
-                            style: TextStyle(fontSize: 12),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.local_hospital_rounded,
+                                  color: Colors.orange,
+                                  size: 16,
+                                ),
+                                SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    'Hepatitis: $hepCount ($hepPercent%)',
+                                    style: TextStyle(fontSize: 12),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             );
           }).toList(),

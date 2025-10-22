@@ -29,25 +29,25 @@ class _GenderSelectionScreenState extends State<GenderSelectionScreen>
     {
       'value': 'Female',
       'icon': Icons.female,
-      'color': AppColors.accent,
+      'color': const Color.fromARGB(255, 221, 125, 189),
       'description': 'Female identity',
     },
     {
       'value': 'Transgender',
       'icon': Icons.transgender,
-      'color': AppColors.secondary,
+      'color': const Color.fromARGB(255, 142, 83, 163),
       'description': 'Transgender identity',
     },
     {
       'value': 'Other',
       'icon': Icons.people_outline,
-      'color': AppColors.warning,
+      'color': const Color.fromARGB(255, 99, 96, 91),
       'description': 'Other identity',
     },
     {
       'value': 'Non-label',
       'icon': Icons.all_inclusive,
-      'color': AppColors.primaryLight,
+      'color': const Color.fromARGB(255, 39, 40, 42),
       'description': 'Prefer not to label',
     },
   ];

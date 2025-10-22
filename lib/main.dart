@@ -140,7 +140,7 @@ class _MyAppState extends State<MyApp> {
 
           // ✅ Create NEW providers for each user session
           return MultiProvider(
-            key: ValueKey(user.uid), // Force rebuild when user changes
+            key: ValueKey(user.uid),
             providers: [
               ChangeNotifierProvider(create: (_) => MapProvider()),
               ChangeNotifierProvider(create: (_) => LocationProvider()),
@@ -151,7 +151,13 @@ class _MyAppState extends State<MyApp> {
               ChangeNotifierProvider(
                 create: (_) => ResearcherAnalyticsProvider(),
               ),
-              ChangeNotifierProvider(create: (_) => UserRoleProvider()),
+              ChangeNotifierProvider(
+                create: (_) {
+                  final roleProvider = UserRoleProvider();
+                  roleProvider.checkUserRole(); // ✅ Trigger role check early
+                  return roleProvider;
+                },
+              ),
             ],
             child: MaterialApp(
               title: 'ProjEcho',

@@ -200,7 +200,7 @@ class GeneralBasicDashboard extends StatelessWidget {
           ),
           SizedBox(height: 16),
           Text(
-            'Are you a healthcare professional?',
+            'Join us Research Partners',
             style: GoogleFonts.workSans(
               color: Colors.white,
               fontSize: 18,

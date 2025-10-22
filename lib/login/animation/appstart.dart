@@ -201,25 +201,23 @@ class _CustomSplashScreenState extends State<CustomSplashScreen>
                                 ),
                               ],
                             ),
-                            child: ClipOval(
-                              child: Padding(
-                                padding: EdgeInsets.all(
-                                  8,
-                                ), // Add some padding around the image
-                                child: Image.asset(
-                                  'assets/images/icon.png',
-                                  width: 104,
-                                  height: 104,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    // Fallback to icon if image fails to load
-                                    return Icon(
-                                      Icons.campaign_rounded,
-                                      size: 60,
-                                      color: Color.fromARGB(255, 29, 78, 156),
-                                    );
-                                  },
-                                ),
+                            child: Padding(
+                              padding: EdgeInsets.all(
+                                8,
+                              ), // Add some padding around the image
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                width: 104,
+                                height: 104,
+                                fit: BoxFit.contain,
+                                errorBuilder: (context, error, stackTrace) {
+                                  // Fallback to icon if image fails to load
+                                  return Icon(
+                                    Icons.campaign_rounded,
+                                    size: 60,
+                                    color: Color.fromARGB(255, 29, 78, 156),
+                                  );
+                                },
                               ),
                             ),
                           ),
@@ -251,24 +249,6 @@ class _CustomSplashScreenState extends State<CustomSplashScreen>
                         ),
                       ),
                       SizedBox(height: 16),
-
-                      // Tagline
-                      SlideTransition(
-                        position: _textSlide,
-                        child: FadeTransition(
-                          opacity: _textOpacity,
-                          child: Text(
-                            'Stay Informed, Share Your Story',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w400,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 60),
 
                       // Loading indicator
                       FadeTransition(

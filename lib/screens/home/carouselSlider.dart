@@ -3,17 +3,16 @@ import 'package:flutter/services.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:projecho/main/app_theme.dart';
-import 'webview_screen.dart'; // Import your WebView screen
+import 'webview_screen.dart';
 
 class ModernBannerModel {
   final String title;
   final String subtitle;
   final List<Color> gradient;
-  final String imageUrl; // Logo URL
-  final IconData fallbackIcon; // Fallback icon if image fails
-  final String? url; // Website URL
-  final Widget? destination; // Keep destination for non-URL navigation
+  final String imageUrl;
+  final IconData fallbackIcon;
+  final String? url;
+  final Widget? destination;
 
   ModernBannerModel({
     required this.title,
@@ -40,20 +39,20 @@ class _ModernCarouselSliderState extends State<ModernCarouselSlider> {
 
   final List<ModernBannerModel> banners = [
     ModernBannerModel(
-      title: '',
+      title: 'HIV.gov',
       subtitle:
-          'Official U.S. government portal for federal HIV and AIDS resources and policy information',
-      gradient: [const Color(0xFFFFD760), const Color(0xFFF5C6A1)],
+          'Official U.S. government portal for federal HIV and AIDS resources',
+      gradient: [const Color(0xFF1877F2), const Color(0xFF0C63D4)],
       imageUrl:
           'https://files.hiv.gov/s3fs-public/2025-07/OIDP_HIVgov_Blog-Email_ClinicalInfo-v01-540x405_0_0%20%281%29.jpg',
       fallbackIcon: Icons.health_and_safety,
       url: 'https://www.hiv.gov/',
     ),
     ModernBannerModel(
-      title: '',
+      title: 'CDC HIV',
       subtitle:
-          'Provides information for the public, healthcare workers, and policymakers',
-      gradient: [const Color(0xFFF1ACCF), const Color(0xFFFCCFE8)],
+          'Information for the public, healthcare workers, and policymakers',
+      gradient: [const Color(0xFF1877F2), const Color(0xFF0C63D4)],
       imageUrl:
           'https://logos-world.net/wp-content/uploads/2021/09/CDC-Logo.png',
       fallbackIcon: Icons.article,
@@ -62,10 +61,9 @@ class _ModernCarouselSliderState extends State<ModernCarouselSlider> {
     ModernBannerModel(
       title: 'PNAC',
       subtitle:
-          'Central advisory, planning, and policymaking body for HIV/AIDS prevention and control in the Philippines.',
-      gradient: [AppColors.primary, AppColors.primaryLight],
-      imageUrl:
-          'https://scontent.fdvo3-1.fna.fbcdn.net/v/t39.30808-6/243165751_163231095982243_9153701041396663701_n.png?_nc_cat=110&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHD7DF6W8KW923TfEgfBm6l8AY_BbNR_IjwBj8Fs1H8iIb1mgwMprymZyCb0KRnHaIvin2NX9QchRICjrN6U1B7&_nc_ohc=FjS4pY0UTkQQ7kNvwEmCGAQ&_nc_oc=AdkgIY_M6udnkIOwTjfg9K9QfDG0Ta-lriy2N1d3XPuXTZGJLVHxX0KJtVOD20gOBLI&_nc_zt=23&_nc_ht=scontent.fdvo3-1.fna&_nc_gid=o10TmZ8OdnAuSo5x_UOs9g&oh=00_AfYiFvr-7e1lB8v_BAoWxyYMkN4pVfvGzon3Luhtdc5IeQ&oe=68E3CEAB',
+          'Central advisory body for HIV/AIDS prevention in the Philippines',
+      gradient: [const Color(0xFF1877F2), const Color(0xFF0C63D4)],
+      imageUrl: 'https://commusta.ph/wp-content/uploads/2022/12/pnac.png',
       fallbackIcon: Icons.people,
       url: 'https://pnac.doh.gov.ph/',
     ),
@@ -75,7 +73,6 @@ class _ModernCarouselSliderState extends State<ModernCarouselSlider> {
     HapticFeedback.lightImpact();
 
     if (banner.url != null) {
-      // Navigate to WebView for URL-based banners
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -84,17 +81,15 @@ class _ModernCarouselSliderState extends State<ModernCarouselSlider> {
         ),
       );
     } else if (banner.destination != null) {
-      // Navigate to specific widget for non-URL banners
       Navigator.push(
         context,
         MaterialPageRoute(builder: (context) => banner.destination!),
       );
     } else {
-      // Show coming soon message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('${banner.title} — Coming Soon'),
-          backgroundColor: AppColors.primary,
+          backgroundColor: const Color(0xFF1877F2),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(10),
@@ -106,166 +101,166 @@ class _ModernCarouselSliderState extends State<ModernCarouselSlider> {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 260, // enough for carousel + spacing + indicators
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            height: 230,
-            child: CarouselSlider(
-              carouselController: _carouselController,
-              items:
-                  banners.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final banner = entry.value;
-                    return GestureDetector(
-                          onTap: () => _handleBannerTap(banner),
-                          child: Container(
-                            margin: const EdgeInsets.symmetric(horizontal: 8),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(20),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: banner.gradient[0].withOpacity(0.3),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 10),
-                                ),
-                              ],
-                              image: DecorationImage(
-                                image: NetworkImage(banner.imageUrl),
-                                fit: BoxFit.cover, // Make it fill background
-                                onError: (error, stackTrace) {
-                                  // Fallback to a solid gradient if image fails
-                                },
-                              ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        CarouselSlider(
+          carouselController: _carouselController,
+          items:
+              banners.asMap().entries.map((entry) {
+                final index = entry.key;
+                final banner = entry.value;
+                return GestureDetector(
+                      onTap: () => _handleBannerTap(banner),
+                      child: Container(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.08),
+                              blurRadius: 20,
+                              offset: const Offset(0, 4),
                             ),
-                            child: Stack(
-                              children: [
-                                // Gradient overlay for text readability
-                                Container(
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Column(
+                            children: [
+                              // Image Section (Top 60%)
+                              Expanded(
+                                flex: 6,
+                                child: Container(
+                                  width: double.infinity,
                                   decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
                                     gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        Colors.black.withOpacity(0.6),
-                                        Colors.black.withOpacity(0.2),
-                                      ],
+                                      colors: banner.gradient,
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
                                     ),
                                   ),
-                                ),
-
-                                // Main content (texts, button, etc.)
-                                Padding(
-                                  padding: const EdgeInsets.all(20),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.center,
+                                  child: Stack(
                                     children: [
-                                      Text(
-                                        banner.title,
-                                        style: GoogleFonts.poppins(
-                                          color: Colors.white,
-                                          fontSize: 22,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        banner.subtitle,
-                                        style: GoogleFonts.poppins(
-                                          color: Colors.white.withOpacity(0.9),
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 12),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          borderRadius: BorderRadius.circular(
-                                            20,
+                                      // Background image with opacity
+                                      Positioned.fill(
+                                        child: Opacity(
+                                          opacity: 0.15,
+                                          child: Image.network(
+                                            banner.imageUrl,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (
+                                              context,
+                                              error,
+                                              stackTrace,
+                                            ) {
+                                              return Center(
+                                                child: Icon(
+                                                  banner.fallbackIcon,
+                                                  size: 60,
+                                                  color: Colors.white
+                                                      .withOpacity(0.3),
+                                                ),
+                                              );
+                                            },
                                           ),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            Text(
-                                              banner.url != null
-                                                  ? 'Visit'
-                                                  : 'Explore',
-                                              style: const TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Icon(
-                                              banner.url != null
-                                                  ? Icons.open_in_new
-                                                  : Icons.arrow_forward,
-                                              color: Colors.white,
-                                              size: 16,
-                                            ),
-                                          ],
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-                              ],
-                            ),
+                              ),
+
+                              Expanded(
+                                flex: 4,
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(12),
+                                  color: Colors.white,
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      // Title
+                                      Text(
+                                        banner.title,
+                                        style: GoogleFonts.inter(
+                                          color: const Color(0xFF1C1E21),
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          letterSpacing: -0.3,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      // Subtitle
+                                      Expanded(
+                                        child: Text(
+                                          banner.subtitle,
+                                          style: GoogleFonts.inter(
+                                            color: const Color(0xFF65676B),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w400,
+                                            height: 1.4,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
-                        )
-                        .animate()
-                        .fadeIn(delay: (300 + index * 100).ms)
-                        .scale(
-                          begin: const Offset(0.9, 0.9),
-                          end: const Offset(1, 1),
-                        );
-                  }).toList(),
-              options: CarouselOptions(
-                height: 260,
-                autoPlay: true,
-                autoPlayInterval: const Duration(seconds: 4),
-                enlargeCenterPage: true,
-                enableInfiniteScroll: true,
-                onPageChanged: (index, reason) {
-                  setState(() => _currentIndex = index);
-                },
-              ),
-            ),
+                        ),
+                      ),
+                    )
+                    .animate()
+                    .fadeIn(delay: (200 + index * 80).ms)
+                    .slideX(begin: 0.1, end: 0);
+              }).toList(),
+          options: CarouselOptions(
+            height: 260,
+            autoPlay: true,
+            autoPlayInterval: const Duration(seconds: 5),
+            autoPlayCurve: Curves.easeInOutCubic,
+            enlargeCenterPage: true,
+            enlargeFactor: 0.25,
+            viewportFraction: 0.85,
+            enableInfiniteScroll: true,
+            onPageChanged: (index, reason) {
+              setState(() => _currentIndex = index);
+            },
           ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children:
-                banners.asMap().entries.map((entry) {
-                  return Container(
-                    width: _currentIndex == entry.key ? 24 : 8,
-                    height: 8,
-                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      color:
-                          _currentIndex == entry.key
-                              ? AppColors.primary
-                              : AppColors.divider,
-                    ),
-                  ).animate().fadeIn().scale(
-                    begin: const Offset(0.8, 0.8),
-                    end: const Offset(1, 1),
-                  );
-                }).toList(),
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children:
+              banners.asMap().entries.map((entry) {
+                final isActive = _currentIndex == entry.key;
+                return AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeInOut,
+                  width: isActive ? 24 : 8,
+                  height: 8,
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(4),
+                    color:
+                        isActive
+                            ? const Color(0xFF1877F2)
+                            : const Color(0xFFE4E6EB),
+                  ),
+                );
+              }).toList(),
+        ),
+      ],
     );
   }
 }

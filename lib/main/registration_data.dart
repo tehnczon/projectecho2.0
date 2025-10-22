@@ -3,50 +3,32 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projecho/screens/analytics/components/services/analytics_processing_service.dart';
 
 class RegistrationData {
-  // Core Registration
-  String uid; // Firebase UID
-
-  // UIC Fields (for local generation only)
+  // ... (keep all your existing fields)
+  String uid;
   String? motherFirstName;
   String? fatherFirstName;
   int? birthOrder;
   DateTime? birthDate;
   String? generatedUIC;
-
-  // Demographics
   String? sexAssignedAtBirth;
-  String? ageRange; // Computed from birthDate
+  String? ageRange;
   String? genderIdentity;
   String? nationality;
-  List<String> hivRelation = []; // Multiple selections allowed
-
-  // Education & Social
+  List<String> hivRelation = [];
   String? educationLevel;
   String? civilStatus;
   bool? isStudying;
   bool? livingWithPartner;
-
-  // Health & Pregnancy
   bool? isPregnant;
   bool? motherHadHIV;
   bool? diagnosedSTI;
   bool? hasHepatitis;
   bool? hasTuberculosis;
-
-  // Sexual Practices
-  String? unprotectedSexWith; // Male, Female, Both, Never, Prefer not to say
-
-  // Work Status
+  String? unprotectedSexWith;
   bool? isOFW;
-
-  // Location
   String? city;
   String? barangay;
-
-  // User Type
-  String? userType; // "PLHIV" or "Health Information Seeker"
-
-  // PLHIV-specific Fields
+  String? userType;
   int? yearDiagnosed;
   String? treatmentHub;
 
@@ -79,7 +61,8 @@ class RegistrationData {
     this.treatmentHub,
   });
 
-  // Compute age range from birth date
+  // ... (keep all your existing methods: computeAgeRange, role, isMSM, etc.)
+
   void computeAgeRange() {
     if (birthDate != null) {
       final now = DateTime.now();
@@ -102,7 +85,6 @@ class RegistrationData {
     }
   }
 
-  // User role based on type
   String get role {
     switch (userType) {
       case 'PLHIV':
@@ -113,7 +95,6 @@ class RegistrationData {
     }
   }
 
-  // Analytics booleans
   bool get isMSM =>
       sexAssignedAtBirth == 'Male' &&
       (unprotectedSexWith == 'Male' || unprotectedSexWith == 'Both');
@@ -131,7 +112,6 @@ class RegistrationData {
 
   bool get isYouth => ageRange == '18-24';
 
-  // Firestore-ready map
   Map<String, dynamic> toFirestore() {
     computeAgeRange();
 
@@ -177,7 +157,227 @@ class RegistrationData {
     return data;
   }
 
-  // JSON for local storage or UI
+  // ============================================
+  // IMPROVED: Save to analytic data with deletion check
+  // ============================================
+  Future<bool> saveToAnalyticData() async {
+    try {
+      computeAgeRange();
+
+      final firestore = FirebaseFirestore.instance;
+
+      // ✅ CHECK: Is this a returning deleted user?
+      final userDoc = await firestore.collection('user').doc(uid).get();
+      final isReturningUser = userDoc.data()?['isReturningUser'] ?? false;
+      final doNotCount = userDoc.data()?['doNotCountInAnalytics'] ?? false;
+
+      if (isReturningUser) {
+        print('⚠️ Returning deleted user detected - marking as do not count');
+      }
+
+      // Save to analyticData
+      await firestore
+          .collection('analyticData')
+          .doc(uid)
+          .set(toFirestore(), SetOptions(merge: true));
+
+      print('✅ Analytics data saved for user: $uid');
+
+      // ✅ Schedule analytics update (debounced)
+      await _scheduleAnalyticsUpdate(forceImmediate: !doNotCount);
+
+      return true;
+    } catch (e) {
+      print('❌ Error saving analytics data: $e');
+      return false;
+    }
+  }
+
+  // ============================================
+  // IMPROVED: Debounced analytics update with deletion awareness
+  // ============================================
+  static DateTime? _lastAnalyticsUpdate;
+  static Timer? _analyticsTimer;
+  static int _pendingUpdates = 0;
+
+  Future<void> _scheduleAnalyticsUpdate({bool forceImmediate = false}) async {
+    _analyticsTimer?.cancel();
+    _pendingUpdates++;
+
+    final delay = forceImmediate ? Duration(seconds: 2) : Duration(seconds: 30);
+
+    _analyticsTimer = Timer(delay, () async {
+      final now = DateTime.now();
+
+      // Update if:
+      // 1. Never updated before, OR
+      // 2. More than 2 minutes since last update, OR
+      // 3. Multiple pending updates (batch efficiency)
+      final shouldUpdate =
+          _lastAnalyticsUpdate == null ||
+          now.difference(_lastAnalyticsUpdate!).inMinutes > 2 ||
+          _pendingUpdates >= 5;
+
+      if (shouldUpdate) {
+        try {
+          print('🔄 Updating analytics summary (pending: $_pendingUpdates)...');
+
+          await AnalyticsProcessingService.updateAnalyticsSummary();
+
+          _lastAnalyticsUpdate = now;
+          _pendingUpdates = 0;
+
+          print('✅ Analytics summary updated at ${now.toIso8601String()}');
+        } catch (e) {
+          print('❌ Failed to update analytics summary: $e');
+          // Retry after 1 minute on failure
+          _scheduleRetry();
+        }
+      } else {
+        print(
+          '⏭️ Analytics update skipped (updated ${now.difference(_lastAnalyticsUpdate!).inMinutes} min ago)',
+        );
+      }
+    });
+  }
+
+  // Retry logic for failed updates
+  static void _scheduleRetry() {
+    Timer(Duration(minutes: 1), () async {
+      if (_pendingUpdates > 0) {
+        try {
+          print('🔄 Retrying analytics update...');
+          await AnalyticsProcessingService.updateAnalyticsSummary();
+          _lastAnalyticsUpdate = DateTime.now();
+          _pendingUpdates = 0;
+          print('✅ Analytics retry successful');
+        } catch (e) {
+          print('❌ Analytics retry failed: $e');
+        }
+      }
+    });
+  }
+
+  // ============================================
+  // Force immediate analytics update (for testing/admin)
+  // ============================================
+  static Future<void> forceAnalyticsUpdate() async {
+    _analyticsTimer?.cancel();
+    _pendingUpdates = 0;
+
+    try {
+      print('⚡ Force updating analytics...');
+      await AnalyticsProcessingService.updateAnalyticsSummary();
+      _lastAnalyticsUpdate = DateTime.now();
+      print('✅ Force update completed');
+    } catch (e) {
+      print('❌ Force update failed: $e');
+      rethrow;
+    }
+  }
+
+  // ============================================
+  // IMPROVED: Save to userDemographic with deletion check
+  // ============================================
+  Future<bool> saveToUserDemographic() async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+
+      // Check if returning user
+      final userDoc = await firestore.collection('user').doc(uid).get();
+      final isReturningUser = userDoc.data()?['isReturningUser'] ?? false;
+
+      if (isReturningUser) {
+        print(
+          '⚠️ Returning user - demographic data will not affect total count',
+        );
+      }
+
+      await firestore.collection('userDemographic').doc(uid).set({
+        'ageRange': ageRange,
+        'location': {'city': city, 'barangay': barangay},
+        'genderIdentity': genderIdentity,
+        'hivRelation': hivRelation,
+        'civilStatus': civilStatus,
+        'isOFW': isOFW,
+        'islivingWithPartner': livingWithPartner,
+        'isStudying': isStudying,
+        'studyingLevel': educationLevel,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      print('✅ User demographic saved to Firestore: $uid');
+
+      // Schedule analytics update
+      await _scheduleAnalyticsUpdate();
+
+      return true;
+    } catch (e) {
+      print('❌ Error saving to Firestore: $e');
+      return false;
+    }
+  }
+
+  // Keep all your other methods unchanged
+  Future<bool> saveToUser() async {
+    try {
+      await FirebaseFirestore.instance.collection('user').doc(uid).set({
+        'role': role,
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastLogin': FieldValue.serverTimestamp(),
+        'isActive': true,
+      }, SetOptions(merge: true));
+
+      print('✅ User profile saved to Firestore: $uid');
+      return true;
+    } catch (e) {
+      print('❌ Error saving to Firestore: $e');
+      return false;
+    }
+  }
+
+  Future<bool> saveToProfiles() async {
+    try {
+      computeAgeRange();
+
+      await FirebaseFirestore.instance.collection('profiles').doc(uid).set({
+        'generatedUIC': generatedUIC,
+        'ageRange': ageRange,
+        'location': {'city': city, 'barangay': barangay},
+        'genderIdentity': genderIdentity,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'createdAt': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      if (role != 'infoSeeker') {
+        Map<String, dynamic> roleData = {};
+        if (role == 'plhiv') {
+          roleData = {
+            'yearDiagnosed': yearDiagnosed,
+            'treatmentHub': treatmentHub,
+          };
+        } else if (role == 'admin') {
+          roleData = {'org': null, 'contactInfo': null, 'isValidated': false};
+        }
+
+        await FirebaseFirestore.instance
+            .collection('profiles')
+            .doc(uid)
+            .collection('roleData')
+            .doc(role)
+            .set(roleData, SetOptions(merge: true));
+      }
+
+      print('✅ Profile saved to Firestore: $uid');
+      return true;
+    } catch (e) {
+      print('❌ Error saving profile to Firestore: $e');
+      return false;
+    }
+  }
+
+  // Keep your existing toJson, fromJson, fromFirestore, copyWith methods
   Map<String, dynamic> toJson() => {
     'uid': uid,
     'motherFirstName': motherFirstName,
@@ -271,145 +471,6 @@ class RegistrationData {
     yearDiagnosed: data['yearDiagnosed'],
     treatmentHub: data['treatmentHub'],
   );
-
-  // Save to analytic data
-  Future<bool> saveToAnalyticData() async {
-    try {
-      computeAgeRange();
-
-      await FirebaseFirestore.instance
-          .collection('analyticData')
-          .doc(uid)
-          .set(toFirestore(), SetOptions(merge: true));
-
-      // Debounced analytics summary update
-      await _scheduleAnalyticsUpdate();
-
-      print('✅ Analytics data saved for user: $uid');
-      return true;
-    } catch (e) {
-      print('❌ Error saving analytics data: $e');
-      return false;
-    }
-  }
-
-  // Debounced analytics update
-  static DateTime? _lastAnalyticsUpdate;
-  static Timer? _analyticsTimer;
-
-  Future<void> _scheduleAnalyticsUpdate() async {
-    _analyticsTimer?.cancel();
-
-    _analyticsTimer = Timer(Duration(seconds: 30), () async {
-      final now = DateTime.now();
-      if (_lastAnalyticsUpdate == null ||
-          now.difference(_lastAnalyticsUpdate!).inMinutes > 2) {
-        try {
-          await AnalyticsProcessingService.updateAnalyticsSummary();
-          _lastAnalyticsUpdate = now;
-          print('Analytics summary updated at ${now.toIso8601String()}');
-        } catch (e) {
-          print('❌ Failed to update analytics summary: $e');
-        }
-      }
-    });
-  }
-
-  Future<bool> saveToUserDemographic() async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('userDemographic') // PRIMARY COLLECTION
-          .doc(uid) // ✅ UID instead of phone
-          .set({
-            'ageRange': ageRange,
-            'location': {'city': city, 'barangay': barangay},
-            'genderIdentity': genderIdentity,
-            'hivRelation': hivRelation,
-            'civilStatus': civilStatus,
-            'isOFW': isOFW,
-            'islivingWithPartner': livingWithPartner,
-            'isStudying': isStudying,
-            'studyingLevel': educationLevel,
-            'createdAt': FieldValue.serverTimestamp(),
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-
-      print('✅ User profile saved to Firestore: $uid');
-      return true;
-    } catch (e) {
-      print('❌ Error saving to Firestore: $e');
-      return false;
-    }
-  }
-
-  // Save to Firestore using UID as document ID
-  Future<bool> saveToUser() async {
-    try {
-      await FirebaseFirestore.instance
-          .collection('user') // PRIMARY COLLECTION
-          .doc(uid) // ✅ UID instead of phone
-          .set({
-            'role': role,
-            'createdAt': FieldValue.serverTimestamp(),
-            'lastLogin': FieldValue.serverTimestamp(),
-            'isActive': true,
-          }, SetOptions(merge: true));
-
-      print('✅ User profile saved to Firestore: $uid');
-      return true;
-    } catch (e) {
-      print('❌ Error saving to Firestore: $e');
-      return false;
-    }
-  }
-
-  // Save minimal profile info to "profiles" collection
-  Future<bool> saveToProfiles() async {
-    try {
-      computeAgeRange();
-
-      await FirebaseFirestore.instance.collection('profiles').doc(uid).set({
-        'generatedUIC': generatedUIC,
-        'ageRange': ageRange,
-        'location': {'city': city, 'barangay': barangay},
-        'genderIdentity': genderIdentity,
-        'updatedAt': FieldValue.serverTimestamp(),
-        'createdAt': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      if (role != 'infoSeeker') {
-        Map<String, dynamic> roleData = {};
-        if (role == 'plhiv') {
-          roleData = {
-            'yearDiagnosed': yearDiagnosed,
-            'treatmentHub': treatmentHub,
-          };
-        } else if (role == 'admin') {
-          roleData = {
-            'org': null, // Replace with actual org variable if available
-            'contactInfo':
-                null, // Replace with actual contact info variable if available
-            'isValidated':
-                false, // Replace with actual validation status if available
-          };
-        }
-
-        // Save role data in subcollection
-        await FirebaseFirestore.instance
-            .collection('profiles')
-            .doc(uid)
-            .collection('roleData')
-            .doc(role)
-            .set(roleData, SetOptions(merge: true));
-      }
-
-      print('✅ Profile saved to Firestore: $uid');
-      return true;
-    } catch (e) {
-      print('❌ Error saving profile to Firestore: $e');
-      return false;
-    }
-  }
 
   RegistrationData copyWith({
     String? uid,

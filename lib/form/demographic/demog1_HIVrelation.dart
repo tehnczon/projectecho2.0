@@ -46,6 +46,12 @@ class _demog1HIVrelationFormState extends State<demog1HIVrelationForm> {
               },
             );
           }).toList(),
+
+          const SizedBox(height: 10),
+          const Text(
+            "If not applicable, you may leave this blank and press Continue.",
+            style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+          ),
         ],
       ),
     );

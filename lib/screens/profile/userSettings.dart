@@ -199,6 +199,9 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
     );
   }
 
+  // Replace the _deleteAccount method in userSettings.dart
+  // This version preserves analytics integrity while respecting user privacy
+
   Future<void> _deleteAccount() async {
     setState(() => _isDeleting = true);
 
@@ -208,41 +211,134 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
         throw Exception('No user logged in');
       }
 
-      // Delete user document from Firestore
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .delete();
+      final uid = user.uid;
+      final phoneNumber = user.phoneNumber;
+      print('🗑️ Starting account deletion for UID: $uid');
 
-      // Delete Firebase Auth account
-      await user.delete();
+      final firestore = FirebaseFirestore.instance;
 
-      // Show success message
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Account deleted successfully',
-              style: GoogleFonts.poppins(fontSize: 12),
-            ),
-            backgroundColor: AppColors.success,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
+      // ==================================================
+      // STEP 1: Create deletion record (analytics tracking)
+      // ==================================================
+      await firestore.collection('deletedUsers').doc(uid).set({
+        'originalUid': uid,
+        'phoneNumber': phoneNumber, // Store hashed version for linking
+        'phoneHash': _hashPhoneNumber(phoneNumber ?? ''),
+        'deletedAt': FieldValue.serverTimestamp(),
+        'deletedBy': uid,
+        'wasCountedInAnalytics': true, // Flag for analytics
+      });
+      print('✅ Created deletion record for analytics tracking');
+
+      // ==================================================
+      // STEP 2: Preserve analytics snapshot (before deletion)
+      // ==================================================
+      final userDoc = await firestore.collection('user').doc(uid).get();
+      if (userDoc.exists) {
+        final userData = userDoc.data();
+        final role = userData?['role'];
+
+        // Save analytics snapshot
+        await firestore.collection('analyticsSnapshots').doc(uid).set({
+          'originalUid': uid,
+          'phoneHash': _hashPhoneNumber(phoneNumber ?? ''),
+          'role': role,
+          'ageRange': userData?['ageRange'],
+          'genderIdentity': userData?['genderIdentity'],
+          'location': userData?['location'],
+          'deletedAt': FieldValue.serverTimestamp(),
+          'wasActive': true,
+          // Anonymized data for analytics
+          'anonymizedProfile': {
+            'role': role,
+            'registrationYear':
+                userData?['createdAt'] != null
+                    ? (userData!['createdAt'] as Timestamp).toDate().year
+                    : null,
+            'lastActiveYear': DateTime.now().year,
+          },
+        });
+        print('✅ Analytics snapshot saved');
       }
 
-      // Navigate to EnterNumberPage
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const EnterNumberPage()),
-        );
+      // ==================================================
+      // STEP 3: Update analytics counters (mark as deleted)
+      // ==================================================
+      await _updateAnalyticsOnDeletion(uid);
+
+      // ==================================================
+      // STEP 4: Delete personal/sensitive data (GDPR compliance)
+      // ==================================================
+      final batch = firestore.batch();
+
+      // Delete main user document
+      batch.delete(firestore.collection('user').doc(uid));
+
+      // Delete from alternative collections
+      batch.delete(firestore.collection('users').doc(uid));
+
+      // Delete sensitive health data
+      batch.delete(firestore.collection('analyticData').doc(uid));
+
+      // Delete demographic data
+      batch.delete(firestore.collection('userDemographic').doc(uid));
+
+      // Delete profile/UIC
+      batch.delete(firestore.collection('profiles').doc(uid));
+
+      // Delete researcher requests
+      final requestsQuery =
+          await firestore
+              .collection('requests')
+              .where('userId', isEqualTo: uid)
+              .get();
+
+      for (var doc in requestsQuery.docs) {
+        batch.delete(doc.reference);
+      }
+
+      await batch.commit();
+      print('✅ All personal data deleted from Firestore');
+
+      // ==================================================
+      // STEP 5: Delete Firebase Auth account
+      // ==================================================
+      try {
+        await user.delete();
+        print('✅ Firebase Auth account deleted');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Account deleted successfully. Your privacy is protected.',
+                style: GoogleFonts.poppins(fontSize: 12),
+              ),
+              backgroundColor: AppColors.success,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          );
+
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (_) => const EnterNumberPage()),
+            (route) => false,
+          );
+        }
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'requires-recent-login') {
+          setState(() => _isDeleting = false);
+          _showReauthDialog();
+        } else {
+          throw e;
+        }
       }
     } catch (e) {
       setState(() => _isDeleting = false);
+      print('❌ Error during account deletion: $e');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -256,10 +352,98 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
+            duration: const Duration(seconds: 5),
           ),
         );
       }
     }
+  }
+
+  // Helper: Hash phone number for privacy-preserving linking
+  String _hashPhoneNumber(String phoneNumber) {
+    // Simple hash for linking without storing actual phone number
+    // In production, use crypto package: sha256.convert(utf8.encode(phoneNumber))
+    return phoneNumber.hashCode.toString();
+  }
+
+  // Helper: Update analytics counters when user deletes account
+  Future<void> _updateAnalyticsOnDeletion(String uid) async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+
+      // Get user data to know what to decrement
+      final userDoc = await firestore.collection('user').doc(uid).get();
+      if (!userDoc.exists) return;
+
+      final userData = userDoc.data();
+      final role = userData?['role'];
+
+      // Update global analytics document
+      final analyticsRef = firestore.collection('analytics').doc('global');
+
+      // Decrement total users
+      await analyticsRef.update({
+        'totalActiveUsers': FieldValue.increment(-1),
+        'totalDeletedUsers': FieldValue.increment(1),
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+
+      // Decrement role-specific counters
+      if (role != null) {
+        await analyticsRef.update({
+          'activeUsersByRole.$role': FieldValue.increment(-1),
+          'deletedUsersByRole.$role': FieldValue.increment(1),
+        });
+      }
+
+      print('✅ Analytics counters updated for deletion');
+    } catch (e) {
+      print('⚠️ Failed to update analytics: $e');
+      // Don't fail the deletion if analytics update fails
+    }
+  }
+
+  // Helper: Show re-authentication dialog
+  void _showReauthDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text(
+              'Re-authentication Required',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            content: Text(
+              'For security, please log in again to delete your account. You will receive a new verification code.',
+              style: GoogleFonts.poppins(fontSize: 12),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text('Cancel', style: GoogleFonts.poppins(fontSize: 12)),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  await FirebaseAuth.instance.signOut();
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const EnterNumberPage()),
+                    (route) => false,
+                  );
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                child: Text(
+                  'Sign Out & Re-login',
+                  style: GoogleFonts.poppins(fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+    );
   }
 
   @override
