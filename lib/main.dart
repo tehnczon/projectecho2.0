@@ -19,6 +19,7 @@ import 'package:projecho/login/registration_flow_manager.dart';
 import 'main/firebase_options.dart';
 import 'package:projecho/onboarding/onbrdingAnimationScreen.dart' as onboarding;
 import 'package:projecho/login/animation/appstart.dart' as splash;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AppTheme {
   AppTheme._();
@@ -58,12 +59,24 @@ class _MyAppState extends State<MyApp> {
   }
 
   void _onInitializationComplete(Widget nextScreen) async {
-    setState(() {
-      _currentScreen = nextScreen;
-      _showSplash = false;
-    });
+    final prefs = await SharedPreferences.getInstance();
+    final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
 
-    await _checkForIncompleteRegistration();
+    if (!hasSeenOnboarding) {
+      // show onboarding once
+      setState(() {
+        _currentScreen = onboarding.MyOnboardingScreen();
+      });
+
+      await prefs.setBool('hasSeenOnboarding', true);
+    } else {
+      setState(() {
+        _currentScreen = nextScreen;
+        _showSplash = false;
+      });
+
+      await _checkForIncompleteRegistration();
+    }
   }
 
   Future<void> _checkForIncompleteRegistration() async {
@@ -96,106 +109,75 @@ class _MyAppState extends State<MyApp> {
       SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness:
-            !kIsWeb && Platform.isAndroid ? Brightness.dark : Brightness.light,
         systemNavigationBarColor: Colors.white,
         systemNavigationBarDividerColor: Colors.transparent,
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
     );
 
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        // Show splash while waiting
-        if (_showSplash) {
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            home: _currentScreen ?? const SizedBox.shrink(),
-          );
-        }
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => MapProvider()),
+        ChangeNotifierProvider(create: (_) => LocationProvider()),
+        ChangeNotifierProvider(create: (_) => FilterProvider()),
+        ChangeNotifierProvider(create: (_) => EnhancedAnalyticsProvider()),
+        ChangeNotifierProvider(create: (_) => ResearcherAnalyticsProvider()),
+        ChangeNotifierProvider(create: (_) => UserRoleProvider()),
+      ],
+      child: MaterialApp(
+        title: 'ProjEcho',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          textTheme: AppTheme.textTheme,
+          platform: TargetPlatform.iOS,
+        ),
+        home: StreamBuilder<User?>(
+          stream: FirebaseAuth.instance.authStateChanges(),
+          builder: (context, snapshot) {
+            // 🟢 Splash first
+            if (_showSplash) {
+              return _currentScreen ?? const SizedBox.shrink();
+            }
 
-        // Show registration check screen
-        if (_isCheckingRegistration) {
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            home: _buildRegistrationCheckScreen(),
-          );
-        }
+            // 🟡 Registration check
+            if (_isCheckingRegistration) {
+              return _buildRegistrationCheckScreen();
+            }
 
-        // Show loading while Firebase checks auth state
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            home: const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            ),
-          );
-        }
+            // 🔵 Firebase loading
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
 
-        // 🟢 User logged in - Create fresh providers
-        if (snapshot.hasData) {
-          final user = snapshot.data!;
-          print('🟢 User logged in: ${user.uid}');
+            // 🟢 User logged in
+            if (snapshot.hasData) {
+              final user = snapshot.data!;
+              print('🟢 Logged in: ${user.uid}');
+              // Trigger role check once logged in
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                Provider.of<UserRoleProvider>(
+                  context,
+                  listen: false,
+                ).checkUserRole();
+              });
+              return const MainPage();
+            }
 
-          // ✅ Create NEW providers for each user session
-          return MultiProvider(
-            key: ValueKey(user.uid),
-            providers: [
-              ChangeNotifierProvider(create: (_) => MapProvider()),
-              ChangeNotifierProvider(create: (_) => LocationProvider()),
-              ChangeNotifierProvider(create: (_) => FilterProvider()),
-              ChangeNotifierProvider(
-                create: (_) => EnhancedAnalyticsProvider(),
-              ),
-              ChangeNotifierProvider(
-                create: (_) => ResearcherAnalyticsProvider(),
-              ),
-              ChangeNotifierProvider(
-                create: (_) {
-                  final roleProvider = UserRoleProvider();
-                  roleProvider.checkUserRole(); // ✅ Trigger role check early
-                  return roleProvider;
-                },
-              ),
-            ],
-            child: MaterialApp(
-              title: 'ProjEcho',
-              debugShowCheckedModeBanner: false,
-              theme: ThemeData(
-                primarySwatch: Colors.blue,
-                textTheme: AppTheme.textTheme,
-                platform: TargetPlatform.iOS,
-              ),
-              home: const MainPage(),
-              routes: {
-                '/onboarding': (context) => onboarding.MyOnboardingScreen(),
-                '/enternumber': (context) => EnterNumberPage(),
-                '/home': (context) => MainPage(),
-                '/profile': (context) => UserProfile(),
-              },
-            ),
-          );
-        }
-
-        // 🔴 User logged out
-        print('🔴 User logged out');
-
-        return MaterialApp(
-          title: 'ProjEcho',
-          debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            primarySwatch: Colors.blue,
-            textTheme: AppTheme.textTheme,
-            platform: TargetPlatform.iOS,
-          ),
-          home: const EnterNumberPage(),
-          routes: {
-            '/onboarding': (context) => onboarding.MyOnboardingScreen(),
-            '/enternumber': (context) => EnterNumberPage(),
+            // 🔴 User logged out
+            print('🔴 User logged out');
+            return const EnterNumberPage();
           },
-        );
-      },
+        ),
+        routes: {
+          '/onboarding': (context) => onboarding.MyOnboardingScreen(),
+          '/enternumber': (context) => EnterNumberPage(),
+          '/home': (context) => MainPage(),
+          '/profile': (context) => UserProfile(),
+        },
+      ),
     );
   }
 

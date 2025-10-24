@@ -334,6 +334,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   ).animate().fadeIn(duration: 800.ms, delay: 600.ms),
 
                   Container(
+                        width: double.infinity,
                         margin: const EdgeInsets.all(10),
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -342,6 +343,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                           border: Border.all(color: AppColors.divider),
                         ),
                         child: Column(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               Icons.recommend_outlined,

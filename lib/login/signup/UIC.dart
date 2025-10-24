@@ -249,45 +249,95 @@ class _UICScreenState extends State<UICScreen>
             const SizedBox(height: 32),
 
             // UIC Preview
+            // UIC Preview
             if (_generatedUIC.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.only(bottom: 24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.primary.withOpacity(0.1),
-                      AppColors.secondary.withOpacity(0.05),
-                    ],
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // UIC Container
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 16,
+                        horizontal: 20,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Your UIC',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _generatedUIC,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                              letterSpacing: 1.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.primary.withOpacity(0.2)),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Your UIC',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
+
+                  const SizedBox(width: 12),
+
+                  // Copy Button Container
+                  InkWell(
+                    onTap: () async {
+                      await Clipboard.setData(
+                        ClipboardData(text: _generatedUIC),
+                      );
+                      HapticFeedback.lightImpact();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: const Text('UIC copied to clipboard!'),
+                          behavior: SnackBarBehavior.floating,
+                          backgroundColor: AppColors.primary,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      height: 72,
+                      width: 72,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: AppColors.primary.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Icon(
+                        Icons.content_copy,
+                        color: AppColors.textPrimary,
+                        size: 30,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      _generatedUIC,
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ).animate().fadeIn().scale(
                 begin: const Offset(0.9, 0.9),
                 end: const Offset(1, 1),
               ),
+
+            if (_generatedUIC.isNotEmpty) const SizedBox(height: 32),
 
             // Form Fields
             _buildModernTextField(

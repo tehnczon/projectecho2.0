@@ -153,25 +153,26 @@ class EnhancedAnalyticsProvider extends ChangeNotifier {
 
   double _calculateMonthlyGrowth(List<QueryDocumentSnapshot> profiles) {
     final now = DateTime.now();
-    final startOfMonth = DateTime(now.year, now.month, 1);
 
-    final previousCount =
+    final startOfThisMonth = DateTime(now.year, now.month, 1);
+    final startOfLastMonth = DateTime(now.year, now.month - 1, 1);
+
+    final lastMonthCount =
         profiles.where((p) {
           final created = (p['createdAt'] as Timestamp).toDate();
-          return created.isBefore(startOfMonth);
+          return created.isAfter(startOfLastMonth) &&
+              created.isBefore(startOfThisMonth);
         }).length;
 
-    final currentMonthCount =
+    final thisMonthCount =
         profiles.where((p) {
           final created = (p['createdAt'] as Timestamp).toDate();
-          return created.isAfter(
-            startOfMonth.subtract(const Duration(seconds: 1)),
-          );
+          return created.isAfter(startOfThisMonth);
         }).length;
 
-    if (previousCount == 0) return currentMonthCount.toDouble();
+    if (lastMonthCount == 0) return 0;
 
-    return (currentMonthCount / previousCount) * 100;
+    return ((thisMonthCount - lastMonthCount) / lastMonthCount) * 100;
   }
 
   Future<List<String>> getTopTreatmentHubs(int count) async {

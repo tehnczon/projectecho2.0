@@ -628,7 +628,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
-                                        'Permanently delete your account and all data',
+                                        'Permanently delete your account and profile data',
                                         style: GoogleFonts.poppins(
                                           fontSize: 12,
                                           color: AppColors.textSecondary,
@@ -683,7 +683,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Deleting your account is permanent and cannot be undone. All your health data, records, and information will be lost forever.',
+                              'Deleting your account is permanent and cannot be undone.non personal analytics data will be preserved.',
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 color: Colors.red,

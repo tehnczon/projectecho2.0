@@ -45,16 +45,25 @@ class _Step1AgeIdentityFormState extends State<Step1AgeIdentityForm> {
   void initState() {
     super.initState();
 
-    // Compute ageRange if birthDate is present
     if (widget.registrationData.birthDate != null) {
       final age = _calculateAge(widget.registrationData.birthDate!);
-      final range = _getAgeRange(age);
-      widget.registrationData.ageRange = range;
+      widget.registrationData.ageRange = _getAgeRange(age);
     }
 
-    selectedSex = widget.registrationData.sexAssignedAtBirth;
-    selectedGender = widget.registrationData.genderIdentity;
-    selectedNationality = widget.registrationData.nationality;
+    // Only set values if they exist in their respective lists
+    if (sexAssignedOptions.contains(
+      widget.registrationData.sexAssignedAtBirth,
+    )) {
+      selectedSex = widget.registrationData.sexAssignedAtBirth;
+    }
+
+    if (genderOptions.contains(widget.registrationData.genderIdentity)) {
+      selectedGender = widget.registrationData.genderIdentity;
+    }
+
+    if (nationalityOptions.contains(widget.registrationData.nationality)) {
+      selectedNationality = widget.registrationData.nationality;
+    }
   }
 
   int _calculateAge(DateTime birthDate) {

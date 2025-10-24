@@ -693,7 +693,7 @@ class _UserProfileState extends State<UserProfile> {
                   ),
                   _buildQuickAction(
                     icon: Icons.settings_outlined,
-                    label: 'sample dart',
+                    label: 'sample create content',
                     onTap: () {
                       // Navigate to create content screen
                       Navigator.push(
