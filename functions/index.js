@@ -1,52 +1,55 @@
-/* eslint-disable max-len */
-const {onDocumentCreated} = require("firebase-functions/v2/firestore");
+const functions = require("firebase-functions");
 const admin = require("firebase-admin");
+const {KeyManagementServiceClient} = require("@google-cloud/kms");
+const crypto = require("crypto");
 
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
+admin.initializeApp();
+const kmsClient = new KeyManagementServiceClient();
 
-const db = admin.firestore();
-const {FieldValue} = admin.firestore;
+// TODO: update these with your actual KMS key info
+const projectId = "forward-ellipse-463813-a5";
+const locationId = "asia-southeast1";
+const keyRingId = "user-data-ring";
+const keyId = "phone-encryption-key";
 
-// ---------- Helpers ----------
-const getFieldValue = (field, fallback = "Unknown") => {
-  if (field === null || field === undefined) return fallback;
-  if (typeof field === "boolean") return field.toString();
-  return field.toString();
-};
+exports.encryptPhone = functions.https.onRequest(async (req, res) => {
+  try {
+    const {phoneNumber} = req.body;
+    if (!phoneNumber) {
+      return res.status(400).json({error: "Missing phone number"});
+    }
 
-// ---------- Cloud Function ----------
-exports.updateAnalyticsCounts = onDocumentCreated("analyticsData/{userId}", async (event) => {
-  const data = event.data.data();
-  const analyticsRef = db.collection("analyticsSummary").doc("global");
+    // 🔒 Use Cloud KMS to encrypt the phone number
+    // eslint-disable-next-line max-len
+    const name = kmsClient.cryptoKeyPath(projectId, locationId, keyRingId, keyId);
+    const [result] = await kmsClient.encrypt({
+      name,
+      plaintext: Buffer.from(phoneNumber),
+    });
 
-  const updates = {};
+    const encrypted = result.ciphertext.toString("base64");
 
-  // String fields
-  updates[`genderIdentityCount.${getFieldValue(data.genderIdentity)}`] = FieldValue.increment(1);
-  updates[`cityCount.${getFieldValue(data.city)}`] = FieldValue.increment(1);
-  updates[`civilStatusCount.${getFieldValue(data.civilStatus)}`] = FieldValue.increment(1);
-  updates[`educationLevelCount.${getFieldValue(data.educationLevel)}`] = FieldValue.increment(1);
-  updates[`ageRangeCount.${getFieldValue(data.ageRange)}`] = FieldValue.increment(1);
-  updates[`barangayCount.${getFieldValue(data.barangay)}`] = FieldValue.increment(1);
+    // Optional: create deterministic HMAC for lookups
+    const hmacKey = "replace-with-your-strong-secret-key";
+    const phoneHmac = crypto
+        .createHmac("sha256", hmacKey)
+        .update(phoneNumber)
+        .digest("hex");
 
-  // Boolean fields
-  updates[`diagnosedSTICount.${getFieldValue(data.diagnosedSTI, "false")}`] = FieldValue.increment(1);
-  updates[`hasHepatitisCount.${getFieldValue(data.hasHepatitis, "false")}`] = FieldValue.increment(1);
-  updates[`hasTuberculosisCount.${getFieldValue(data.hasTuberculosis, "false")}`] = FieldValue.increment(1);
-  updates[`hasMultiplePartnerRiskCount.${getFieldValue(data.hasMultiplePartnerRisk, "false")}`] = FieldValue.increment(1);
-  updates[`isOFWCount.${getFieldValue(data.isOFW, "false")}`] = FieldValue.increment(1);
-  updates[`isPregnantCount.${getFieldValue(data.isPregnant, "false")}`] = FieldValue.increment(1);
-  updates[`isStudyingCount.${getFieldValue(data.isStudying, "false")}`] = FieldValue.increment(1);
-  updates[`livingWithPartnerCount.${getFieldValue(data.livingWithPartner, "false")}`] = FieldValue.increment(1);
-  updates[`motherHadHIVCount.${getFieldValue(data.motherHadHIV, "false")}`] = FieldValue.increment(1);
+    // Store encrypted value and HMAC (never store plaintext!)
+    await admin.firestore().collection("users").add({
+      phone_encrypted: encrypted,
+      phone_hmac: phoneHmac,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
 
-  // Always increment total users
-  updates.totalUsers = FieldValue.increment(1);
-
-  // Audit
-  updates.lastUpdated = FieldValue.serverTimestamp();
-
-  await analyticsRef.set(updates, {merge: true});
+    res.status(200).json({
+      success: true,
+      encrypted,
+      phoneHmac,
+    });
+  } catch (error) {
+    console.error("Encryption error:", error);
+    res.status(500).json({error: error.message});
+  }
 });

@@ -40,7 +40,6 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
       bool isDeviceSupported = await _localAuth.isDeviceSupported();
 
       if (!canCheckBiometrics || !isDeviceSupported) {
-        // If biometrics not available, allow access
         setState(() {
           _isAuthenticated = true;
           _isAuthenticating = false;
@@ -199,110 +198,38 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
     );
   }
 
-  // Replace the _deleteAccount method in userSettings.dart
-  // This version preserves analytics integrity while respecting user privacy
-
   Future<void> _deleteAccount() async {
     setState(() => _isDeleting = true);
 
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
-        throw Exception('No user logged in');
-      }
+      if (user == null) throw Exception('No user logged in');
 
       final uid = user.uid;
-      final phoneNumber = user.phoneNumber;
-      print('🗑️ Starting account deletion for UID: $uid');
+      print('🗑️ Starting complete account deletion for UID: $uid');
 
       final firestore = FirebaseFirestore.instance;
-
-      // ==================================================
-      // STEP 1: Create deletion record (analytics tracking)
-      // ==================================================
-      await firestore.collection('deletedUsers').doc(uid).set({
-        'originalUid': uid,
-        'phoneNumber': phoneNumber, // Store hashed version for linking
-        'phoneHash': _hashPhoneNumber(phoneNumber ?? ''),
-        'deletedAt': FieldValue.serverTimestamp(),
-        'deletedBy': uid,
-        'wasCountedInAnalytics': true, // Flag for analytics
-      });
-      print('✅ Created deletion record for analytics tracking');
-
-      // ==================================================
-      // STEP 2: Preserve analytics snapshot (before deletion)
-      // ==================================================
-      final userDoc = await firestore.collection('user').doc(uid).get();
-      if (userDoc.exists) {
-        final userData = userDoc.data();
-        final role = userData?['role'];
-
-        // Save analytics snapshot
-        await firestore.collection('analyticsSnapshots').doc(uid).set({
-          'originalUid': uid,
-          'phoneHash': _hashPhoneNumber(phoneNumber ?? ''),
-          'role': role,
-          'ageRange': userData?['ageRange'],
-          'genderIdentity': userData?['genderIdentity'],
-          'location': userData?['location'],
-          'deletedAt': FieldValue.serverTimestamp(),
-          'wasActive': true,
-          // Anonymized data for analytics
-          'anonymizedProfile': {
-            'role': role,
-            'registrationYear':
-                userData?['createdAt'] != null
-                    ? (userData!['createdAt'] as Timestamp).toDate().year
-                    : null,
-            'lastActiveYear': DateTime.now().year,
-          },
-        });
-        print('✅ Analytics snapshot saved');
-      }
-
-      // ==================================================
-      // STEP 3: Update analytics counters (mark as deleted)
-      // ==================================================
-      await _updateAnalyticsOnDeletion(uid);
-
-      // ==================================================
-      // STEP 4: Delete personal/sensitive data (GDPR compliance)
-      // ==================================================
       final batch = firestore.batch();
 
-      // Delete main user document
       batch.delete(firestore.collection('user').doc(uid));
-
-      // Delete from alternative collections
-      batch.delete(firestore.collection('users').doc(uid));
-
-      // Delete sensitive health data
       batch.delete(firestore.collection('analyticData').doc(uid));
-
-      // Delete demographic data
       batch.delete(firestore.collection('userDemographic').doc(uid));
-
-      // Delete profile/UIC
       batch.delete(firestore.collection('profiles').doc(uid));
 
-      // Delete researcher requests
       final requestsQuery =
           await firestore
               .collection('requests')
               .where('userId', isEqualTo: uid)
               .get();
-
       for (var doc in requestsQuery.docs) {
         batch.delete(doc.reference);
       }
 
       await batch.commit();
-      print('✅ All personal data deleted from Firestore');
+      print('✅ All user data deleted from Firestore');
 
-      // ==================================================
-      // STEP 5: Delete Firebase Auth account
-      // ==================================================
+      await _updateAnalyticsOnDeletion(uid);
+
       try {
         await user.delete();
         print('✅ Firebase Auth account deleted');
@@ -311,7 +238,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Account deleted successfully. Your privacy is protected.',
+                'Account deleted successfully. All your data has been removed.',
                 style: GoogleFonts.poppins(fontSize: 12),
               ),
               backgroundColor: AppColors.success,
@@ -359,51 +286,33 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
     }
   }
 
-  // Helper: Hash phone number for privacy-preserving linking
-  String _hashPhoneNumber(String phoneNumber) {
-    // Simple hash for linking without storing actual phone number
-    // In production, use crypto package: sha256.convert(utf8.encode(phoneNumber))
-    return phoneNumber.hashCode.toString();
-  }
-
-  // Helper: Update analytics counters when user deletes account
   Future<void> _updateAnalyticsOnDeletion(String uid) async {
     try {
       final firestore = FirebaseFirestore.instance;
-
-      // Get user data to know what to decrement
       final userDoc = await firestore.collection('user').doc(uid).get();
       if (!userDoc.exists) return;
 
       final userData = userDoc.data();
       final role = userData?['role'];
 
-      // Update global analytics document
       final analyticsRef = firestore.collection('analytics').doc('global');
-
-      // Decrement total users
       await analyticsRef.update({
         'totalActiveUsers': FieldValue.increment(-1),
-        'totalDeletedUsers': FieldValue.increment(1),
         'lastUpdated': FieldValue.serverTimestamp(),
       });
 
-      // Decrement role-specific counters
       if (role != null) {
         await analyticsRef.update({
           'activeUsersByRole.$role': FieldValue.increment(-1),
-          'deletedUsersByRole.$role': FieldValue.increment(1),
         });
       }
 
       print('✅ Analytics counters updated for deletion');
     } catch (e) {
       print('⚠️ Failed to update analytics: $e');
-      // Don't fail the deletion if analytics update fails
     }
   }
 
-  // Helper: Show re-authentication dialog
   void _showReauthDialog() {
     showDialog(
       context: context,
@@ -519,7 +428,6 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Security Notice
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
@@ -566,7 +474,6 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
 
                 const SizedBox(height: 30),
 
-                // Danger Zone
                 Text(
                   'Danger Zone',
                   style: GoogleFonts.poppins(
@@ -578,7 +485,6 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
 
                 const SizedBox(height: 16),
 
-                // Delete Account Card
                 Container(
                       decoration: BoxDecoration(
                         color: AppColors.surface,
@@ -664,7 +570,6 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
 
                 const SizedBox(height: 20),
 
-                // Warning Message
                 Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
@@ -683,7 +588,7 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
                           const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'Deleting your account is permanent and cannot be undone.non personal analytics data will be preserved.',
+                              'Deleting your account is permanent and cannot be undone. Non-personal analytics data will be preserved.',
                               style: GoogleFonts.poppins(
                                 fontSize: 12,
                                 color: Colors.red,

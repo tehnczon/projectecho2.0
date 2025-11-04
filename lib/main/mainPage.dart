@@ -4,7 +4,7 @@ import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/screens/home/homePage.dart';
 import 'package:projecho/screens/analytics/general_basic_dashboard.dart';
 import 'package:projecho/screens/analytics/researcher_dashboard.dart';
-import 'package:projecho/screens/profile/userProfile.dart';
+import 'package:projecho/screens/profile/user_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -12,6 +12,7 @@ import 'dart:ui';
 import 'package:projecho/screens/analytics/components/providers/user_role_provider.dart';
 import 'package:projecho/screens/analytics/components/providers/researcher_analytics_provider.dart';
 import 'package:projecho/map/map_screen.dart';
+import 'package:projecho/screens/med_tracker/drug_cabinet_screen.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -57,6 +58,7 @@ class _MainPageState extends State<MainPage> {
         final List<Widget> pages = [
           HomePage(),
           _buildAnalyticsDashboard(roleProvider),
+          if (roleProvider.isPLHIV) const DrugCabinetScreen(),
           MapScreen(),
           UserProfile(),
         ];
@@ -114,6 +116,34 @@ class _MainPageState extends State<MainPage> {
             ),
             label: '',
           ),
+
+          // Medication (ONLY for PLHIV) - ADD THIS
+          if (roleProvider.isPLHIV)
+            BottomNavigationBarItem(
+              icon: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.medication_outlined),
+                  Text('Meds', style: GoogleFonts.poppins(fontSize: 8)),
+                ],
+              ),
+              activeIcon: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.medication, color: Color(0xFF1877F2)),
+                  Text(
+                    'Meds',
+                    style: GoogleFonts.poppins(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1877F2),
+                    ),
+                  ),
+                ],
+              ),
+              label: '',
+            ),
+
           BottomNavigationBarItem(
             icon: Column(
               mainAxisSize: MainAxisSize.min,

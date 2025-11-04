@@ -5,13 +5,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/main/registration_data.dart';
-import 'package:projecho/form/plhivForm/step1_age_identity.dart';
-import 'package:projecho/form/plhivForm/step2_education_status.dart';
-import 'package:projecho/form/plhivForm/step3_health_pregnancy.dart';
-import 'package:projecho/form/plhivForm/step4_sexual_practices.dart';
-import 'package:projecho/form/plhivForm/step5_work_status.dart';
+import 'package:projecho/form/plhivForm/step1_demographic_data.dart';
+import 'package:projecho/form/plhivForm/step2_occupation.dart';
+import 'package:projecho/form/plhivForm/Step3_HistoryOfExposureForm.dart';
+import 'package:projecho/form/plhivForm/step4_medical_history.dart';
+import 'package:projecho/form/plhivForm/step5_hiv_test.dart';
 import 'package:projecho/form/plhivForm/step6_confirmation.dart';
 import 'package:projecho/login/registration_flow_manager.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'FormDataMapper.dart';
 
 class PLHIVStepperScreen extends StatefulWidget {
   final RegistrationData registrationData;
@@ -30,13 +32,16 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
   bool _isSubmitting = false;
   String? _submitError;
 
+  // Track terms agreement state
+  bool _isTermsAgreed = false;
+
   final List<String> stepTitles = [
-    "Your Identity",
-    "Education & Life",
-    "Health Journey",
-    "Personal Wellness",
-    "Work & Life",
-    "Final Review",
+    "DEMOGRAPHIC DATA",
+    "OCCUPATION",
+    "HISTORY OF EXPOSURE",
+    "MEDICAL HISTORY",
+    "PREVIOUS HIV TEST",
+    "FINAL CONFIRMATION",
   ];
 
   final List<IconData> stepIcons = [
@@ -48,15 +53,6 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
     Icons.check_circle_outline,
   ];
 
-  final List<String> encouragingMessages = [
-    "Welcome! Your voice matters here. 💙",
-    "Every journey is unique and valuable. 🌟",
-    "Your health story helps others too. 💚",
-    "Thank you for trusting us. 🤝",
-    "Almost there! You're doing amazing. 💪",
-    "One final step. We're proud of you! 🎉",
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -64,8 +60,6 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
       vsync: this,
       duration: const Duration(milliseconds: 800),
     )..forward();
-
-    // Save initial progress
     _saveProgressLocally();
   }
 
@@ -75,7 +69,6 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
     super.dispose();
   }
 
-  // Save progress locally with current step
   Future<void> _saveProgressLocally() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -101,24 +94,77 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
   }
 
   bool _validateCurrentStep() {
+    // Special validation for final confirmation step
+    if (_currentStep == 5) {
+      // First validate form fields
+      if (!(_formKeys[_currentStep].currentState?.validate() ?? false)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Expanded(child: Text('Please fill in all required fields')),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            margin: EdgeInsets.all(8),
+          ),
+        );
+        return false;
+      }
+
+      // Then check terms agreement
+      if (!_isTermsAgreed) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white, size: 18),
+                SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Please accept the terms and conditions to proceed',
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            margin: EdgeInsets.all(8),
+            duration: Duration(seconds: 3),
+          ),
+        );
+        return false;
+      }
+
+      return true;
+    }
+
+    // Regular validation for other steps
     if (_formKeys[_currentStep].currentState?.validate() ?? false) {
       return true;
     } else {
-      // Show validation error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Row(
             children: [
-              Icon(Icons.error_outline, color: Colors.white, size: 20),
+              Icon(Icons.error_outline, color: Colors.white, size: 18),
               SizedBox(width: 8),
-              Text('Please fill in all required fields'),
+              Expanded(child: Text('Please fill in all required fields')),
             ],
           ),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          margin: EdgeInsets.all(8),
         ),
       );
       return false;
@@ -132,11 +178,8 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
       setState(() => _currentStep++);
       _progressController.forward(from: 0);
       HapticFeedback.lightImpact();
-
-      // Save progress after each step
       await _saveProgressLocally();
     } else {
-      // Final step - submit form
       await _submitForm();
     }
   }
@@ -146,262 +189,86 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
       setState(() => _currentStep--);
       _progressController.forward(from: 0);
       HapticFeedback.lightImpact();
-
-      // Save progress when going back
       await _saveProgressLocally();
     }
   }
 
-  Widget _buildModernTimeline() {
+  Widget _buildCompactProgressBar() {
     return Container(
-      height: 120,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        itemCount: stepTitles.length,
-        itemBuilder: (context, index) {
-          final isActive = index == _currentStep;
-          final isPassed = index < _currentStep;
-
-          return Container(
-                width: 80,
-                margin: const EdgeInsets.only(right: 8),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      width: isActive ? 44 : 32,
-                      height: isActive ? 44 : 32,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color:
-                            isActive
-                                ? AppColors.primary
-                                : isPassed
-                                ? AppColors.success
-                                : AppColors.divider,
-                        boxShadow:
-                            isActive
-                                ? [
-                                  BoxShadow(
-                                    color: AppColors.primary.withOpacity(0.3),
-                                    blurRadius: 8,
-                                    spreadRadius: 2,
-                                  ),
-                                ]
-                                : [],
-                      ),
-                      child: Icon(
-                        isPassed ? Icons.check : stepIcons[index],
-                        color: Colors.white,
-                        size: isActive ? 20 : 16,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Flexible(
-                      child: Text(
-                        stepTitles[index],
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight:
-                              isActive ? FontWeight.bold : FontWeight.normal,
-                          color:
-                              isActive
-                                  ? AppColors.primary
-                                  : isPassed
-                                  ? AppColors.success
-                                  : AppColors.textSecondary,
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-              .animate()
-              .fadeIn(delay: (index * 100).ms)
-              .slideX(begin: 0.2, end: 0);
-        },
-      ),
-    );
-  }
-
-  Widget _buildProgressBar() {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      height: 8,
-      decoration: BoxDecoration(
-        color: AppColors.divider,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return AnimatedContainer(
-            duration: const Duration(milliseconds: 500),
-            width:
-                constraints.maxWidth * ((_currentStep + 1) / stepTitles.length),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [AppColors.primary, AppColors.primaryLight],
-              ),
-              borderRadius: BorderRadius.circular(4),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withOpacity(0.3),
-                  blurRadius: 4,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildEncouragementCard() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.primary.withOpacity(0.05),
-            AppColors.secondary.withOpacity(0.03),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.primary.withOpacity(0.1)),
-      ),
-      child: Column(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      color: AppColors.surface,
+      child: Row(
         children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(Icons.favorite, color: AppColors.primary, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  encouragingMessages[_currentStep],
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: 14,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ),
-            ],
-          ),
-
           // Progress indicator
-          if (_currentStep > 0) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Icon(Icons.timeline, color: AppColors.success, size: 16),
-                const SizedBox(width: 8),
-                Text(
-                  'Step ${_currentStep + 1} of ${stepTitles.length}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.success,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Spacer(),
-                Text(
-                  '${((_currentStep + 1) / stepTitles.length * 100).round()}% Complete',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-              ],
-            ),
-          ],
-
-          // Error message display
-          if (_submitError != null) ...[
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
+          Expanded(
+            child: Container(
+              height: 4,
               decoration: BoxDecoration(
-                color: AppColors.error.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(2),
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.error_outline, color: AppColors.error, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      _submitError!,
-                      style: TextStyle(fontSize: 12, color: AppColors.error),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    width:
+                        constraints.maxWidth *
+                        ((_currentStep + 1) / stepTitles.length),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.primary, AppColors.primaryLight],
+                      ),
+                      borderRadius: BorderRadius.circular(2),
                     ),
-                  ),
-                  TextButton(
-                    onPressed: () => setState(() => _submitError = null),
-                    child: Text('Dismiss', style: TextStyle(fontSize: 10)),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
-          ],
+          ),
+          SizedBox(width: 12),
+          // Step counter
+          Text(
+            '${_currentStep + 1}/${stepTitles.length}',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textSecondary,
+            ),
+          ),
         ],
       ),
-    ).animate().fadeIn(duration: 600.ms).slideY(begin: 0.1, end: 0);
+    );
   }
 
   Widget _buildStepContent() {
     Widget content;
     switch (_currentStep) {
       case 0:
-        content = Step1AgeIdentityForm(
+        content = Step1DemographicForm(
           registrationData: widget.registrationData,
           formKey: _formKeys[0],
         );
         break;
       case 1:
-        content = Step2EducationStatusForm(
+        content = Step2OccupationForm(
           registrationData: widget.registrationData,
           formKey: _formKeys[1],
         );
         break;
       case 2:
-        content = Step3HealthPregnancyForm(
+        content = Step3HistoryOfExposureForm(
           registrationData: widget.registrationData,
           formKey: _formKeys[2],
         );
         break;
       case 3:
-        content = Step4SexualPracticesForm(
+        content = Step4MedicalHistoryForm(
           registrationData: widget.registrationData,
           formKey: _formKeys[3],
         );
         break;
       case 4:
-        content = Step5WorkStatusForm(
+        content = Step5PreviousHIVTestForm(
           registrationData: widget.registrationData,
           formKey: _formKeys[4],
         );
@@ -410,6 +277,12 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
         content = Step6FinalConfirmation(
           registrationData: widget.registrationData,
           formKey: _formKeys[5],
+          // Pass callback to track agreement state
+          onAgreementChanged: (isAgreed) {
+            setState(() {
+              _isTermsAgreed = isAgreed;
+            });
+          },
         );
         break;
       default:
@@ -417,13 +290,13 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
     }
 
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 300),
       transitionBuilder: (child, animation) {
         return FadeTransition(
           opacity: animation,
           child: SlideTransition(
             position: Tween<Offset>(
-              begin: const Offset(0.05, 0),
+              begin: const Offset(0.03, 0),
               end: Offset.zero,
             ).animate(animation),
             child: child,
@@ -434,84 +307,83 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
     );
   }
 
-  Widget _buildNavigationButtons() {
+  Widget _buildCompactNavigationButtons() {
+    // Check if we're on the final step and terms not agreed
+    final isCompleteButtonDisabled = _currentStep == 5 && !_isTermsAgreed;
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, -2),
-          ),
-        ],
+        border: Border(top: BorderSide(color: AppColors.divider, width: 1)),
       ),
       child: SafeArea(
+        top: false,
         child: Row(
           children: [
-            // Back button
             if (_currentStep > 0)
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _isSubmitting ? null : _previousStep,
-                  icon: const Icon(Icons.arrow_back_ios, size: 18),
-                  label: const Text("Back"),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: AppColors.textSecondary,
-                    side: BorderSide(color: AppColors.divider),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
+              IconButton(
+                onPressed: _isSubmitting ? null : _previousStep,
+                icon: Icon(Icons.arrow_back_ios, size: 18),
+                color: AppColors.textSecondary,
+                padding: EdgeInsets.all(8),
+                constraints: BoxConstraints(minWidth: 40, minHeight: 40),
               ),
-            if (_currentStep > 0) const SizedBox(width: 12),
-
-            // Next/Submit button
+            if (_currentStep > 0) SizedBox(width: 4),
             Expanded(
-              flex: 2,
-              child: ElevatedButton.icon(
-                onPressed: _isSubmitting ? null : _nextStep,
-                icon:
-                    _isSubmitting
-                        ? SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
-                          ),
-                        )
-                        : Icon(
-                          _currentStep == stepTitles.length - 1
-                              ? Icons.check_circle
-                              : Icons.arrow_forward,
-                          size: 20,
-                        ),
-                label: Text(
-                  _isSubmitting
-                      ? "Saving..."
-                      : _currentStep == stepTitles.length - 1
-                      ? "Complete Registration"
-                      : "Continue",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
+              child: ElevatedButton(
+                onPressed:
+                    (_isSubmitting || isCompleteButtonDisabled)
+                        ? null
+                        : _nextStep,
                 style: ElevatedButton.styleFrom(
                   backgroundColor:
                       _isSubmitting
                           ? AppColors.primary.withOpacity(0.7)
+                          : isCompleteButtonDisabled
+                          ? AppColors.divider
                           : AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  elevation: _isSubmitting ? 0 : 2,
+                  elevation:
+                      (_isSubmitting || isCompleteButtonDisabled) ? 0 : 1,
+                  disabledBackgroundColor: AppColors.divider,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_isSubmitting)
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    else
+                      Icon(
+                        _currentStep == stepTitles.length - 1
+                            ? Icons.check
+                            : Icons.arrow_forward,
+                        size: 18,
+                      ),
+                    SizedBox(width: 8),
+                    Text(
+                      _isSubmitting
+                          ? "Saving..."
+                          : _currentStep == stepTitles.length - 1
+                          ? "Complete"
+                          : "Continue",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -529,7 +401,6 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
       _submitError = null;
     });
 
-    // Show submission dialog
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -538,20 +409,21 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
             onWillPop: () async => false,
             child: AlertDialog(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(12),
               ),
+              contentPadding: EdgeInsets.all(20),
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   CircularProgressIndicator(color: AppColors.primary),
                   SizedBox(height: 16),
                   Text(
-                    'Completing your registration...',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                    'Completing registration...',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
                   ),
                   SizedBox(height: 8),
                   Text(
-                    'This may take a moment',
+                    'Securing your data',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.textSecondary,
@@ -568,37 +440,78 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
 
     while (retryCount < maxRetries) {
       try {
-        // Attempt to save to Firestore
-        bool success = await widget.registrationData.saveToAnalyticData();
+        // Update location data
+        widget.registrationData.updateLocationFromForm();
 
-        if (success) {
-          // Clear local progress after successful save
-          await _clearLocalProgress();
+        // Save analytics data (non-PII)
+        bool analyticsSuccess =
+            await widget.registrationData.saveToAnalyticData();
 
-          Navigator.pop(context); // Close loading dialog
-
-          // Navigate to welcome screen
-          RegistrationFlowManager.navigateToNextStep(
-            context: context,
-            currentStep: 'plhivForm',
-            registrationData: widget.registrationData,
-          );
-          // Show success message
-
-          return;
-        } else {
-          throw Exception('Save operation returned false');
+        if (!analyticsSuccess) {
+          throw Exception('Failed to save analytics data');
         }
+
+        // Save hashed secure data (PII)
+        bool secureSuccess = await widget.registrationData.saveSecureData();
+
+        if (!secureSuccess) {
+          throw Exception('Failed to save secure data');
+        }
+
+        // Save user profile
+        bool userSuccess = await widget.registrationData.saveToUser();
+
+        if (!userSuccess) {
+          throw Exception('Failed to save user profile');
+        }
+
+        // Save to profiles
+        bool profileSuccess = await widget.registrationData.saveToProfiles();
+
+        if (!profileSuccess) {
+          throw Exception('Failed to save profile');
+        }
+
+        // Save demographics (optional, can fail without blocking)
+        await widget.registrationData.saveToUserDemographic();
+
+        // Success - clear local progress
+        await _clearLocalProgress();
+
+        // Close loading dialog
+        Navigator.pop(context);
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Registration completed successfully!'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+
+        // Navigate to next step
+        RegistrationFlowManager.navigateToNextStep(
+          context: context,
+          currentStep: 'plhivForm',
+          registrationData: widget.registrationData,
+        );
+
+        return;
       } catch (e) {
         retryCount++;
         print('Save attempt $retryCount failed: $e');
 
         if (retryCount < maxRetries) {
-          // Wait before retry with exponential backoff
           await Future.delayed(Duration(seconds: retryCount * 2));
         } else {
-          // Max retries reached - show error
-          Navigator.pop(context); // Close loading dialog
+          Navigator.pop(context);
           _handleSubmissionError(e.toString());
           return;
         }
@@ -618,13 +531,13 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
       builder:
           (context) => AlertDialog(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(12),
             ),
             title: Row(
               children: [
-                Icon(Icons.error_outline, color: AppColors.error, size: 24),
+                Icon(Icons.error_outline, color: AppColors.error, size: 20),
                 SizedBox(width: 8),
-                Text('Registration Error'),
+                Text('Registration Error', style: TextStyle(fontSize: 16)),
               ],
             ),
             content: Column(
@@ -632,8 +545,8 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'We couldn\'t complete your registration right now. Your progress has been saved.',
-                  style: TextStyle(fontSize: 14, height: 1.4),
+                  'We couldn\'t complete your registration. Your progress has been saved locally.',
+                  style: TextStyle(fontSize: 13),
                 ),
                 SizedBox(height: 12),
                 Container(
@@ -644,16 +557,15 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
                   ),
                   child: Row(
                     children: [
-                      Icon(
-                        Icons.info_outline,
-                        color: AppColors.primary,
-                        size: 16,
-                      ),
+                      Icon(Icons.security, color: AppColors.primary, size: 16),
                       SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'You can try again or come back later to complete registration.',
-                          style: TextStyle(fontSize: 12),
+                          'Your sensitive data is protected and encrypted',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ],
@@ -672,7 +584,7 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
-                  _submitForm(); // Retry
+                  _submitForm();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -695,46 +607,141 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
             ),
             title: Row(
               children: [
-                Icon(Icons.help_outline, color: AppColors.primary, size: 24),
-                SizedBox(width: 8),
-                Text('Need Help?'),
-              ],
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('• Your progress is automatically saved'),
-                SizedBox(height: 8),
-                Text('• You can go back to previous steps anytime'),
-                SizedBox(height: 8),
-                Text('• All information is kept confidential'),
-                SizedBox(height: 8),
-                Text('• Skip optional fields if you prefer'),
-                SizedBox(height: 12),
-                Container(
-                  padding: EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.success.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Text(
-                    'Your participation helps improve healthcare for everyone. Thank you! 💚',
-                    style: TextStyle(fontSize: 12, fontStyle: FontStyle.italic),
+                Icon(Icons.info_outline, color: AppColors.primary, size: 24),
+                SizedBox(width: 10),
+                Text(
+                  'Privacy & Information',
+                  style: GoogleFonts.poppins(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Voluntary Section
+                  Text(
+                    'Fill at your own pace:',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  _buildBullet('All fields are optional'),
+                  _buildBullet('You can skip any section'),
+
+                  SizedBox(height: 16),
+
+                  // Personal Data
+                  Text(
+                    'Your personal data:',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  _buildBullet('Used only for your app profile'),
+                  _buildBullet('Kept confidential and secure'),
+                  _buildBullet('You can edit anytime'),
+
+                  SizedBox(height: 16),
+
+                  // Research Data
+                  Text(
+                    'Research use:',
+                    style: GoogleFonts.poppins(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  _buildBullet('Non-identifiable data for health research'),
+                  _buildBullet('No personal identifiers shared'),
+                  _buildBullet('Helps improve healthcare services'),
+
+                  SizedBox(height: 16),
+
+                  // Privacy Commitment
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.shield_outlined,
+                          color: AppColors.primary,
+                          size: 20,
+                        ),
+                        SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Your privacy is protected',
+                            style: GoogleFonts.poppins(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: Text(
                   'Got it!',
-                  style: TextStyle(color: AppColors.primary),
+                  style: GoogleFonts.poppins(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
           ),
+    );
+  }
+
+  Widget _buildBullet(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '• ',
+            style: GoogleFonts.poppins(
+              fontSize: 13,
+              color: AppColors.primary,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: GoogleFonts.poppins(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -743,14 +750,17 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
     return WillPopScope(
       onWillPop: () async {
         if (_isSubmitting) {
-          // Show warning about interrupting submission
           final shouldExit = await showDialog<bool>(
             context: context,
             builder:
                 (context) => AlertDialog(
-                  title: Text('Exit Registration?'),
+                  title: Text(
+                    'Exit Registration?',
+                    style: TextStyle(fontSize: 16),
+                  ),
                   content: Text(
-                    'Your registration is in progress. Exiting now may lose your current progress.',
+                    'Registration in progress. Exit now?',
+                    style: TextStyle(fontSize: 13),
                   ),
                   actions: [
                     TextButton(
@@ -769,8 +779,6 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
           );
           return shouldExit ?? false;
         }
-
-        // Save progress when going back
         await _saveProgressLocally();
         return true;
       },
@@ -779,37 +787,47 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
         appBar: AppBar(
           backgroundColor: AppColors.surface,
           elevation: 0,
+          toolbarHeight: 48,
+          titleSpacing: 0,
           title: Text(
-            "Health Profile",
+            "DOH Form A - ${stepTitles[_currentStep]}",
             style: TextStyle(
               color: AppColors.textPrimary,
               fontWeight: FontWeight.w600,
+              fontSize: 14,
             ),
           ),
           leading: IconButton(
-            icon: Icon(Icons.arrow_back_ios, color: AppColors.textPrimary),
+            icon: Icon(
+              Icons.arrow_back_ios,
+              size: 18,
+              color: AppColors.textPrimary,
+            ),
             onPressed: _isSubmitting ? null : () => Navigator.pop(context),
+            padding: EdgeInsets.all(8),
           ),
           actions: [
-            // Help button
             IconButton(
-              icon: Icon(Icons.help_outline, color: AppColors.textSecondary),
-              onPressed: _isSubmitting ? null : () => _showHelpDialog(),
+              icon: Icon(
+                Icons.help_outline,
+                size: 20,
+                color: AppColors.textSecondary,
+              ),
+              onPressed: _isSubmitting ? null : _showHelpDialog,
+              padding: EdgeInsets.all(8),
             ),
           ],
         ),
         body: Column(
           children: [
-            _buildModernTimeline(),
-            _buildProgressBar(),
-            _buildEncouragementCard(),
+            _buildCompactProgressBar(),
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                 child: _buildStepContent(),
               ),
             ),
-            _buildNavigationButtons(),
+            _buildCompactNavigationButtons(),
           ],
         ),
       ),

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'dart:io';
 import 'package:projecho/main/app_theme.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:projecho/login/login/inputNum.dart';
 import 'package:projecho/main/mainPage.dart';
-import 'package:projecho/screens/profile/userProfile.dart';
+import 'package:projecho/screens/profile/user_profile.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projecho/screens/analytics/components/providers/user_role_provider.dart';
@@ -20,6 +18,12 @@ import 'main/firebase_options.dart';
 import 'package:projecho/onboarding/onbrdingAnimationScreen.dart' as onboarding;
 import 'package:projecho/login/animation/appstart.dart' as splash;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:projecho/screens/med_tracker/medication_provider.dart';
+
+// 🔹 TEMPORARY for testing
+// import 'package:projecho/main/mainPage.dart';
+// import 'package:projecho/main/registration_data.dart';
+// import './screens/med_tracker/setup_routine_screen.dart';
 
 class AppTheme {
   AppTheme._();
@@ -123,6 +127,7 @@ class _MyAppState extends State<MyApp> {
         ChangeNotifierProvider(create: (_) => EnhancedAnalyticsProvider()),
         ChangeNotifierProvider(create: (_) => ResearcherAnalyticsProvider()),
         ChangeNotifierProvider(create: (_) => UserRoleProvider()),
+        ChangeNotifierProvider(create: (_) => MedicationProvider()),
       ],
       child: MaterialApp(
         title: 'ProjEcho',
@@ -171,6 +176,14 @@ class _MyAppState extends State<MyApp> {
             return const EnterNumberPage();
           },
         ),
+
+        // 🔹 TEMPORARY for testing
+        // home: const SetupRoutineScreen(
+        //   // registrationData: RegistrationData(
+        //   //   // fill required fields with dummy values
+        //   //   uid: 'Test User',
+        //   // ),
+        // ),
         routes: {
           '/onboarding': (context) => onboarding.MyOnboardingScreen(),
           '/enternumber': (context) => EnterNumberPage(),

@@ -16,7 +16,8 @@ class TreatmentHubScreen extends StatefulWidget {
 }
 
 class _TreatmentHubScreenState extends State<TreatmentHubScreen> {
-  final TextEditingController _hubController = TextEditingController();
+  String? _selectedHub;
+
   Future<List<String>> fetchCenters() async {
     try {
       final snapshot =
@@ -25,8 +26,8 @@ class _TreatmentHubScreenState extends State<TreatmentHubScreen> {
       final centers =
           snapshot.docs.map((doc) => doc['name'] as String).toList();
 
-      if (!centers.contains('Prefer not to say')) {
-        centers.insert(0, 'Prefer not to say');
+      if (!centers.contains('Prefer not to share')) {
+        centers.insert(0, 'Prefer not to share');
       }
 
       return centers;
@@ -36,12 +37,12 @@ class _TreatmentHubScreenState extends State<TreatmentHubScreen> {
     }
   }
 
-  void _onContinue() {
-    if (_hubController.text.trim().isEmpty) {
+  void _onContinue() async {
+    if (_selectedHub == null || _selectedHub!.isEmpty) {
       HapticFeedback.lightImpact();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text("Please enter your treatment hub"),
+          content: const Text("Please select your treatment hub"),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
@@ -53,28 +54,16 @@ class _TreatmentHubScreenState extends State<TreatmentHubScreen> {
     }
 
     HapticFeedback.mediumImpact();
-    widget.registrationData.treatmentHub = _hubController.text.trim();
+    widget.registrationData.treatmentHub = _selectedHub!;
 
-    Future.delayed(const Duration(milliseconds: 100), () async {
-      widget.registrationData.treatmentHub = _hubController.text.trim();
-
-      bool success = await widget.registrationData.saveToProfiles();
-
-      if (success) {
-        RegistrationFlowManager.navigateToNextStep(
-          context: context,
-          currentStep: 'treatmentHub',
-          registrationData: widget.registrationData,
-        );
-      }
-    });
-  }
-
-  void _selectHub(String hub) {
-    setState(() {
-      _hubController.text = hub;
-    });
-    HapticFeedback.lightImpact();
+    bool success = await widget.registrationData.saveToProfiles();
+    if (success) {
+      RegistrationFlowManager.navigateToNextStep(
+        context: context,
+        currentStep: 'treatmentHub',
+        registrationData: widget.registrationData,
+      );
+    }
   }
 
   @override
@@ -136,79 +125,62 @@ class _TreatmentHubScreenState extends State<TreatmentHubScreen> {
 
               const SizedBox(height: 32),
 
-              // Privacy assurance card
+              // Privacy card
               Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.primary.withOpacity(0.05),
-                          AppColors.secondary.withOpacity(0.03),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      AppColors.primary.withOpacity(0.05),
+                      AppColors.secondary.withOpacity(0.03),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        Icons.security,
+                        color: AppColors.primary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            "Your Privacy Matters",
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            "This helps us connect you with relevant support services. It remains confidential.",
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                              height: 1.4,
+                            ),
+                          ),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: AppColors.primary.withOpacity(0.1),
-                      ),
                     ),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.security,
-                            color: AppColors.primary,
-                            size: 20,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                "Your Privacy Matters",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.textPrimary,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                "This information helps us connect you with relevant support services. It remains confidential.",
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: AppColors.textSecondary,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                  .animate()
-                  .fadeIn(duration: 800.ms, delay: 200.ms)
-                  .slideY(begin: 0.1, end: 0),
+                  ],
+                ),
+              ).animate().fadeIn(duration: 800.ms, delay: 200.ms),
 
               const SizedBox(height: 24),
-
-              // Quick select options
-              Text(
-                "Quick select:",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-
-              const SizedBox(height: 12),
 
               FutureBuilder<List<String>>(
                 future: fetchCenters(),
@@ -222,129 +194,81 @@ class _TreatmentHubScreenState extends State<TreatmentHubScreen> {
                       style: TextStyle(color: AppColors.error),
                     );
                   }
+
                   final hubs = snapshot.data ?? [];
-                  if (hubs.isEmpty) {
-                    return Text(
-                      "No centers found.",
-                      style: TextStyle(color: AppColors.textSecondary),
-                    );
-                  }
 
-                  return Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children:
-                        hubs.map((hub) {
-                          final isSelected = _hubController.text == hub;
-                          final isPreferNotToSay =
-                              hub.toLowerCase() == 'prefer not to say';
-
-                          return InkWell(
-                            onTap: () => _selectHub(hub),
-                            borderRadius: BorderRadius.circular(20),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              decoration: BoxDecoration(
-                                color:
-                                    isSelected
-                                        ? (isPreferNotToSay
-                                            ? Colors.red
-                                            : AppColors.primary)
-                                        : AppColors.surface,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color:
-                                      isSelected
-                                          ? (isPreferNotToSay
-                                              ? Colors.red
-                                              : AppColors.primary)
-                                          : AppColors.divider,
-                                ),
-                              ),
-                              child: Text(
-                                hub,
-                                style: TextStyle(
-                                  color:
-                                      isSelected
-                                          ? Colors.white
-                                          : isPreferNotToSay
-                                          ? Colors.red
-                                          : AppColors.textPrimary,
-                                  fontSize: 14,
-                                  fontWeight:
-                                      isSelected
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                  );
-                },
-              ).animate().fadeIn(duration: 600.ms, delay: 400.ms),
-
-              const SizedBox(height: 24),
-
-              // Input field
-              Text(
-                "Or enter manually:",
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textSecondary,
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: TextField(
-                      controller: _hubController,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: AppColors.textPrimary,
-                      ),
-                      decoration: InputDecoration(
-                        labelText: "Treatment Hub Name",
-                        labelStyle: TextStyle(color: AppColors.textSecondary),
-                        hintText: "Enter your treatment center",
-                        hintStyle: TextStyle(color: AppColors.textLight),
-                        prefixIcon: Icon(
-                          Icons.location_on,
-                          color: AppColors.primary,
-                        ),
-                        border: OutlineInputBorder(
+                  return Container(
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        filled: true,
-                        fillColor: AppColors.surface,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 16,
+                        child: DropdownButtonFormField<String>(
+                          isExpanded: true,
+
+                          value: _selectedHub,
+                          dropdownColor: AppColors.surface,
+                          decoration: InputDecoration(
+                            prefixIcon: Icon(
+                              Icons.local_hospital,
+                              color: AppColors.primary,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: AppColors.surface,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 20,
+                              vertical: 16,
+                            ),
+                          ),
+                          hint: Text(
+                            "Choose from centers",
+                            style: TextStyle(color: AppColors.textLight),
+                          ),
+                          items:
+                              hubs.map((hub) {
+                                final isPreferNotToShare =
+                                    hub.toLowerCase() == 'prefer not to share';
+                                return DropdownMenuItem<String>(
+                                  value: hub,
+                                  child: Text(
+                                    hub,
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 1,
+                                    style: TextStyle(
+                                      color:
+                                          isPreferNotToShare
+                                              ? Colors.red
+                                              : AppColors.textPrimary,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+
+                          onChanged: (value) {
+                            // your onChanged logic
+
+                            HapticFeedback.lightImpact();
+                            setState(() {
+                              _selectedHub = value;
+                            });
+                          },
                         ),
-                      ),
-                    ),
-                  )
-                  .animate()
-                  .fadeIn(duration: 600.ms, delay: 600.ms)
-                  .slideY(begin: 0.1, end: 0),
+                      )
+                      .animate()
+                      .fadeIn(duration: 600.ms, delay: 400.ms)
+                      .slideY(begin: 0.1, end: 0);
+                },
+              ),
 
               const SizedBox(height: 40),
 
@@ -354,7 +278,6 @@ class _TreatmentHubScreenState extends State<TreatmentHubScreen> {
                     height: 56,
                     child: ElevatedButton(
                       onPressed: _onContinue,
-
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -387,47 +310,36 @@ class _TreatmentHubScreenState extends State<TreatmentHubScreen> {
 
               // Encouragement message
               Center(
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: AppColors.success.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Column(
-                        children: [
-                          Icon(
-                            Icons.favorite,
-                            color: AppColors.success,
-                            size: 24,
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "You're doing great!",
-                            style: TextStyle(
-                              color: AppColors.success,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Every step brings you closer to better support",
-                            style: TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                  .animate()
-                  .fadeIn(duration: 1000.ms, delay: 1000.ms)
-                  .scale(
-                    begin: const Offset(0.9, 0.9),
-                    end: const Offset(1, 1),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.success.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-
-              const SizedBox(height: 20),
+                  child: Column(
+                    children: [
+                      Icon(Icons.favorite, color: AppColors.success, size: 24),
+                      const SizedBox(height: 8),
+                      Text(
+                        "You're doing great!",
+                        style: TextStyle(
+                          color: AppColors.success,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        "Every step brings you closer to better support",
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ).animate().fadeIn(duration: 1000.ms, delay: 1000.ms),
+              const SizedBox(height: 32),
             ],
           ),
         ),

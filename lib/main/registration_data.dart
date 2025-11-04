@@ -1,67 +1,203 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projecho/screens/analytics/components/services/analytics_processing_service.dart';
 
 class RegistrationData {
-  // ... (keep all your existing fields)
+  // ============================================
+  // PERSONAL IDENTIFIABLE INFORMATION (PII)
+  // Stored as plaintext locally, hashed in Firestore
+  // ============================================
   String uid;
+
+  // Step 1: Demographic Data (PII)
+  String? philhealthNumber;
+  String? firstName;
+  String? middleName;
+  String? lastName;
+  String? suffix;
   String? motherFirstName;
   String? fatherFirstName;
   int? birthOrder;
   DateTime? birthDate;
+  String? currentCity;
+  String? currentProvince;
+  String? permanentCity;
+  String? permanentProvince;
+  String? birthCity;
+  String? birthProvince;
+
+  // ============================================
+  // NON-PII DATA (Safe to store as-is)
+  // ============================================
+
+  // User metadata
   String? generatedUIC;
-  String? sexAssignedAtBirth;
-  String? ageRange;
-  String? genderIdentity;
-  String? nationality;
-  List<String> hivRelation = [];
-  String? educationLevel;
-  String? civilStatus;
-  bool? isStudying;
-  bool? livingWithPartner;
-  bool? isPregnant;
-  bool? motherHadHIV;
-  bool? diagnosedSTI;
-  bool? hasHepatitis;
-  bool? hasTuberculosis;
-  String? unprotectedSexWith;
-  bool? isOFW;
-  String? city;
-  String? barangay;
   String? userType;
   int? yearDiagnosed;
   String? treatmentHub;
 
+  // Step 1: Demographic Data (Non-PII)
+  String? sexAssignedAtBirth;
+  String? ageRange;
+  String? genderIdentity;
+  String? customGender;
+  String? nationality;
+  String? otherNationality;
+  String? educationLevel;
+  String? civilStatus;
+  bool? livingWithPartner;
+  bool? isPregnant;
+  int? numberOfChildren;
+
+  // Step 2: Occupation
+  String? currentOccupation;
+  String? previousOccupation;
+  bool? isStudying;
+  String? schoolLevel;
+  bool? isOFW;
+  int? ofwReturnYear;
+  String? ofwBasedLocation; // "On a ship" or "Land"
+  String? ofwLastCountry;
+
+  // Step 3: History of Exposure
+  bool? motherHadHIV;
+  int? ageAtFirstSex;
+  int? ageAtFirstDrugUse;
+  int? femalePartnerCount;
+  int? malePartnerCount;
+  int? yearLastSexFemale;
+  int? yearLastSexMale;
+
+  // Exposure history (no/within12/moreThan12)
+  Map<String, String?> exposureHistory = {
+    'sexFemaleNoCondom': null,
+    'sexMaleNoCondom': null,
+    'sexWithHIVPerson': null,
+    'payingForSex': null,
+    'acceptingPayment': null,
+    'injectedDrugs': null,
+    'bloodTransfusion': null,
+    'occupationalExposure': null,
+    'gotTattoo': null,
+    'sti': null,
+  };
+
+  // Step 4: Medical History
+  bool? hasTuberculosis;
+  bool? hasHepatitisB;
+  bool? hasHepatitisC;
+  bool? cbsReactive;
+  bool? takingPreP;
+  bool? diagnosedSTI;
+
+  // Step 5: Previous HIV Test
+  bool? everTestedForHIV;
+  int? lastTestMonth;
+  int? lastTestYear;
+  String? testFacility;
+  String? testCity;
+  String?
+  testResult; // Positive/Negative/Indeterminate/Was not able to get result
+
+  // Computed fields
+  String? unprotectedSexWith;
+  List<String> hivRelation = [];
+  String? city;
+  String? barangay;
+
   RegistrationData({
     required this.uid,
+    this.philhealthNumber,
+    this.firstName,
+    this.middleName,
+    this.lastName,
+    this.suffix,
     this.motherFirstName,
     this.fatherFirstName,
     this.birthOrder,
     this.birthDate,
+    this.currentCity,
+    this.currentProvince,
+    this.permanentCity,
+    this.permanentProvince,
+    this.birthCity,
+    this.birthProvince,
     this.generatedUIC,
-    this.sexAssignedAtBirth,
-    this.ageRange,
-    this.genderIdentity,
-    this.nationality,
-    this.educationLevel,
-    this.civilStatus,
-    this.isStudying,
-    this.livingWithPartner,
-    this.isPregnant,
-    this.motherHadHIV,
-    this.diagnosedSTI,
-    this.hasHepatitis,
-    this.hasTuberculosis,
-    this.unprotectedSexWith,
-    this.isOFW,
-    this.city,
-    this.barangay,
     this.userType,
     this.yearDiagnosed,
     this.treatmentHub,
+    this.sexAssignedAtBirth,
+    this.ageRange,
+    this.genderIdentity,
+    this.customGender,
+    this.nationality,
+    this.otherNationality,
+    this.educationLevel,
+    this.civilStatus,
+    this.livingWithPartner,
+    this.isPregnant,
+    this.numberOfChildren,
+    this.currentOccupation,
+    this.previousOccupation,
+    this.isStudying,
+    this.schoolLevel,
+    this.isOFW,
+    this.ofwReturnYear,
+    this.ofwBasedLocation,
+    this.ofwLastCountry,
+    this.motherHadHIV,
+    this.ageAtFirstSex,
+    this.ageAtFirstDrugUse,
+    this.femalePartnerCount,
+    this.malePartnerCount,
+    this.yearLastSexFemale,
+    this.yearLastSexMale,
+    this.hasTuberculosis,
+    this.hasHepatitisB,
+    this.hasHepatitisC,
+    this.cbsReactive,
+    this.takingPreP,
+    this.diagnosedSTI,
+    this.everTestedForHIV,
+    this.lastTestMonth,
+    this.lastTestYear,
+    this.testFacility,
+    this.testCity,
+    this.testResult,
+    this.city,
+    this.barangay,
   });
 
-  // ... (keep all your existing methods: computeAgeRange, role, isMSM, etc.)
+  // ============================================
+  // HASHING UTILITIES
+  // ============================================
+
+  /// Hash sensitive data using SHA-256
+  static String _hashData(String? data) {
+    if (data == null || data.isEmpty) return '';
+    var bytes = utf8.encode(data);
+    var digest = sha256.convert(bytes);
+    return digest.toString();
+  }
+
+  /// Create composite hash for unique identification
+  String _createCompositeHash() {
+    final components = [
+      firstName ?? '',
+      middleName ?? '',
+      lastName ?? '',
+      birthDate?.toIso8601String() ?? '',
+      motherFirstName ?? '',
+      fatherFirstName ?? '',
+    ].join('|');
+    return _hashData(components);
+  }
+
+  // ============================================
+  // COMPUTED PROPERTIES
+  // ============================================
 
   void computeAgeRange() {
     if (birthDate != null) {
@@ -82,6 +218,22 @@ class RegistrationData {
         ageRange = '35-44';
       else
         ageRange = '45+';
+    }
+  }
+
+  /// Compute unprotected sex classification
+  void computeUnprotectedSexWith() {
+    int femaleCount = femalePartnerCount ?? 0;
+    int maleCount = malePartnerCount ?? 0;
+
+    if (femaleCount > 0 && maleCount > 0) {
+      unprotectedSexWith = 'Both';
+    } else if (maleCount > 0) {
+      unprotectedSexWith = 'Male';
+    } else if (femaleCount > 0) {
+      unprotectedSexWith = 'Female';
+    } else {
+      unprotectedSexWith = 'Never';
     }
   }
 
@@ -112,8 +264,24 @@ class RegistrationData {
 
   bool get isYouth => ageRange == '18-24';
 
+  /// Check if user has any STI exposure
+  bool get hasSTIExposure {
+    return exposureHistory['sti'] == 'within12' ||
+        exposureHistory['sti'] == 'moreThan12' ||
+        diagnosedSTI == true;
+  }
+
+  /// Check for hepatitis (any type)
+  bool get hasHepatitis => hasHepatitisB == true || hasHepatitisC == true;
+
+  // ============================================
+  // FIRESTORE SAVE METHODS
+  // ============================================
+
+  /// Prepare data for analyticData collection (NON-PII ONLY)
   Map<String, dynamic> toFirestore() {
     computeAgeRange();
+    computeUnprotectedSexWith();
 
     Map<String, dynamic> data = {
       'role': role,
@@ -122,29 +290,69 @@ class RegistrationData {
       'lastLogin': FieldValue.serverTimestamp(),
       'isActive': true,
       'generatedUIC': generatedUIC,
+
+      // Hashed identifier (for deduplication without exposing PII)
+      'compositeHash': _createCompositeHash(),
+
+      // Step 1: Demographic (Non-PII)
       'birthDate': birthDate != null ? Timestamp.fromDate(birthDate!) : null,
       'ageRange': ageRange,
       'sexAssignedAtBirth': sexAssignedAtBirth,
       'genderIdentity': genderIdentity,
+      'customGender': customGender,
       'nationality': nationality,
+      'otherNationality': otherNationality,
       'educationLevel': educationLevel,
       'civilStatus': civilStatus,
-      'isStudying': isStudying ?? false,
       'livingWithPartner': livingWithPartner ?? false,
       'isPregnant': isPregnant ?? false,
+      'numberOfChildren': numberOfChildren,
+
+      // Step 2: Occupation
+      'currentOccupation': currentOccupation,
+      'previousOccupation': previousOccupation,
+      'isStudying': isStudying ?? false,
+      'schoolLevel': schoolLevel,
+      'isOFW': isOFW ?? false,
+      'ofwReturnYear': ofwReturnYear,
+      'ofwBasedLocation': ofwBasedLocation,
+      'ofwLastCountry': ofwLastCountry,
+
+      // Step 3: History of Exposure
       'motherHadHIV': motherHadHIV ?? false,
-      'diagnosedSTI': diagnosedSTI ?? false,
-      'hasHepatitis': hasHepatitis ?? false,
+      'ageAtFirstSex': ageAtFirstSex,
+      'ageAtFirstDrugUse': ageAtFirstDrugUse,
+      'femalePartnerCount': femalePartnerCount,
+      'malePartnerCount': malePartnerCount,
+      'yearLastSexFemale': yearLastSexFemale,
+      'yearLastSexMale': yearLastSexMale,
+      'exposureHistory': exposureHistory,
+
+      // Step 4: Medical History
       'hasTuberculosis': hasTuberculosis ?? false,
+      'hasHepatitisB': hasHepatitisB ?? false,
+      'hasHepatitisC': hasHepatitisC ?? false,
+      'cbsReactive': cbsReactive ?? false,
+      'takingPreP': takingPreP ?? false,
+      'diagnosedSTI': diagnosedSTI ?? false,
+
+      // Step 5: Previous HIV Test
+      'everTestedForHIV': everTestedForHIV ?? false,
+      'lastTestMonth': lastTestMonth,
+      'lastTestYear': lastTestYear,
+      'testResult': testResult,
+
+      // Computed fields
       'unprotectedSexWith': unprotectedSexWith,
       'city': city,
       'barangay': barangay,
-      'isOFW': isOFW ?? false,
       'isMSM': isMSM,
       'isMSW': isMSW,
       'isWSW': isWSW,
       'hasMultiplePartnerRisk': hasMultiplePartnerRisk,
       'isYouth': isYouth,
+      'hasSTIExposure': hasSTIExposure,
+      'hasHepatitis': hasHepatitis,
     };
 
     if (userType == 'PLHIV') {
@@ -157,16 +365,49 @@ class RegistrationData {
     return data;
   }
 
+  /// Prepare PII data for secure storage (HASHED)
+  Map<String, dynamic> toSecureFirestore() {
+    return {
+      'uid': uid,
+      'compositeHash': _createCompositeHash(),
+
+      // Hashed PII
+      'philhealthNumberHash': _hashData(philhealthNumber),
+      'firstNameHash': _hashData(firstName),
+      'middleNameHash': _hashData(middleName),
+      'lastNameHash': _hashData(lastName),
+      'suffixHash': _hashData(suffix),
+      'motherFirstNameHash': _hashData(motherFirstName),
+      'fatherFirstNameHash': _hashData(fatherFirstName),
+      'birthOrderHash': _hashData(birthOrder?.toString()),
+
+      // Location hashes
+      'currentCityHash': _hashData(currentCity),
+      'currentProvinceHash': _hashData(currentProvince),
+      'permanentCityHash': _hashData(permanentCity),
+      'permanentProvinceHash': _hashData(permanentProvince),
+      'birthCityHash': _hashData(birthCity),
+      'birthProvinceHash': _hashData(birthProvince),
+      'testFacilityHash': _hashData(testFacility),
+      'testCityHash': _hashData(testCity),
+
+      'createdAt': FieldValue.serverTimestamp(),
+      'updatedAt': FieldValue.serverTimestamp(),
+    };
+  }
+
   // ============================================
-  // IMPROVED: Save to analytic data with deletion check
+  // SAVE TO FIRESTORE
   // ============================================
+
   Future<bool> saveToAnalyticData() async {
     try {
       computeAgeRange();
+      computeUnprotectedSexWith();
 
       final firestore = FirebaseFirestore.instance;
 
-      // ✅ CHECK: Is this a returning deleted user?
+      // Check returning user status
       final userDoc = await firestore.collection('user').doc(uid).get();
       final isReturningUser = userDoc.data()?['isReturningUser'] ?? false;
       final doNotCount = userDoc.data()?['doNotCountInAnalytics'] ?? false;
@@ -175,7 +416,7 @@ class RegistrationData {
         print('⚠️ Returning deleted user detected - marking as do not count');
       }
 
-      // Save to analyticData
+      // Save analytics data (NON-PII)
       await firestore
           .collection('analyticData')
           .doc(uid)
@@ -183,7 +424,7 @@ class RegistrationData {
 
       print('✅ Analytics data saved for user: $uid');
 
-      // ✅ Schedule analytics update (debounced)
+      // Schedule analytics update
       await _scheduleAnalyticsUpdate(forceImmediate: !doNotCount);
 
       return true;
@@ -193,9 +434,28 @@ class RegistrationData {
     }
   }
 
+  /// Save hashed PII to secure collection
+  Future<bool> saveSecureData() async {
+    try {
+      final firestore = FirebaseFirestore.instance;
+
+      await firestore
+          .collection('secureUserData')
+          .doc(uid)
+          .set(toSecureFirestore(), SetOptions(merge: true));
+
+      print('✅ Secure hashed data saved for user: $uid');
+      return true;
+    } catch (e) {
+      print('❌ Error saving secure data: $e');
+      return false;
+    }
+  }
+
   // ============================================
-  // IMPROVED: Debounced analytics update with deletion awareness
+  // ANALYTICS UPDATE SCHEDULING
   // ============================================
+
   static DateTime? _lastAnalyticsUpdate;
   static Timer? _analyticsTimer;
   static int _pendingUpdates = 0;
@@ -209,10 +469,6 @@ class RegistrationData {
     _analyticsTimer = Timer(delay, () async {
       final now = DateTime.now();
 
-      // Update if:
-      // 1. Never updated before, OR
-      // 2. More than 2 minutes since last update, OR
-      // 3. Multiple pending updates (batch efficiency)
       final shouldUpdate =
           _lastAnalyticsUpdate == null ||
           now.difference(_lastAnalyticsUpdate!).inMinutes > 2 ||
@@ -221,16 +477,12 @@ class RegistrationData {
       if (shouldUpdate) {
         try {
           print('🔄 Updating analytics summary (pending: $_pendingUpdates)...');
-
           await AnalyticsProcessingService.updateAnalyticsSummary();
-
           _lastAnalyticsUpdate = now;
           _pendingUpdates = 0;
-
           print('✅ Analytics summary updated at ${now.toIso8601String()}');
         } catch (e) {
           print('❌ Failed to update analytics summary: $e');
-          // Retry after 1 minute on failure
           _scheduleRetry();
         }
       } else {
@@ -241,7 +493,6 @@ class RegistrationData {
     });
   }
 
-  // Retry logic for failed updates
   static void _scheduleRetry() {
     Timer(Duration(minutes: 1), () async {
       if (_pendingUpdates > 0) {
@@ -258,9 +509,6 @@ class RegistrationData {
     });
   }
 
-  // ============================================
-  // Force immediate analytics update (for testing/admin)
-  // ============================================
   static Future<void> forceAnalyticsUpdate() async {
     _analyticsTimer?.cancel();
     _pendingUpdates = 0;
@@ -277,13 +525,13 @@ class RegistrationData {
   }
 
   // ============================================
-  // IMPROVED: Save to userDemographic with deletion check
+  // OTHER SAVE METHODS
   // ============================================
+
   Future<bool> saveToUserDemographic() async {
     try {
       final firestore = FirebaseFirestore.instance;
 
-      // Check if returning user
       final userDoc = await firestore.collection('user').doc(uid).get();
       final isReturningUser = userDoc.data()?['isReturningUser'] ?? false;
 
@@ -308,10 +556,7 @@ class RegistrationData {
       }, SetOptions(merge: true));
 
       print('✅ User demographic saved to Firestore: $uid');
-
-      // Schedule analytics update
       await _scheduleAnalyticsUpdate();
-
       return true;
     } catch (e) {
       print('❌ Error saving to Firestore: $e');
@@ -319,7 +564,6 @@ class RegistrationData {
     }
   }
 
-  // Keep all your other methods unchanged
   Future<bool> saveToUser() async {
     try {
       await FirebaseFirestore.instance.collection('user').doc(uid).set({
@@ -341,11 +585,15 @@ class RegistrationData {
     try {
       computeAgeRange();
 
+      String? finalCustomGender =
+          (genderIdentity == 'Other') ? customGender : null;
+
       await FirebaseFirestore.instance.collection('profiles').doc(uid).set({
         'generatedUIC': generatedUIC,
         'ageRange': ageRange,
         'location': {'city': city, 'barangay': barangay},
         'genderIdentity': genderIdentity,
+        'customGender': finalCustomGender,
         'updatedAt': FieldValue.serverTimestamp(),
         'createdAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
@@ -377,28 +625,45 @@ class RegistrationData {
     }
   }
 
-  // Keep your existing toJson, fromJson, fromFirestore, copyWith methods
+  // ============================================
+  // SERIALIZATION (Keep existing methods)
+  // ============================================
+
   Map<String, dynamic> toJson() => {
     'uid': uid,
+    'philhealthNumber': philhealthNumber,
+    'firstName': firstName,
+    'middleName': middleName,
+    'lastName': lastName,
+    'suffix': suffix,
     'motherFirstName': motherFirstName,
     'fatherFirstName': fatherFirstName,
     'birthOrder': birthOrder,
     'birthDate': birthDate?.toIso8601String(),
+    'currentCity': currentCity,
+    'currentProvince': currentProvince,
+    'permanentCity': permanentCity,
+    'permanentProvince': permanentProvince,
+    'birthCity': birthCity,
+    'birthProvince': birthProvince,
     'generatedUIC': generatedUIC,
     'sexAssignedAtBirth': sexAssignedAtBirth,
     'ageRange': ageRange,
     'genderIdentity': genderIdentity,
+    'customGender': customGender,
     'nationality': nationality,
+    'otherNationality': otherNationality,
     'educationLevel': educationLevel,
     'civilStatus': civilStatus,
     'isStudying': isStudying,
     'livingWithPartner': livingWithPartner,
     'isPregnant': isPregnant,
+    'numberOfChildren': numberOfChildren,
     'motherHadHIV': motherHadHIV,
     'diagnosedSTI': diagnosedSTI,
-    'hasHepatitis': hasHepatitis,
     'hasTuberculosis': hasTuberculosis,
-    'unprotectedSexWith': unprotectedSexWith,
+    'hasHepatitisB': hasHepatitisB,
+    'hasHepatitisC': hasHepatitisC,
     'isOFW': isOFW,
     'city': city,
     'barangay': barangay,
@@ -410,6 +675,11 @@ class RegistrationData {
   factory RegistrationData.fromJson(Map<String, dynamic> json) =>
       RegistrationData(
         uid: json['uid'],
+        philhealthNumber: json['philhealthNumber'],
+        firstName: json['firstName'],
+        middleName: json['middleName'],
+        lastName: json['lastName'],
+        suffix: json['suffix'],
         motherFirstName: json['motherFirstName'],
         fatherFirstName: json['fatherFirstName'],
         birthOrder: json['birthOrder'],
@@ -429,9 +699,7 @@ class RegistrationData {
         isPregnant: json['isPregnant'],
         motherHadHIV: json['motherHadHIV'],
         diagnosedSTI: json['diagnosedSTI'],
-        hasHepatitis: json['hasHepatitis'],
         hasTuberculosis: json['hasTuberculosis'],
-        unprotectedSexWith: json['unprotectedSexWith'],
         isOFW: json['isOFW'],
         city: json['city'],
         barangay: json['barangay'],
@@ -439,92 +707,4 @@ class RegistrationData {
         yearDiagnosed: json['yearDiagnosed'],
         treatmentHub: json['treatmentHub'],
       );
-
-  factory RegistrationData.fromFirestore(
-    Map<String, dynamic> data,
-    String uid,
-  ) => RegistrationData(
-    uid: uid,
-    generatedUIC: data['generatedUIC'],
-    birthDate:
-        data['birthDate'] != null
-            ? (data['birthDate'] as Timestamp).toDate()
-            : null,
-    sexAssignedAtBirth: data['sexAssignedAtBirth'],
-    ageRange: data['ageRange'],
-    genderIdentity: data['genderIdentity'],
-    nationality: data['nationality'],
-    educationLevel: data['educationLevel'],
-    civilStatus: data['civilStatus'],
-    isStudying: data['isStudying'],
-    livingWithPartner: data['livingWithPartner'],
-    isPregnant: data['isPregnant'],
-    motherHadHIV: data['motherHadHIV'],
-    diagnosedSTI: data['diagnosedSTI'],
-    hasHepatitis: data['hasHepatitis'],
-    hasTuberculosis: data['hasTuberculosis'],
-    unprotectedSexWith: data['unprotectedSexWith'],
-    isOFW: data['isOFW'],
-    city: data['city'],
-    barangay: data['barangay'],
-    userType: data['userType'],
-    yearDiagnosed: data['yearDiagnosed'],
-    treatmentHub: data['treatmentHub'],
-  );
-
-  RegistrationData copyWith({
-    String? uid,
-    String? motherFirstName,
-    String? fatherFirstName,
-    int? birthOrder,
-    DateTime? birthDate,
-    String? generatedUIC,
-    String? sexAssignedAtBirth,
-    String? ageRange,
-    String? genderIdentity,
-    String? nationality,
-    String? educationLevel,
-    String? civilStatus,
-    bool? isStudying,
-    bool? livingWithPartner,
-    bool? isPregnant,
-    bool? motherHadHIV,
-    bool? diagnosedSTI,
-    bool? hasHepatitis,
-    bool? hasTuberculosis,
-    String? unprotectedSexWith,
-    bool? isOFW,
-    String? city,
-    String? barangay,
-    String? userType,
-    int? yearDiagnosed,
-    String? treatmentHub,
-  }) => RegistrationData(
-    uid: uid ?? this.uid,
-    motherFirstName: motherFirstName ?? this.motherFirstName,
-    fatherFirstName: fatherFirstName ?? this.fatherFirstName,
-    birthOrder: birthOrder ?? this.birthOrder,
-    birthDate: birthDate ?? this.birthDate,
-    generatedUIC: generatedUIC ?? this.generatedUIC,
-    sexAssignedAtBirth: sexAssignedAtBirth ?? this.sexAssignedAtBirth,
-    ageRange: ageRange ?? this.ageRange,
-    genderIdentity: genderIdentity ?? this.genderIdentity,
-    nationality: nationality ?? this.nationality,
-    educationLevel: educationLevel ?? this.educationLevel,
-    civilStatus: civilStatus ?? this.civilStatus,
-    isStudying: isStudying ?? this.isStudying,
-    livingWithPartner: livingWithPartner ?? this.livingWithPartner,
-    isPregnant: isPregnant ?? this.isPregnant,
-    motherHadHIV: motherHadHIV ?? this.motherHadHIV,
-    diagnosedSTI: diagnosedSTI ?? this.diagnosedSTI,
-    hasHepatitis: hasHepatitis ?? this.hasHepatitis,
-    hasTuberculosis: hasTuberculosis ?? this.hasTuberculosis,
-    unprotectedSexWith: unprotectedSexWith ?? this.unprotectedSexWith,
-    isOFW: isOFW ?? this.isOFW,
-    city: city ?? this.city,
-    barangay: barangay ?? this.barangay,
-    userType: userType ?? this.userType,
-    yearDiagnosed: yearDiagnosed ?? this.yearDiagnosed,
-    treatmentHub: treatmentHub ?? this.treatmentHub,
-  );
 }

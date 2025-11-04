@@ -6,6 +6,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/main/registration_data.dart';
 import 'package:projecho/login/registration_flow_manager.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class LocationScreen extends StatefulWidget {
   final RegistrationData registrationData;
@@ -276,7 +277,7 @@ class _LocationScreenState extends State<LocationScreen>
     )..repeat(reverse: true);
 
     // Auto-detect location on init
-    _detectLocation();
+    // _detectLocation();
   }
 
   @override
@@ -523,102 +524,250 @@ class _LocationScreenState extends State<LocationScreen>
             // Auto-detect button
             // Accuracy Disclaimer
             Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.3),
-                    ),
-                  ),
-                  child: Column(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            Icons.info_outline,
-                            color: AppColors.primary,
-                            size: 22,
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              'Detected location may not be fully accurate. '
-                              'City and barangay data are based on the Philippine Statistics Authority (PSA).',
-                              style: TextStyle(
-                                fontSize: 13,
-                                height: 1.4,
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Icon(
+                        Icons.info_outline,
+                        color: AppColors.primary,
+                        size: 22,
                       ),
-                      const SizedBox(height: 10),
-
-                      // 🧭 Auto-detected location display
-                      Container(
-                        width: double.infinity,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.primaryLight.withOpacity(0.8),
-                              AppColors.primaryLight,
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.primaryLight.withOpacity(0.3),
-                              blurRadius: 15,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: ElevatedButton.icon(
-                          onPressed:
-                              isDetectingLocation ? null : _detectLocation,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.transparent,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon:
-                              isDetectingLocation
-                                  ? SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                  : Icon(
-                                    Icons.my_location,
-                                    color: Colors.white,
-                                  ),
-                          label: Text(
-                            isDetectingLocation
-                                ? 'Detecting...'
-                                : 'Auto-detect Location',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w600,
-                            ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Detected location may not be fully accurate. '
+                          'City and barangay data are based on the Philippine Statistics Authority (PSA).',
+                          style: TextStyle(
+                            fontSize: 13,
+                            height: 1.4,
+                            color: AppColors.textSecondary,
                           ),
                         ),
                       ),
                     ],
                   ),
-                )
-                .animate()
-                .fadeIn(duration: 700.ms, delay: 300.ms)
-                .slideY(begin: 0.1, end: 0),
+                  const SizedBox(height: 10),
+
+                  // 🧭 Auto-detected location display
+                  Container(
+                    width: double.infinity,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.primaryLight.withOpacity(0.8),
+                          AppColors.primaryLight,
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primaryLight.withOpacity(0.3),
+                          blurRadius: 15,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed:
+                          isDetectingLocation
+                              ? null
+                              : () async {
+                                final shouldContinue = await showDialog<bool>(
+                                  context: context,
+                                  barrierDismissible: false,
+                                  builder:
+                                      (context) => Dialog(
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            20,
+                                          ),
+                                        ),
+                                        insetPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 40,
+                                            ),
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 20,
+                                            vertical: 24,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Colors.black.withOpacity(
+                                                  0.08,
+                                                ),
+                                                blurRadius: 15,
+                                                offset: const Offset(0, 6),
+                                              ),
+                                            ],
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.location_on_rounded,
+                                                color: AppColors.primary,
+                                                size: 42,
+                                              ),
+                                              const SizedBox(height: 14),
+                                              Text(
+                                                'Share Your Location?',
+                                                textAlign: TextAlign.center,
+                                                style: GoogleFonts.poppins(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 18,
+                                                  color: AppColors.textPrimary,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                'Are you sure you want to share your current location? '
+                                                'This helps us detect your city and barangay.',
+                                                textAlign: TextAlign.center,
+                                                style: GoogleFonts.poppins(
+                                                  fontSize: 12,
+                                                  height: 1.5,
+                                                  color:
+                                                      AppColors.textSecondary,
+                                                ),
+                                              ),
+                                              const SizedBox(height: 22),
+                                              Row(
+                                                children: [
+                                                  Expanded(
+                                                    child: OutlinedButton(
+                                                      onPressed:
+                                                          () => Navigator.pop(
+                                                            context,
+                                                            false,
+                                                          ),
+                                                      style: OutlinedButton.styleFrom(
+                                                        side: BorderSide(
+                                                          color: AppColors
+                                                              .textSecondary
+                                                              .withOpacity(0.5),
+                                                        ),
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                12,
+                                                              ),
+                                                        ),
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              vertical: 10,
+                                                            ),
+                                                      ),
+                                                      child: Text(
+                                                        'Cancel',
+                                                        style: GoogleFonts.poppins(
+                                                          fontWeight:
+                                                              FontWeight.w600,
+                                                          color:
+                                                              AppColors
+                                                                  .textPrimary,
+                                                          fontSize: 12,
+                                                        ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Expanded(
+                                                    child: ElevatedButton(
+                                                      onPressed:
+                                                          () => Navigator.pop(
+                                                            context,
+                                                            true,
+                                                          ),
+                                                      style: ElevatedButton.styleFrom(
+                                                        backgroundColor:
+                                                            AppColors.primary,
+                                                        elevation: 0,
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius:
+                                                              BorderRadius.circular(
+                                                                12,
+                                                              ),
+                                                        ),
+                                                        padding:
+                                                            const EdgeInsets.symmetric(
+                                                              vertical: 10,
+                                                            ),
+                                                      ),
+                                                      child: Text(
+                                                        'Continue',
+                                                        style:
+                                                            GoogleFonts.poppins(
+                                                              color:
+                                                                  Colors.white,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              fontSize: 12,
+                                                            ),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                );
+
+                                if (shouldContinue == true) {
+                                  _detectLocation();
+                                }
+                              },
+
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      icon:
+                          isDetectingLocation
+                              ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : Icon(Icons.my_location, color: Colors.white),
+                      label: Text(
+                        isDetectingLocation
+                            ? 'Detecting...'
+                            : 'Auto-detect Location',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ).animate().fadeIn(duration: 700.ms, delay: 300.ms).slideY(begin: 0.1, end: 0),
 
             // Manual selection
             Text(

@@ -6,6 +6,11 @@ import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/login/login/rceiverOTP.dart';
 import 'package:projecho/login/signup/privacyPolicy.dart';
 import 'package:projecho/login/signup/terms.dart';
+import 'package:projecho/main/mainPage.dart';
+import './google_auth_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:projecho/login/signup/termsCondition.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class EnterNumberPage extends StatefulWidget {
   const EnterNumberPage({super.key});
@@ -19,8 +24,10 @@ class _EnterNumberPageState extends State<EnterNumberPage>
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _phoneController = TextEditingController();
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   late AnimationController _animationController;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleAuthService _googleAuthService = GoogleAuthService();
 
   @override
   void initState() {
@@ -36,6 +43,135 @@ class _EnterNumberPageState extends State<EnterNumberPage>
     _animationController.dispose();
     _phoneController.dispose();
     super.dispose();
+  }
+
+  // Google Sign-In handler
+  void _signInWithGoogle() async {
+    setState(() => _isGoogleLoading = true);
+    HapticFeedback.mediumImpact();
+
+    try {
+      final userCredential = await _googleAuthService.signInWithGoogle();
+
+      if (userCredential == null) {
+        // User canceled
+        setState(() => _isGoogleLoading = false);
+        return;
+      }
+
+      final user = userCredential.user!;
+      final uid = user.uid;
+      final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
+
+      // Check if user exists in Firestore
+      final userDoc =
+          await FirebaseFirestore.instance.collection('user').doc(uid).get();
+
+      setState(() => _isGoogleLoading = false);
+
+      // Existing user with complete profile
+      if (userDoc.exists && userDoc.data()?['role'] != null) {
+        print('✅ Existing Google user - navigating to home');
+
+        // Optionally prompt to link phone if not linked
+        final hasPhone = user.providerData.any(
+          (info) => info.providerId == 'phone',
+        );
+        if (!hasPhone) {
+          _showLinkPhoneDialog();
+        }
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const MainPage()),
+        );
+      } else {
+        // New Google user - start registration flow
+        print('✅ New Google user - starting registration');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => TermsAndConditionsPage(uid: uid)),
+        );
+      }
+    } catch (e) {
+      setState(() => _isGoogleLoading = false);
+
+      String errorMessage = 'Google Sign-In failed';
+      if (e.toString().contains('account-exists-with-different-credential')) {
+        errorMessage =
+            'An account already exists with this email. Please use your phone number to sign in.';
+      } else {
+        errorMessage = 'Google Sign-In failed: ${e.toString()}';
+      }
+
+      _showErrorSnackBar(errorMessage);
+    }
+  }
+
+  void _showLinkPhoneDialog() {
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              backgroundColor: AppColors.surface,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Row(
+                children: [
+                  Icon(Icons.phone_android, color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Link Phone Number',
+                      style: GoogleFonts.poppins(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              content: Text(
+                'Would you like to link a phone number for account recovery? This helps you access your account if you lose access to your Google account.',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(
+                    'Maybe Later',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    // User can link from profile later
+                  },
+                  child: Text(
+                    'Link Now',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+      );
+    });
   }
 
   void _submitNumber() async {
@@ -91,11 +227,8 @@ class _EnterNumberPageState extends State<EnterNumberPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
+      extendBodyBehindAppBar: true,
+
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: Form(
@@ -103,6 +236,8 @@ class _EnterNumberPageState extends State<EnterNumberPage>
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const SizedBox(height: 70),
+
               // Icon
               Center(
                 child: Container(
@@ -124,8 +259,8 @@ class _EnterNumberPageState extends State<EnterNumberPage>
 
               // Title
               Text(
-                'Enter Your Phone Number',
-                style: TextStyle(
+                'Welcome to ECHO',
+                style: GoogleFonts.poppins(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: AppColors.textPrimary,
@@ -135,272 +270,302 @@ class _EnterNumberPageState extends State<EnterNumberPage>
               const SizedBox(height: 8),
 
               Text(
-                'We\'ll send you a verification code',
-                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+                'Sign in to continue',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  color: AppColors.textSecondary,
+                ),
               ).animate().fadeIn(duration: 600.ms, delay: 100.ms),
 
               const SizedBox(height: 32),
 
-              // Phone Input Field
-              Container(
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 10,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: TextFormField(
-                      controller: _phoneController,
-                      autofocus: true,
-                      keyboardType: TextInputType.phone,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(10),
-                        _PhoneNumberFormatter(),
-                      ],
-                      decoration: InputDecoration(
-                        prefixIcon: Container(
-                          padding: const EdgeInsets.only(left: 20, right: 10),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.primary.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  '🇵🇭 +63',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.primary,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        hintText: '917 123 4567',
-                        hintStyle: TextStyle(
-                          color: AppColors.textLight,
-                          fontSize: 18,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: AppColors.surface,
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 20,
-                          vertical: 20,
-                        ),
-                      ),
-                      validator: (value) {
-                        final digits =
-                            value?.replaceAll(RegExp(r'\D'), '') ?? '';
-                        if (digits.isEmpty) {
-                          return 'Please enter your phone number';
-                        }
-                        if (digits.length != 10) {
-                          return 'Enter a valid 10-digit phone number';
-                        }
-                        return null;
-                      },
-                    ),
-                  )
-                  .animate()
-                  .fadeIn(duration: 600.ms, delay: 200.ms)
-                  .slideY(begin: 0.1, end: 0),
+              // Phone Number Label
+              Text(
+                'Sign in with Phone Number',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textPrimary,
+                ),
+              ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
 
               const SizedBox(height: 16),
 
-              // Info Card
+              // Phone Input Field with Arrow Button
               Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.primary.withOpacity(0.1),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: TextFormField(
+                  controller: _phoneController,
+                  autofocus: false,
+                  keyboardType: TextInputType.phone,
+                  style: GoogleFonts.poppins(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                    _PhoneNumberFormatter(),
+                  ],
+                  decoration: InputDecoration(
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.only(left: 16, right: 10),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '🇵🇭 +63',
+                          style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
+                        ),
                       ),
                     ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 20,
-                          color: AppColors.primary,
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Your number will be used for verification only',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
+                    prefixIconConstraints: const BoxConstraints(
+                      minWidth: 0,
+                      minHeight: 0,
                     ),
-                  )
-                  .animate()
-                  .fadeIn(duration: 800.ms, delay: 400.ms)
-                  .slideY(begin: 0.1, end: 0),
-
-              const SizedBox(height: 40),
-
-              // Submit Button
-              AnimatedBuilder(
-                    animation: _animationController,
-                    builder: (context, child) {
-                      return Column(
-                        children: [
-                          Container(
-                            width: double.infinity,
-                            height: 56,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.primary,
-                                  AppColors.primaryLight,
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow:
-                                  _isLoading
-                                      ? []
-                                      : [
-                                        BoxShadow(
-                                          color: AppColors.primary.withOpacity(
-                                            0.3,
-                                          ),
-                                          blurRadius: 20,
-                                          offset: const Offset(0, 10),
-                                        ),
-                                      ],
+                    // Arrow button in the right corner
+                    suffixIcon: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: GestureDetector(
+                        onTap:
+                            _isLoading || _isGoogleLoading
+                                ? null
+                                : _submitNumber,
+                        child: Container(
+                          height: 44,
+                          width: 44,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.primary,
+                                AppColors.primaryLight,
+                              ],
                             ),
-                            child: ElevatedButton(
-                              onPressed: _isLoading ? null : _submitNumber,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.transparent,
-                                shadowColor: Colors.transparent,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                              ),
-                              child:
-                                  _isLoading
-                                      ? SizedBox(
-                                        height: 24,
-                                        width: 24,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2,
+                            borderRadius: BorderRadius.circular(12),
+                            boxShadow:
+                                _isLoading
+                                    ? []
+                                    : [
+                                      BoxShadow(
+                                        color: AppColors.primary.withOpacity(
+                                          0.3,
                                         ),
-                                      )
-                                      : Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          const Text(
-                                            'Send OTP',
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Icon(
-                                            Icons.arrow_forward_rounded,
-                                            color: Colors.white,
-                                          ),
-                                        ],
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 6),
                                       ),
-                            ),
+                                    ],
                           ),
-                          const SizedBox(height: 20),
-                          // Disclaimer text with blue clickable link
-                          Wrap(
-                            alignment: WrapAlignment.center,
+                          child: Center(
+                            child:
+                                _isLoading
+                                    ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 2,
+                                      ),
+                                    )
+                                    : const Icon(
+                                      Icons.arrow_forward,
+                                      color: Colors.white,
+                                      size: 24,
+                                    ),
+                          ),
+                        ).animate().fadeIn(duration: 400.ms, delay: 300.ms),
+                      ),
+                    ),
+                    hintText: '917 123 4567',
+                    hintStyle: GoogleFonts.poppins(
+                      color: AppColors.textLight,
+                      fontSize: 18,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    filled: true,
+                    fillColor: AppColors.surface,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 20,
+                    ),
+                  ),
+                  validator: (value) {
+                    final digits = value?.replaceAll(RegExp(r'\D'), '') ?? '';
+                    if (digits.isEmpty) {
+                      return 'Please enter your phone number';
+                    }
+                    if (digits.length != 10) {
+                      return 'Enter a valid 10-digit phone number';
+                    }
+                    return null;
+                  },
+                ),
+              ).animate().fadeIn(duration: 600.ms, delay: 300.ms),
+
+              const SizedBox(height: 24),
+
+              // Divider with "OR"
+              Row(
+                children: [
+                  Expanded(child: Divider(color: AppColors.divider)),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(
+                      'OR',
+                      style: GoogleFonts.poppins(
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: AppColors.divider)),
+                ],
+              ).animate().fadeIn(duration: 600.ms, delay: 400.ms),
+
+              const SizedBox(height: 24),
+
+              // Google Sign-In Button
+              Container(
+                width: double.infinity,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: ElevatedButton(
+                  onPressed:
+                      _isGoogleLoading || _isLoading ? null : _signInWithGoogle,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black87,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  child:
+                      _isGoogleLoading
+                          ? SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              color: AppColors.primary,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              Image.asset(
+                                'assets/google_logo.png',
+                                height: 24,
+                                width: 24,
+                              ),
+                              const SizedBox(width: 12),
                               Text(
-                                "By continuing, you agree to our ",
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => Terms(),
-                                    ),
-                                  );
-                                },
-                                child: Text(
-                                  "Terms ",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
-                                    decoration: TextDecoration.underline,
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                "and have read our ",
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                              GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => Privacypolicy(),
-                                    ),
-                                  );
-                                },
-                                child: Text(
-                                  "Privacy Policy",
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: AppColors.primary,
-                                    fontWeight: FontWeight.w600,
-                                    decoration: TextDecoration.underline,
-                                  ),
+                                'Continue with Google',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
-                        ],
+                ),
+              ).animate().fadeIn(duration: 600.ms, delay: 500.ms),
+
+              const SizedBox(height: 20),
+
+              // Disclaimer
+              Wrap(
+                alignment: WrapAlignment.center,
+                children: [
+                  Text(
+                    "By continuing, you agree to our ",
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => Terms()),
                       );
                     },
-                  )
-                  .animate()
-                  .fadeIn(duration: 600.ms, delay: 600.ms)
-                  .slideY(begin: 0.1, end: 0),
+                    child: Text(
+                      "Terms ",
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    "and have read our ",
+                    style: GoogleFonts.poppins(
+                      fontSize: 10,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => Privacypolicy(),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      "Privacy Policy",
+                      style: GoogleFonts.poppins(
+                        fontSize: 12,
+                        color: AppColors.primary,
+                        fontWeight: FontWeight.w600,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
             ],
           ),
         ),

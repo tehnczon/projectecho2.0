@@ -24,32 +24,38 @@ class _UserTypeScreenState extends State<UserTypeScreen>
   bool _showRetryOption = false;
   String? _errorMessage;
 
+  // Enhanced user types with clear descriptions
   final List<Map<String, dynamic>> userTypes = [
     {
       'type': 'PLHIV',
       'title': 'Person Living with HIV',
-      'subtitle': 'Access specialized support and resources',
+
       'icon': Icons.favorite,
       'color': AppColors.primary,
       'benefits': [
-        'Confidential support groups',
-        'Health tracking tools',
-        'Treatment resources',
-        'Community connection',
+        'DOH HIV testing form profiling',
+        'Treatment hub locator',
+        'Personalized learnings',
+        'Encouragement dashboard',
+        'Feed anonymous data for research',
       ],
+      'helpText':
+          'Get access to specialized resources, connect with treatment hubs, and contribute to research while maintaining complete privacy and anonymity.',
     },
     {
       'type': 'Health Information Seeker',
       'title': 'Health Information Seeker',
-      'subtitle': 'Learn and support the community',
+
       'icon': Icons.school,
       'color': AppColors.secondary,
       'benefits': [
-        'Educational resources',
-        'Research updates',
-        'Community insights',
-        'Support guidelines',
+        'Demographic profiling',
+        'Treatment hub locator',
+        'Personalized learnings',
+        'Encouragement dashboard',
       ],
+      'helpText':
+          'Access educational content, find testing locations, and get reliable information about HIV prevention and care. No personal health disclosure required.',
     },
   ];
 
@@ -60,8 +66,6 @@ class _UserTypeScreenState extends State<UserTypeScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-
-    // Auto-save progress on init
     _saveProgressLocally();
   }
 
@@ -71,7 +75,6 @@ class _UserTypeScreenState extends State<UserTypeScreen>
     super.dispose();
   }
 
-  // Save registration progress locally as backup
   Future<void> _saveProgressLocally() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -86,31 +89,34 @@ class _UserTypeScreenState extends State<UserTypeScreen>
     }
   }
 
-  void _handleSelection(String userType) async {
-    if (_isLoading) return;
+  void _handleSelection(String? userType) {
+    if (userType == null || _isLoading) return;
 
     HapticFeedback.mediumImpact();
     setState(() {
       selectedType = userType;
       widget.registrationData.userType = userType;
+      _errorMessage = null;
+    });
+  }
+
+  Future<void> _handleContinue() async {
+    if (selectedType == null || _isLoading) return;
+
+    setState(() {
       _isLoading = true;
       _showRetryOption = false;
       _errorMessage = null;
     });
 
-    // Save progress locally before proceeding
     await _saveProgressLocally();
-
-    // Add slight delay for visual feedback
     await Future.delayed(const Duration(milliseconds: 500));
 
-    if (userType == 'PLHIV') {
+    if (selectedType == 'PLHIV') {
       await widget.registrationData.saveToProfiles();
       await widget.registrationData.saveToUser();
-      // PLHIV flow - navigate to diagnosis year
       _navigateToPLHIVFlow();
     } else {
-      // Info Seeker - save immediately and complete
       await widget.registrationData.saveToProfiles();
       _navigateToDemographic();
     }
@@ -118,7 +124,6 @@ class _UserTypeScreenState extends State<UserTypeScreen>
 
   void _navigateToPLHIVFlow() {
     setState(() => _isLoading = false);
-
     RegistrationFlowManager.navigateToNextStep(
       context: context,
       currentStep: 'userType',
@@ -128,7 +133,6 @@ class _UserTypeScreenState extends State<UserTypeScreen>
 
   void _navigateToDemographic() {
     setState(() => _isLoading = false);
-
     RegistrationFlowManager.navigateToNextStep(
       context: context,
       currentStep: 'userType',
@@ -136,87 +140,30 @@ class _UserTypeScreenState extends State<UserTypeScreen>
     );
   }
 
-  void handleNavigationError(String error) {
-    setState(() {
-      _isLoading = false;
-      selectedType = null;
-    });
-
-    _showErrorDialog(
-      title: 'Navigation Error',
-      message: 'Something went wrong. Please try again.',
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text('OK', style: TextStyle(color: AppColors.primary)),
-        ),
-      ],
-    );
-  }
-
-  void _showErrorDialog({
-    required String title,
-    required String message,
-    required List<Widget> actions,
-  }) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder:
-          (context) => AlertDialog(
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            title: Row(
-              children: [
-                Icon(Icons.error_outline, color: AppColors.error, size: 24),
-                SizedBox(width: 8),
-                Text(title, style: TextStyle(fontSize: 18)),
-              ],
-            ),
-            content: Text(message, style: TextStyle(fontSize: 14, height: 1.4)),
-            actions: actions,
-          ),
-    );
-  }
-
-  void _showErrorSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.white, size: 20),
-            SizedBox(width: 8),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: AppColors.error,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        action:
-            _showRetryOption
-                ? SnackBarAction(
-                  label: 'Retry',
-                  textColor: Colors.white,
-                  onPressed: () => _handleSelection(selectedType!),
-                )
-                : null,
-      ),
+  Map<String, dynamic>? _getSelectedTypeData() {
+    return userTypes.firstWhere(
+      (type) => type['type'] == selectedType,
+      orElse: () => {},
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final selectedTypeData = _getSelectedTypeData();
+
     return WillPopScope(
       onWillPop: () async {
         if (_isLoading) {
-          // Prevent back navigation while loading
-          _showErrorSnackBar(
-            'Please wait for the current operation to complete',
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Please wait for the current operation to complete',
+              ),
+              backgroundColor: AppColors.error,
+            ),
           );
           return false;
         }
-        // Save progress when going back
         await _saveProgressLocally();
         return true;
       },
@@ -275,44 +222,69 @@ class _UserTypeScreenState extends State<UserTypeScreen>
 
               // Subtitle
               Text(
-                'Please select your role',
-                style: TextStyle(fontSize: 18, color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ).animate().fadeIn(duration: 600.ms, delay: 100.ms),
+                    'Choose the option that best describes you',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  )
+                  .animate()
+                  .fadeIn(duration: 500.ms, delay: 100.ms)
+                  .slideY(begin: 0.2, end: 0),
 
-              const SizedBox(height: 8),
+              const SizedBox(height: 20),
 
-              // Error message display
-              if (_errorMessage != null)
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.error.withOpacity(0.3)),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        color: AppColors.error,
-                        size: 20,
+              // Privacy and Comfort Notice
+              Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.secondary.withOpacity(0.15),
                       ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _errorMessage!,
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.shield_outlined,
+                              size: 20,
+                              color: AppColors.secondary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                'Your Choice, Your Privacy',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.secondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'You can choose "Health Information Seeker" for any reason—whether you\'re seeking general knowledge, supporting someone, or simply prefer not to disclose. Both options give you valuable resources, and you can always update your profile later.',
                           style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.error,
-                            height: 1.4,
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            height: 1.5,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ).animate().fadeIn(),
+                      ],
+                    ),
+                  )
+                  .animate()
+                  .fadeIn(duration: 700.ms, delay: 150.ms)
+                  .slideY(begin: 0.1, end: 0),
+
+              const SizedBox(height: 24),
 
               // Info Card
               Container(
@@ -356,198 +328,283 @@ class _UserTypeScreenState extends State<UserTypeScreen>
 
               const SizedBox(height: 32),
 
-              // User Type Cards
-              ...userTypes.asMap().entries.map((entry) {
-                final index = entry.key;
-                final type = entry.value;
-                final isSelected = selectedType == type['type'];
-                final isDisabled = _isLoading && !isSelected;
+              // Dropdown Label
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'I\'m registering as:',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ).animate().fadeIn(delay: 400.ms),
 
-                return Container(
-                      margin: const EdgeInsets.only(bottom: 20),
-                      child: InkWell(
-                        onTap:
-                            isDisabled
-                                ? null
-                                : () => _handleSelection(type['type']),
-                        borderRadius: BorderRadius.circular(20),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 300),
-                          padding: const EdgeInsets.all(20),
-                          decoration: BoxDecoration(
-                            color:
-                                isSelected
-                                    ? type['color'].withOpacity(0.1)
-                                    : isDisabled
-                                    ? AppColors.surface.withOpacity(0.5)
-                                    : AppColors.surface,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color:
-                                  isSelected
-                                      ? type['color']
-                                      : isDisabled
-                                      ? AppColors.divider.withOpacity(0.5)
-                                      : AppColors.divider,
-                              width: isSelected ? 2 : 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color:
-                                    isSelected
-                                        ? type['color'].withOpacity(0.2)
-                                        : Colors.black.withOpacity(0.05),
-                                blurRadius: isSelected ? 20 : 10,
-                                offset: const Offset(0, 5),
+              const SizedBox(height: 12),
+
+              // Dropdown Field with Enhanced Descriptions
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color:
+                        selectedType != null
+                            ? AppColors.primary.withOpacity(0.5)
+                            : AppColors.divider,
+                    width: selectedType != null ? 2 : 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color:
+                          selectedType != null
+                              ? AppColors.primary.withOpacity(0.1)
+                              : Colors.black.withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: DropdownButtonFormField<String>(
+                  value: selectedType,
+                  decoration: InputDecoration(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    border: InputBorder.none,
+                  ),
+                  hint: Text(
+                    'Select your role',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 16,
+                    ),
+                  ),
+                  isExpanded: true,
+                  icon: Icon(
+                    Icons.keyboard_arrow_down,
+                    color: AppColors.primary,
+                  ),
+                  dropdownColor: AppColors.surface,
+                  style: TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  // Updated dropdown items to include descriptions
+                  items:
+                      userTypes.map((type) {
+                        return DropdownMenuItem<String>(
+                          value: type['type'],
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: type['color'].withOpacity(0.1),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  type['icon'],
+                                  color: type['color'],
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      type['title'],
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textPrimary,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 2),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Container(
-                                    width: 60,
-                                    height: 60,
-                                    decoration: BoxDecoration(
-                                      color: type['color'].withOpacity(
-                                        isDisabled ? 0.05 : 0.1,
-                                      ),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      type['icon'],
-                                      color: type['color'].withOpacity(
-                                        isDisabled ? 0.5 : 1.0,
-                                      ),
-                                      size: 30,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          type['title'],
-                                          style: TextStyle(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            color:
-                                                isSelected
-                                                    ? type['color']
-                                                    : isDisabled
-                                                    ? AppColors.textPrimary
-                                                        .withOpacity(0.5)
-                                                    : AppColors.textPrimary,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 4),
-                                        Text(
-                                          type['subtitle'],
-                                          style: TextStyle(
-                                            fontSize: 14,
-                                            color: AppColors.textSecondary
-                                                .withOpacity(
-                                                  isDisabled ? 0.5 : 1.0,
-                                                ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (_isLoading && isSelected)
-                                    SizedBox(
-                                      width: 24,
-                                      height: 24,
-                                      child: CircularProgressIndicator(
-                                        color: type['color'],
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  else
-                                    Icon(
-                                      isSelected
-                                          ? Icons.check_circle
-                                          : Icons.arrow_forward_ios,
-                                      color:
-                                          isSelected
-                                              ? type['color']
-                                              : isDisabled
-                                              ? AppColors.textLight.withOpacity(
-                                                0.5,
-                                              )
-                                              : AppColors.textLight,
-                                      size: isSelected ? 24 : 16,
-                                    ),
-                                ],
-                              ),
-                              if (isSelected) ...[
-                                const SizedBox(height: 16),
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: type['color'].withOpacity(0.05),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'What you\'ll get:',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: type['color'],
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      ...(type['benefits'] as List<String>)
-                                          .map(
-                                            (benefit) => Padding(
-                                              padding: const EdgeInsets.only(
-                                                bottom: 4,
-                                              ),
-                                              child: Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.check,
-                                                    size: 14,
-                                                    color: type['color'],
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Text(
-                                                      benefit,
-                                                      style: TextStyle(
-                                                        fontSize: 12,
-                                                        color:
-                                                            AppColors
-                                                                .textSecondary,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                          )
-                                          .toList(),
-                                    ],
-                                  ),
-                                ).animate().fadeIn().slideY(begin: 0.1, end: 0),
-                              ],
-                            ],
+                        );
+                      }).toList(),
+                  onChanged: _isLoading ? null : _handleSelection,
+                ),
+              ).animate().fadeIn(delay: 500.ms).slideY(begin: 0.1, end: 0),
+
+              // Help Text Section (shows when option selected)
+              if (selectedType != null && selectedTypeData!.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: selectedTypeData['color'].withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: selectedTypeData['color'].withOpacity(0.15),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline,
+                        size: 20,
+                        color: selectedTypeData['color'],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          selectedTypeData['helpText'],
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: AppColors.textPrimary,
+                            height: 1.4,
                           ),
                         ),
                       ),
-                    )
-                    .animate()
-                    .fadeIn(delay: (400 + index * 200).ms)
-                    .slideX(begin: 0.1, end: 0);
-              }).toList(),
+                    ],
+                  ),
+                ).animate().fadeIn().slideY(begin: 0.1, end: 0),
+              ],
+
+              // Benefits Section (shows when option selected)
+              if (selectedType != null && selectedTypeData!.isNotEmpty) ...[
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        selectedTypeData['color'].withOpacity(0.08),
+                        selectedTypeData['color'].withOpacity(0.03),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: selectedTypeData['color'].withOpacity(0.2),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.star_rounded,
+                            color: selectedTypeData['color'],
+                            size: 24,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'What you\'ll get:',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: selectedTypeData['color'],
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      ...(selectedTypeData['benefits'] as List<String>)
+                          .map(
+                            (benefit) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    margin: const EdgeInsets.only(top: 2),
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: selectedTypeData['color']
+                                          .withOpacity(0.15),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      Icons.check,
+                                      size: 14,
+                                      color: selectedTypeData['color'],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      benefit,
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: AppColors.textPrimary,
+                                        height: 1.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                          .toList(),
+                    ],
+                  ),
+                ).animate().fadeIn(delay: 100.ms).slideY(begin: 0.1, end: 0),
+              ],
+
+              const SizedBox(height: 32),
+
+              // Continue Button
+              SizedBox(
+                width: double.infinity,
+                height: 56,
+                child: ElevatedButton(
+                  onPressed:
+                      selectedType != null && !_isLoading
+                          ? _handleContinue
+                          : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor:
+                        selectedType != null
+                            ? AppColors.primary
+                            : AppColors.divider,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: selectedType != null ? 4 : 0,
+                    shadowColor: AppColors.primary.withOpacity(0.3),
+                    disabledBackgroundColor: AppColors.divider,
+                  ),
+                  child:
+                      _isLoading
+                          ? SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                'Continue',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Icon(Icons.arrow_forward, size: 20),
+                            ],
+                          ),
+                ),
+              ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1, end: 0),
 
               const SizedBox(height: 24),
 
@@ -561,21 +618,36 @@ class _UserTypeScreenState extends State<UserTypeScreen>
                         color: AppColors.success.withOpacity(0.2),
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                    child: Column(
                       children: [
-                        Icon(Icons.lock, size: 20, color: AppColors.success),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Text(
-                            'Your information is kept confidential and secure',
-                            style: TextStyle(
-                              fontSize: 13,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.lock,
+                              size: 20,
                               color: AppColors.success,
-                              fontWeight: FontWeight.w500,
                             ),
-                            textAlign: TextAlign.center,
+                            const SizedBox(width: 8),
+                            Text(
+                              'Complete Privacy Guaranteed',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppColors.success,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Your information is encrypted, confidential, and never shared. You have full control to update or delete your data anytime.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                            height: 1.4,
                           ),
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),
@@ -587,7 +659,7 @@ class _UserTypeScreenState extends State<UserTypeScreen>
                     end: const Offset(1, 1),
                   ),
 
-              // Connection status indicator
+              // Loading Status
               if (_isLoading)
                 Container(
                   margin: const EdgeInsets.only(top: 16),

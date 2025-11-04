@@ -17,39 +17,15 @@ class GenderSelectionScreen extends StatefulWidget {
 class _GenderSelectionScreenState extends State<GenderSelectionScreen>
     with SingleTickerProviderStateMixin {
   String? selectedGender;
+  String? customGender;
   late AnimationController _animationController;
 
-  final List<Map<String, dynamic>> genderOptions = [
-    {
-      'value': 'Male',
-      'icon': Icons.male,
-      'color': AppColors.primary,
-      'description': 'Male identity',
-    },
-    {
-      'value': 'Female',
-      'icon': Icons.female,
-      'color': const Color.fromARGB(255, 221, 125, 189),
-      'description': 'Female identity',
-    },
-    {
-      'value': 'Transgender',
-      'icon': Icons.transgender,
-      'color': const Color.fromARGB(255, 142, 83, 163),
-      'description': 'Transgender identity',
-    },
-    {
-      'value': 'Other',
-      'icon': Icons.people_outline,
-      'color': const Color.fromARGB(255, 99, 96, 91),
-      'description': 'Other identity',
-    },
-    {
-      'value': 'Non-label',
-      'icon': Icons.all_inclusive,
-      'color': const Color.fromARGB(255, 39, 40, 42),
-      'description': 'Prefer not to label',
-    },
+  final List<String> genderOptions = [
+    'Male',
+    'Female',
+    'Transgender',
+    'Other',
+    'Prefer not to share',
   ];
 
   @override
@@ -67,22 +43,22 @@ class _GenderSelectionScreenState extends State<GenderSelectionScreen>
     super.dispose();
   }
 
-  void _handleSelection(String gender) {
+  void _handleContinue() {
     HapticFeedback.lightImpact();
-    setState(() => selectedGender = gender);
 
-    // Add slight delay for visual feedback
-    Future.delayed(const Duration(milliseconds: 300), () async {
-      widget.registrationData.genderIdentity = gender;
+    final genderToSave =
+        selectedGender == 'Other' ? customGender ?? 'Other' : selectedGender;
 
-      // 🔑 Save profile after gender selection (before user type)
+    if (genderToSave == null || genderToSave.isEmpty) return;
 
-      RegistrationFlowManager.navigateToNextStep(
-        context: context,
-        currentStep: 'gender',
-        registrationData: widget.registrationData,
-      );
-    });
+    widget.registrationData.genderIdentity = selectedGender;
+    widget.registrationData.customGender = customGender; // 👈 Add this line
+
+    RegistrationFlowManager.navigateToNextStep(
+      context: context,
+      currentStep: 'gender',
+      registrationData: widget.registrationData,
+    );
   }
 
   @override
@@ -102,7 +78,7 @@ class _GenderSelectionScreenState extends State<GenderSelectionScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with icon
+            // Header icon
             Center(
               child:
                   Container(
@@ -142,191 +118,170 @@ class _GenderSelectionScreenState extends State<GenderSelectionScreen>
 
             const SizedBox(height: 12),
 
-            // Subtitle
+            // Subtitle info box
             Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withOpacity(0.05),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.primary.withOpacity(0.1),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.primary.withOpacity(0.1)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.favorite, size: 20, color: AppColors.primary),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'We respect all gender identities. Choose the one that best reflects you — your journey matters.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppColors.textSecondary,
+                        height: 1.4,
+                      ),
                     ),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.favorite, size: 20, color: AppColors.primary),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'We respect all gender identities. Choose the one that best reflects you — your journey matters.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: AppColors.textSecondary,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-                .animate()
-                .fadeIn(duration: 700.ms, delay: 200.ms)
-                .slideY(begin: 0.1, end: 0),
+                ],
+              ),
+            ).animate().fadeIn(duration: 700.ms, delay: 200.ms),
 
             const SizedBox(height: 32),
 
-            // Gender Options
-            ...genderOptions.asMap().entries.map((entry) {
-              final index = entry.key;
-              final option = entry.value;
-              final isSelected = selectedGender == option['value'];
+            // Dropdown Selector
+            DropdownButtonFormField<String>(
+              decoration: InputDecoration(
+                labelText: "Select Gender Identity",
+                prefixIcon: Icon(
+                  Icons.wc,
+                  color: AppColors.primary,
+                ), // 👈 added icon
+                filled: true,
+                fillColor: AppColors.surface,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+                ),
+                labelStyle: TextStyle(color: AppColors.textSecondary),
+              ),
+              dropdownColor: AppColors.surface,
+              value: selectedGender,
+              icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+              style: TextStyle(color: AppColors.textPrimary, fontSize: 16),
+              items:
+                  genderOptions
+                      .map(
+                        (gender) => DropdownMenuItem(
+                          value: gender,
+                          child: Text(gender),
+                        ),
+                      )
+                      .toList(),
+              onChanged: (value) {
+                setState(() {
+                  selectedGender = value;
+                  if (value != 'Other') customGender = null;
+                });
+              },
+            ).animate().fadeIn(delay: 300.ms),
 
-              return Container(
-                    margin: const EdgeInsets.only(bottom: 16),
-                    child: InkWell(
-                      onTap: () => _handleSelection(option['value']),
-                      borderRadius: BorderRadius.circular(16),
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color:
-                              isSelected
-                                  ? option['color'].withOpacity(0.1)
-                                  : AppColors.surface,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color:
-                                isSelected
-                                    ? option['color']
-                                    : AppColors.divider,
-                            width: isSelected ? 2 : 1,
-                          ),
-                          boxShadow:
-                              isSelected
-                                  ? [
-                                    BoxShadow(
-                                      color: option['color'].withOpacity(0.2),
-                                      blurRadius: 15,
-                                      offset: const Offset(0, 5),
-                                    ),
-                                  ]
-                                  : [
-                                    BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color:
-                                    isSelected
-                                        ? option['color'].withOpacity(0.2)
-                                        : AppColors.divider.withOpacity(0.3),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                option['icon'],
-                                color:
-                                    isSelected
-                                        ? option['color']
-                                        : AppColors.textSecondary,
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    option['value'],
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight:
-                                          isSelected
-                                              ? FontWeight.bold
-                                              : FontWeight.w500,
-                                      color:
-                                          isSelected
-                                              ? option['color']
-                                              : AppColors.textPrimary,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    option['description'],
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: AppColors.textSecondary,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Icon(
-                              isSelected
-                                  ? Icons.check_circle
-                                  : Icons.arrow_forward_ios,
-                              color:
-                                  isSelected
-                                      ? option['color']
-                                      : AppColors.textLight,
-                              size: isSelected ? 24 : 16,
-                            ),
-                          ],
-                        ),
-                      ),
+            const SizedBox(height: 16),
+
+            // Text field for "Other"
+            if (selectedGender == 'Other')
+              TextFormField(
+                decoration: InputDecoration(
+                  labelText: "Please specify",
+                  labelStyle: TextStyle(color: AppColors.textSecondary),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(
+                      color: AppColors.primary,
+                      width: 1.5,
                     ),
-                  )
-                  .animate()
-                  .fadeIn(delay: (300 + index * 100).ms)
-                  .slideX(begin: 0.1, end: 0);
-            }).toList(),
+                  ),
+                ),
+                onChanged:
+                    (value) => setState(() => customGender = value), // 👈 FIXED
+              ).animate().fadeIn(delay: 400.ms),
+
+            const SizedBox(height: 40),
+
+            // Continue button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed:
+                    selectedGender == null
+                        ? null
+                        : (selectedGender == 'Other' &&
+                            (customGender?.isEmpty ?? true))
+                        ? null
+                        : _handleContinue,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Continue',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ).animate().fadeIn(delay: 500.ms),
 
             const SizedBox(height: 24),
 
-            // Support Message
+            // Support message
             Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        AppColors.success.withOpacity(0.05),
-                        AppColors.primary.withOpacity(0.03),
-                      ],
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.success.withOpacity(0.05),
+                    AppColors.primary.withOpacity(0.03),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.support_agent, color: AppColors.success, size: 24),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Your identity is valid and respected here.',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.support_agent,
-                        color: AppColors.success,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Your identity is valid and respected here.',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
-                .animate()
-                .fadeIn(duration: 1.seconds, delay: 800.ms)
-                .slideY(begin: 0.1, end: 0),
+                ],
+              ),
+            ).animate().fadeIn(duration: 1.seconds, delay: 800.ms),
           ],
         ),
       ),

@@ -39,33 +39,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  String _getGreetingMessage() {
-    final hour = DateTime.now().hour;
-    if (hour >= 5 && hour < 12) {
-      return 'Good Morning';
-    } else if (hour >= 12 && hour <= 17) {
-      return 'Good Afternoon';
-    } else {
-      return 'Good Evening';
-    }
-  }
-
-  IconData _getGreetingIcon() {
-    final hour = DateTime.now().hour;
-    if (hour >= 5 && hour < 12) {
-      return Icons.wb_sunny;
-    } else if (hour >= 12 && hour <= 17) {
-      return Icons.wb_cloudy;
-    } else {
-      return Icons.nights_stay;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final message = _getGreetingMessage();
-    final icon = _getGreetingIcon();
-
     return Scaffold(
       backgroundColor: AppColors.background,
       key: _scaffoldKey,
@@ -75,7 +50,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           slivers: [
             // Modern App Bar
             SliverAppBar(
-              expandedHeight: 100,
+              expandedHeight: 30,
               floating: false,
               pinned: true,
               backgroundColor: AppColors.background,
@@ -90,39 +65,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Row(
-                                children: [
-                                  Icon(
-                                    icon,
-                                    color: AppColors.warning,
-                                    size: 24,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    message,
-                                    style: GoogleFonts.poppins(
-                                      color: const Color.fromARGB(
-                                        255,
-                                        48,
-                                        51,
-                                        56,
-                                      ),
-                                      fontSize: 20,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              )
-                              .animate()
-                              .fadeIn(duration: 800.ms)
-                              .slideX(begin: -0.1, end: 0),
-                          const SizedBox(height: 4),
-                        ],
-                      ),
                       // Stack(
                       //   children: [
                       //     Container(
