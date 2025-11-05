@@ -19,11 +19,7 @@ import 'package:projecho/onboarding/onbrdingAnimationScreen.dart' as onboarding;
 import 'package:projecho/login/animation/appstart.dart' as splash;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:projecho/screens/med_tracker/medication_provider.dart';
-
-// 🔹 TEMPORARY for testing
-// import 'package:projecho/main/mainPage.dart';
-// import 'package:projecho/main/registration_data.dart';
-// import './screens/med_tracker/setup_routine_screen.dart';
+import 'package:projecho/screens/home/articleDetail.dart';
 
 class AppTheme {
   AppTheme._();
@@ -176,19 +172,36 @@ class _MyAppState extends State<MyApp> {
             return const EnterNumberPage();
           },
         ),
-
-        // 🔹 TEMPORARY for testing
-        // home: const SetupRoutineScreen(
-        //   // registrationData: RegistrationData(
-        //   //   // fill required fields with dummy values
-        //   //   uid: 'Test User',
-        //   // ),
-        // ),
         routes: {
           '/onboarding': (context) => onboarding.MyOnboardingScreen(),
           '/enternumber': (context) => EnterNumberPage(),
           '/home': (context) => MainPage(),
           '/profile': (context) => UserProfile(),
+        },
+        // Handle dynamic routes like article detail
+        onGenerateRoute: (settings) {
+          // Article Detail Route
+          if (settings.name == '/article-detail') {
+            final args = settings.arguments as Map<String, dynamic>?;
+
+            if (args != null &&
+                args.containsKey('id') &&
+                args.containsKey('data')) {
+              return MaterialPageRoute(
+                builder:
+                    (context) => ArticleDetailPage(
+                      id: args['id'] as String,
+                      data: args['data'] as Map<String, dynamic>,
+                    ),
+              );
+            }
+
+            // If arguments are invalid, return to home
+            return MaterialPageRoute(builder: (context) => const MainPage());
+          }
+
+          // Default: return null to use routes table
+          return null;
         },
       ),
     );

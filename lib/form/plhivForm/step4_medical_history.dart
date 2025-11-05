@@ -72,7 +72,7 @@ class _Step4MedicalHistoryFormState extends State<Step4MedicalHistoryForm> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '19. Please check all that apply. (optional)',
+                    '15. Please check all that apply. If none, leave blank.',
                     style: _labelStyle(),
                   ),
                   const SizedBox(height: 16),
@@ -222,7 +222,7 @@ class _Step4MedicalHistoryFormState extends State<Step4MedicalHistoryForm> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(

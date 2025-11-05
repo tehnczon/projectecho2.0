@@ -55,10 +55,7 @@ class BasicInfoCard extends StatelessWidget {
             const SizedBox(height: 16),
             if (userData != null) ...[
               ProfileItem(label: "Unique ID", value: userData!['generatedUIC']),
-              ProfileItem(
-                label: "User Type",
-                value: userData!['userType'] ?? userData!['role'],
-              ),
+              ProfileItem(label: "User Type"),
               ProfileItem(
                 label: "Location",
                 value:

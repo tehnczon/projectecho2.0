@@ -82,7 +82,7 @@ class _Step3HistoryOfExposureFormState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '15. Did your birth mother have HIV when you were born? (optional)',
+                    '11. Did your birth mother have HIV when you were born?',
                     style: _labelStyle(),
                   ),
                   const SizedBox(height: 8),
@@ -138,7 +138,7 @@ class _Step3HistoryOfExposureFormState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '16. Answer all. Have you ever experienced any of the following? Please check the appropriate column for each item. (optional)',
+                    '12. Have you ever experienced any of the following? Please check the appropriate column for each item.',
                     style: _labelStyle(),
                   ),
                   const SizedBox(height: 16),
@@ -232,7 +232,7 @@ class _Step3HistoryOfExposureFormState
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('17. Age milestones (optional):', style: _labelStyle()),
+                  Text('13. Age milestones:', style: _labelStyle()),
                   const SizedBox(height: 12),
 
                   Row(
@@ -342,7 +342,7 @@ class _Step3HistoryOfExposureFormState
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '18. If you have ever had sex, please answer this section. If the answer is none, write "0" in the box. (optional)',
+                    '14. If you have ever had sex, please answer this section. If the answer is none, write "0" in the box.',
                     style: _labelStyle(),
                   ),
                   const SizedBox(height: 16),
@@ -506,7 +506,7 @@ class _Step3HistoryOfExposureFormState
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:projecho/screens/home/notification/notification_service.dart';
 
 class MedicationProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -205,6 +206,11 @@ class MedicationProvider extends ChangeNotifier {
       isSetupComplete = true;
 
       _calculateInventoryRunsOut();
+
+      // Schedule notification
+      final notificationService = NotificationService();
+      await notificationService.scheduleMedicationReminder(time);
+
       notifyListeners();
 
       print('✅ Initial medication settings saved');
@@ -221,12 +227,10 @@ class MedicationProvider extends ChangeNotifier {
       final user = _auth.currentUser;
       if (user == null) return false;
 
-      // Check if document exists first
       final docExists = await checkSetupStatus();
 
       if (!docExists) {
         print('⚠️ Cannot update - setup not complete');
-        // Create initial document with just the time
         await _firestore.collection('medicalTracker').doc(user.uid).set({
           'uid': user.uid,
           'generatedUIC': generatedUIC,
@@ -246,6 +250,11 @@ class MedicationProvider extends ChangeNotifier {
       }
 
       medicationTime = newTime;
+
+      // Schedule notification 1 minute before medication time
+      final notificationService = NotificationService();
+      await notificationService.scheduleMedicationReminder(newTime);
+
       notifyListeners();
 
       print('✅ Medication time updated to: $newTime');
@@ -298,6 +307,8 @@ class MedicationProvider extends ChangeNotifier {
   }
 
   // Log medication taken
+
+  // Update the logMedicationTaken method:
   Future<bool> logMedicationTaken() async {
     try {
       final user = _auth.currentUser;
@@ -316,7 +327,6 @@ class MedicationProvider extends ChangeNotifier {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
-      // Check if already taken today
       if (wasTakenOnDate(today)) {
         print('⚠️ Medication already logged for today');
         return false;
@@ -324,7 +334,6 @@ class MedicationProvider extends ChangeNotifier {
 
       final newInventory = currentInventory - 1;
 
-      // Create intake log
       await _firestore
           .collection('medicalTracker')
           .doc(user.uid)
@@ -337,7 +346,6 @@ class MedicationProvider extends ChangeNotifier {
             'treatmentHub': treatmentHub,
           });
 
-      // Update main tracker
       await _firestore.collection('medicalTracker').doc(user.uid).update({
         'currentInventory': newInventory,
         'lastTakenDate': FieldValue.serverTimestamp(),
@@ -352,10 +360,20 @@ class MedicationProvider extends ChangeNotifier {
 
       _calculateInventoryRunsOut();
 
-      // Check if below threshold and send alert to center
+      // Check if below threshold and send alert + notification
       if (newInventory <= threshold) {
         await _sendLowInventoryAlert();
+
+        // Show local notification
+        final notificationService = NotificationService();
+        await notificationService.showLowInventoryNotification(
+          newInventory,
+          threshold,
+        );
       }
+
+      // Check for LTF status
+      await NotificationService.checkLostToFollowUp();
 
       notifyListeners();
       print('✅ Medication logged successfully');
@@ -366,7 +384,7 @@ class MedicationProvider extends ChangeNotifier {
     }
   }
 
-  // Check for missed doses and update
+  // Update the checkMissedDoses method:
   Future<void> checkMissedDoses() async {
     try {
       final user = _auth.currentUser;
@@ -389,7 +407,16 @@ class MedicationProvider extends ChangeNotifier {
         // Alert center if missed more than 3 days
         if (consecutiveMissedDays >= 3) {
           await _sendMissedDosesAlert();
+
+          // Show local notification
+          final notificationService = NotificationService();
+          await notificationService.showMissedDoseNotification(
+            consecutiveMissedDays,
+          );
         }
+
+        // Check for LTF (90 days)
+        await NotificationService.checkLostToFollowUp();
 
         notifyListeners();
       }
@@ -414,6 +441,7 @@ class MedicationProvider extends ChangeNotifier {
         'message':
             'Patient $generatedUIC has $currentInventory pills remaining (below threshold of $threshold)',
         'status': 'pending',
+        'read': false,
         'timestamp': FieldValue.serverTimestamp(),
       });
 
@@ -423,7 +451,7 @@ class MedicationProvider extends ChangeNotifier {
     }
   }
 
-  // Send alert for missed doses
+  // Update the _sendMissedDosesAlert to add 'read' field:
   Future<void> _sendMissedDosesAlert() async {
     try {
       final user = _auth.currentUser;
@@ -440,6 +468,7 @@ class MedicationProvider extends ChangeNotifier {
         'message':
             'Patient $generatedUIC has not taken medication for $consecutiveMissedDays consecutive days',
         'status': 'pending',
+        'read': false,
         'timestamp': FieldValue.serverTimestamp(),
       });
 

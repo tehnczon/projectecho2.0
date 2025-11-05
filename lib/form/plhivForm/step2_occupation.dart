@@ -74,7 +74,7 @@ class _Step2OccupationFormState extends State<Step2OccupationForm> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '12. Current Occupation (please specify main source of income) (optional):',
+                    '8. Current Occupation (please specify main source of income):',
                     style: _labelStyle(),
                   ),
                   const SizedBox(height: 8),
@@ -117,10 +117,7 @@ class _Step2OccupationFormState extends State<Step2OccupationForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '13. Currently in school? (optional)',
-                    style: _labelStyle(),
-                  ),
+                  Text('9. Currently in school? ', style: _labelStyle()),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -250,7 +247,7 @@ class _Step2OccupationFormState extends State<Step2OccupationForm> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '14. Did you work overseas/abroad in the past 5 years? (optional)',
+                    '10. Did you work overseas/abroad in the past 5 years?',
                     style: _labelStyle(),
                   ),
                   const SizedBox(height: 8),
@@ -389,7 +386,8 @@ class _Step2OccupationFormState extends State<Step2OccupationForm> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
+        color: AppColors.primary,
+
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(

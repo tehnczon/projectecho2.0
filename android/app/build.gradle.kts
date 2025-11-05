@@ -10,35 +10,30 @@ plugins {
 
 android {
     namespace = "com.example.projecho"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 35 // ✅ Must be at least 35 for flutter_local_notifications v10+
     ndkVersion = "27.0.12077973"
-    
-   
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        // ✅ Enable Java 17 + desugaring support
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
-        jvmTarget = JavaVersion.VERSION_11.toString()
+        jvmTarget = "17"
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.example.projecho"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = 23
-        targetSdk = flutter.targetSdkVersion
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
     }
@@ -49,6 +44,9 @@ flutter {
 }
 
 dependencies {
+    // ✅ Add this line for backward compatibility (required)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:34.2.0"))
 

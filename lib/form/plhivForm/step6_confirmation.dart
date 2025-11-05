@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../main/registration_data.dart';
 import '../../main/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:projecho/login/signup/privacyPolicy.dart';
+import 'package:projecho/login/signup/terms.dart';
 
 class Step6FinalConfirmation extends StatefulWidget {
   final RegistrationData registrationData;
@@ -85,7 +87,7 @@ class _Step6FinalConfirmationState extends State<Step6FinalConfirmation> {
 
                   _buildInfoRow(
                     Icons.shield_outlined,
-                    'Your data is encrypted and stored securely',
+                    'Your data is stored securely',
                   ),
 
                   const SizedBox(height: 12),
@@ -138,14 +140,64 @@ class _Step6FinalConfirmationState extends State<Step6FinalConfirmation> {
               child: Column(
                 children: [
                   CheckboxListTile(
-                    title: Text(
-                      'I have read and agree to the terms',
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textPrimary,
-                      ),
+                    title: Wrap(
+                      alignment: WrapAlignment.center,
+                      children: [
+                        Text(
+                          'I have read and agree to the ',
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => Terms()),
+                            );
+                          },
+                          child: Text(
+                            "Terms ",
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                        Text(
+                          "and ",
+                          style: GoogleFonts.poppins(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => Privacypolicy(),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            "Privacy Policy",
+                            style: GoogleFonts.poppins(
+                              fontSize: 14,
+                              color: AppColors.primary,
+                              fontWeight: FontWeight.w600,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 8),
                       child: Text(
@@ -160,12 +212,15 @@ class _Step6FinalConfirmationState extends State<Step6FinalConfirmation> {
                     onChanged: (value) {
                       setState(() {
                         _agreed = value ?? false;
-                        // Clear error when user checks the box
-                        if (_agreed) {
-                          _showError = false;
-                        }
+                        if (_agreed) _showError = false;
                       });
+
+                      // 🔥 Notify parent about agreement change
+                      if (widget.onAgreementChanged != null) {
+                        widget.onAgreementChanged!(_agreed);
+                      }
                     },
+
                     dense: false,
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,

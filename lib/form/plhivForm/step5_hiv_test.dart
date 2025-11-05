@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../main/registration_data.dart';
 import '../../main/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Step5PreviousHIVTestForm extends StatefulWidget {
   final RegistrationData registrationData;
@@ -25,6 +26,40 @@ class _Step5PreviousHIVTestFormState extends State<Step5PreviousHIVTestForm> {
   final TextEditingController _testFacilityController = TextEditingController();
   final TextEditingController _testCityController = TextEditingController();
 
+  // Form values
+
+  String? _selectedTreatmentHub;
+
+  // Options
+
+  List<String> _treatmentHubs = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    _loadTreatmentHubs();
+    _loadExistingData();
+  }
+
+  Future<void> _loadTreatmentHubs() async {
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('centers').get();
+      final centers =
+          snapshot.docs.map((doc) => doc['name'] as String).toList();
+
+      setState(() {
+        _treatmentHubs = ['Prefer not to share', ...centers];
+      });
+    } catch (e) {
+      print('Error fetching treatment hubs: $e');
+      setState(() {
+        _treatmentHubs = ['Prefer not to share'];
+      });
+    }
+  }
+
   bool? _everTestedForHIV;
   String? _testResult;
 
@@ -33,16 +68,85 @@ class _Step5PreviousHIVTestFormState extends State<Step5PreviousHIVTestForm> {
     'Negative',
     'Indeterminate',
     'Was not able to get result',
+    'Prefer not to share',
   ];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadExistingData();
-  }
 
   void _loadExistingData() {
     // Load any existing data from registrationData if available
+  }
+
+  Widget _buildDropdown({
+    required String label,
+    required String? value,
+    required List<String> items,
+    required Function(String?) onChanged,
+    IconData? prefixIcon,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: DropdownButtonFormField<String>(
+              value: value,
+              decoration: InputDecoration(
+                prefixIcon:
+                    prefixIcon != null
+                        ? Icon(prefixIcon, color: AppColors.primary)
+                        : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+              ),
+              style: GoogleFonts.poppins(fontSize: 14, color: Colors.black87),
+              dropdownColor: Colors.white,
+              isExpanded: true,
+              hint: Text(
+                'Select $label',
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: Colors.grey[500],
+                ),
+              ),
+              items:
+                  items.map((String item) {
+                    final isPreferNotToShare =
+                        item.toLowerCase() == 'prefer not to share';
+                    return DropdownMenuItem<String>(
+                      value: item,
+                      child: Text(
+                        item,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.poppins(
+                          color:
+                              isPreferNotToShare ? Colors.red : Colors.black87,
+                        ),
+                      ),
+                    );
+                  }).toList(),
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -68,7 +172,7 @@ class _Step5PreviousHIVTestFormState extends State<Step5PreviousHIVTestForm> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '21. Have you ever been tested for HIV before? (optional)',
+                    '16. Have you ever been tested for HIV before?',
                     style: _labelStyle(),
                   ),
                   const SizedBox(height: 8),
@@ -206,15 +310,17 @@ class _Step5PreviousHIVTestFormState extends State<Step5PreviousHIVTestForm> {
                       style: GoogleFonts.poppins(fontSize: 10),
                     ),
                     const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _testFacilityController,
-                      style: GoogleFonts.poppins(fontSize: 12),
-                      decoration: _inputDecoration(
-                        'Facility name',
-                      ).copyWith(hintStyle: const TextStyle(fontSize: 10)),
+                    _buildDropdown(
+                      label: 'Facility name',
+                      value: _selectedTreatmentHub,
+                      items: _treatmentHubs,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedTreatmentHub = value;
+                        });
+                      },
+                      prefixIcon: Icons.local_hospital,
                     ),
-
-                    const SizedBox(height: 12),
 
                     Text(
                       'City/Municipality:',
@@ -267,7 +373,7 @@ class _Step5PreviousHIVTestFormState extends State<Step5PreviousHIVTestForm> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(

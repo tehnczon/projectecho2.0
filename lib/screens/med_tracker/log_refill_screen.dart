@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:projecho/form/plhivForm/app_colors.dart';
+import 'package:projecho/screens/med_tracker/medication_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -14,12 +16,13 @@ class _LogRefillScreenState extends State<LogRefillScreen> {
   int bottlesOnHand = 0;
   final TextEditingController _hubController = TextEditingController();
   List<String> _treatmentHubs = [];
+  bool isSaving = false;
 
   @override
   void initState() {
     super.initState();
     _loadTreatmentHubs();
-    _loadUserHub(); // ✅ fetch user’s treatment hub from Firestore
+    _loadUserHub();
   }
 
   Future<void> _loadTreatmentHubs() async {
@@ -45,7 +48,6 @@ class _LogRefillScreenState extends State<LogRefillScreen> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
 
-      // ✅ Match the structure used in EditProfile
       final roleDataDoc =
           await FirebaseFirestore.instance
               .collection('profiles')
@@ -187,6 +189,56 @@ class _LogRefillScreenState extends State<LogRefillScreen> {
         );
       },
     );
+  }
+
+  Future<void> _updateCabinet() async {
+    // Validate input
+    if (bottlesOnHand == 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Please set the number of bottles'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      isSaving = true;
+    });
+
+    final medProvider = Provider.of<MedicationProvider>(context, listen: false);
+
+    // Call logRefill - 1 bottle = 30 pills
+    final success = await medProvider.logRefill(
+      bottles: bottlesOnHand,
+      hub: _hubController.text.isNotEmpty ? _hubController.text : null,
+    );
+
+    setState(() {
+      isSaving = false;
+    });
+
+    if (success && mounted) {
+      final totalPills = bottlesOnHand * 30;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '✅ Added $bottlesOnHand bottle${bottlesOnHand > 1 ? 's' : ''} ($totalPills pills) to your cabinet!',
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      Navigator.pop(context);
+    } else if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('⚠️ Failed to log refill. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -337,19 +389,27 @@ class _LogRefillScreenState extends State<LogRefillScreen> {
                 width: double.infinity,
                 height: 56,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
+                  onPressed: isSaving ? null : _updateCabinet,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2563EB),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  child: const Text(
-                    'Update Cabinet',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
-                  ),
+                  child:
+                      isSaving
+                          ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                          : const Text(
+                            'Update Cabinet',
+                            style: TextStyle(fontSize: 16, color: Colors.white),
+                          ),
                 ),
               ),
             ],
@@ -357,5 +417,11 @@ class _LogRefillScreenState extends State<LogRefillScreen> {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _hubController.dispose();
+    super.dispose();
   }
 }

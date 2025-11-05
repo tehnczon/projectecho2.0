@@ -304,7 +304,7 @@ class _DrugCabinetScreenState extends State<DrugCabinetScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                wasTakenToday ? "✅ Taken Today!" : "Today's Pill!",
+                wasTakenToday ? "Taken Today!" : "Today's Pill!",
                 style: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.bold,
@@ -461,7 +461,7 @@ class _DrugCabinetScreenState extends State<DrugCabinetScreen> {
           const SizedBox(height: 16),
           Row(
             children: [
-              const Icon(Icons.medication, size: 40, color: Colors.blue),
+              Image.asset('assets/pill.png', width: 60, height: 60),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

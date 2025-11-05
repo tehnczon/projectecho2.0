@@ -308,17 +308,6 @@ class _UserTypeScreenState extends State<UserTypeScreen>
                           size: 20,
                           color: AppColors.primary,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Your participation helps healthcare providers and researchers better understand and support communities affected by HIV.',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                              height: 1.4,
-                            ),
-                          ),
-                        ),
                       ],
                     ),
                   )

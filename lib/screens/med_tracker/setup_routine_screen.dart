@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:projecho/screens/med_tracker/medication_provider.dart';
 import 'select_time_screen.dart';
 import 'drug_cabinet_screen.dart';
+import '../../main/mainPage.dart';
 
 class SetupRoutineScreen extends StatefulWidget {
   const SetupRoutineScreen({Key? key}) : super(key: key);
@@ -192,7 +193,7 @@ class _SetupRoutineScreenState extends State<SetupRoutineScreen> {
     if (success && mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const DrugCabinetScreen()),
+        MaterialPageRoute(builder: (context) => const MainPage()),
       );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(

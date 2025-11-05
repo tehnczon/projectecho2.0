@@ -19,15 +19,6 @@ class Step1DemographicForm extends StatefulWidget {
 }
 
 class _Step1DemographicFormState extends State<Step1DemographicForm> {
-  final TextEditingController _philhealthController = TextEditingController();
-  final TextEditingController _firstNameController = TextEditingController();
-  final TextEditingController _middleNameController = TextEditingController();
-  final TextEditingController _lastNameController = TextEditingController();
-  final TextEditingController _suffixController = TextEditingController();
-  final TextEditingController _motherInitialsController =
-      TextEditingController();
-  final TextEditingController _fatherInitialsController =
-      TextEditingController();
   final TextEditingController _birthOrderController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _ageMonthsController = TextEditingController();
@@ -49,7 +40,6 @@ class _Step1DemographicFormState extends State<Step1DemographicForm> {
 
   String? _sexAtBirth;
   String? _selfIdentity;
-  bool _enrolledPhilHealth = true;
   String? _nationality;
   String? _educationLevel;
   String? _civilStatus;
@@ -123,158 +113,7 @@ class _Step1DemographicFormState extends State<Step1DemographicForm> {
             _sectionHeader('DEMOGRAPHIC DATA'),
             const SizedBox(height: 20),
 
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.divider),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // PhilHealth Number
-                  Text('1. PhilHealth Number (optional)', style: _labelStyle()),
-
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          style: GoogleFonts.poppins(fontSize: 12),
-                          controller: _philhealthController,
-                          decoration: _inputDecoration(
-                            'XX-XXXXXXXXX-X',
-                          ).copyWith(hintStyle: const TextStyle(fontSize: 10)),
-
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(12),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Row(
-                        children: [
-                          Checkbox(
-                            materialTapTargetSize:
-                                MaterialTapTargetSize.shrinkWrap,
-                            value: !_enrolledPhilHealth,
-                            onChanged: (value) {
-                              setState(
-                                () => _enrolledPhilHealth = !(value ?? false),
-                              );
-                            },
-                            activeColor: AppColors.primary,
-                          ),
-                          Text(
-                            'Not enrolled in PhilHealth',
-                            style: GoogleFonts.poppins(fontSize: 10),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.divider),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Full Name
-                  Text('2. Name (Full name)(optional)', style: _labelStyle()),
-                  const SizedBox(height: 8),
-                  _textField(_firstNameController, 'First Name'),
-
-                  const SizedBox(height: 12),
-                  _textField(_middleNameController, 'Middle Name'),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: _textField(_lastNameController, 'Last Name'),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(child: _textField(_suffixController, 'Suffix')),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
             // Parent info & birth order
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.divider),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '3. Parents name & Birth order (optional)',
-                    style: _labelStyle(),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _initialsField(
-                          _motherInitialsController,
-                          'Mother',
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _initialsField(
-                          _fatherInitialsController,
-                          'Father',
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'First 2 letters of Fsthers\'s real name',
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: AppColors.surface,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            _textField(
-                              _birthOrderController,
-
-                              'Birth order',
-                              keyboardType: TextInputType.number,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
             const SizedBox(height: 20),
 
             // 4. Birth Date & Age
@@ -290,7 +129,7 @@ class _Step1DemographicFormState extends State<Step1DemographicForm> {
                 children: [
                   // 🔹 Section title
                   Text(
-                    '4. Birth date and Age (optional)',
+                    '1. Birth date and Age',
                     style: _labelStyle().copyWith(fontSize: 12),
                   ),
                   const SizedBox(height: 8),
@@ -383,7 +222,7 @@ class _Step1DemographicFormState extends State<Step1DemographicForm> {
               child: Column(
                 children: [
                   _radioGroup(
-                    '5. Sex (at birth)(optional)',
+                    '2. Sex (at birth)',
                     ['Male', 'Female'],
                     _sexAtBirth,
                     (val) => setState(() => _sexAtBirth = val),
@@ -464,10 +303,7 @@ class _Step1DemographicFormState extends State<Step1DemographicForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '6. Current Place of Residence (optional)',
-                    style: _labelStyle(),
-                  ),
+                  Text('3. Current Place of Residence ', style: _labelStyle()),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -547,7 +383,7 @@ class _Step1DemographicFormState extends State<Step1DemographicForm> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _radioGroup(
-                    '7. Nationality (optional)',
+                    '4. Nationality ',
                     ['Filipino', 'Other'],
                     _nationality,
                     (val) => setState(() => _nationality = val),
@@ -591,7 +427,7 @@ class _Step1DemographicFormState extends State<Step1DemographicForm> {
               dropdownColor: AppColors.surface,
               icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
               decoration: InputDecoration(
-                labelText: "8. Highest Educational Attainment",
+                labelText: "5. Highest Educational Attainment",
                 labelStyle: GoogleFonts.poppins(
                   fontWeight: FontWeight.w600,
 
@@ -648,7 +484,7 @@ class _Step1DemographicFormState extends State<Step1DemographicForm> {
               dropdownColor: AppColors.surface,
               icon: Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
               decoration: InputDecoration(
-                labelText: "9. Civil Status",
+                labelText: "6. Civil Status",
                 labelStyle: GoogleFonts.poppins(
                   color: AppColors.textPrimary,
                   fontWeight: FontWeight.w600,
@@ -687,7 +523,7 @@ class _Step1DemographicFormState extends State<Step1DemographicForm> {
                 border: Border.all(color: AppColors.divider),
               ),
               child: _radioGroupBool(
-                '10. Are you currently living with a partner? (optional)',
+                '7. Are you currently living with a partner? ',
                 _livingWithPartner,
                 (val) => setState(() => _livingWithPartner = val),
               ),
@@ -711,7 +547,7 @@ class _Step1DemographicFormState extends State<Step1DemographicForm> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _radioGroupBool(
-                      '11. Are you currently pregnant? (if female only) (optional)',
+                      '8. Are you currently pregnant? (if female only) ',
                       _isPregnant,
                       (val) => setState(() => _isPregnant = val),
                     ),
@@ -736,7 +572,7 @@ class _Step1DemographicFormState extends State<Step1DemographicForm> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.grey[800],
+        color: AppColors.primary,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Center(
@@ -946,22 +782,6 @@ class _Step1DemographicFormState extends State<Step1DemographicForm> {
   @override
   void _saveStep1Data() {
     // PII Data (will be hashed when saved to Firestore)
-    widget.registrationData.philhealthNumber =
-        _philhealthController.text.trim();
-    widget.registrationData.firstName = _firstNameController.text.trim();
-    widget.registrationData.middleName = _middleNameController.text.trim();
-    widget.registrationData.lastName = _lastNameController.text.trim();
-    widget.registrationData.suffix = _suffixController.text.trim();
-    widget.registrationData.motherFirstName =
-        _motherInitialsController.text.trim();
-    widget.registrationData.fatherFirstName =
-        _fatherInitialsController.text.trim();
-
-    if (_birthOrderController.text.isNotEmpty) {
-      widget.registrationData.birthOrder = int.tryParse(
-        _birthOrderController.text,
-      );
-    }
 
     // Parse birthdate
     if (_birthDateController.text.isNotEmpty) {
@@ -1021,13 +841,6 @@ class _Step1DemographicFormState extends State<Step1DemographicForm> {
   void dispose() {
     _saveStep1Data(); // Save data before disposing
 
-    _philhealthController.dispose();
-    _firstNameController.dispose();
-    _middleNameController.dispose();
-    _lastNameController.dispose();
-    _suffixController.dispose();
-    _motherInitialsController.dispose();
-    _fatherInitialsController.dispose();
     _birthOrderController.dispose();
     _ageController.dispose();
     _ageMonthsController.dispose();
