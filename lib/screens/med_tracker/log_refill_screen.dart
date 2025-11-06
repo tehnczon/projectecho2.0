@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:projecho/form/plhivForm/app_colors.dart';
+import 'package:projecho/login/signup/plhivForm/app_colors.dart';
 import 'package:projecho/screens/med_tracker/medication_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -23,6 +24,27 @@ class _LogRefillScreenState extends State<LogRefillScreen> {
     super.initState();
     _loadTreatmentHubs();
     _loadUserHub();
+  }
+
+  String? _selectedHub;
+
+  Future<List<String>> fetchCenters() async {
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('centers').get();
+
+      final centers =
+          snapshot.docs.map((doc) => doc['name'] as String).toList();
+
+      if (!centers.contains('Prefer not to share')) {
+        centers.insert(0, 'Prefer not to share');
+      }
+
+      return centers;
+    } catch (e) {
+      print("❌ Error fetching centers: $e");
+      return [];
+    }
   }
 
   Future<void> _loadTreatmentHubs() async {
@@ -359,18 +381,61 @@ class _LogRefillScreenState extends State<LogRefillScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+
                     const SizedBox(height: 8),
-                    TextField(
-                      controller: _hubController,
-                      readOnly: true,
-                      decoration: const InputDecoration(
-                        filled: true,
-                        fillColor: Colors.white,
+                    DropdownButtonFormField<String>(
+                      isExpanded: true,
+
+                      value: _selectedHub,
+                      dropdownColor: AppColors.surface,
+                      decoration: InputDecoration(
+                        prefixIcon: Icon(
+                          Icons.local_hospital,
+                          color: AppColors.primary,
+                        ),
                         border: OutlineInputBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                          borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide.none,
                         ),
+                        filled: true,
+                        fillColor: AppColors.surface,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 16,
+                        ),
                       ),
+                      hint: Text(
+                        "Choose Treatment Hub",
+                        style: TextStyle(color: AppColors.textLight),
+                      ),
+                      items:
+                          _treatmentHubs.map((hub) {
+                            final isPreferNotToShare =
+                                hub.toLowerCase() == 'prefer not to share';
+                            return DropdownMenuItem<String>(
+                              value: hub,
+                              child: Text(
+                                hub,
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                                style: TextStyle(
+                                  color:
+                                      isPreferNotToShare
+                                          ? Colors.red
+                                          : AppColors.textPrimary,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+
+                      onChanged: (value) {
+                        // your onChanged logic
+
+                        HapticFeedback.lightImpact();
+                        setState(() {
+                          _selectedHub = value;
+                        });
+                      },
                     ),
                     const SizedBox(height: 16),
                     const Text(

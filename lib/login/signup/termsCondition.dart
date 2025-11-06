@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:projecho/main/app_theme.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projecho/login/signup/UIC.dart';
 import 'package:projecho/main/registration_data.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -11,7 +10,11 @@ import 'package:url_launcher/url_launcher.dart';
 class TermsAndConditionsPage extends StatefulWidget {
   final String uid;
 
-  const TermsAndConditionsPage({super.key, required this.uid});
+  const TermsAndConditionsPage({
+    super.key,
+    required this.uid,
+    required String phoneNumber,
+  });
 
   @override
   State<TermsAndConditionsPage> createState() => _TermsAndConditionsPageState();

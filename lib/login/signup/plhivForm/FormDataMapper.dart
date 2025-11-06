@@ -10,13 +10,7 @@ class FormDataMapper {
     Map<String, dynamic> state,
   ) {
     // PII Data
-    regData.philhealthNumber = controllers['philhealth']?.text.trim();
-    regData.firstName = controllers['firstName']?.text.trim();
-    regData.middleName = controllers['middleName']?.text.trim();
-    regData.lastName = controllers['lastName']?.text.trim();
-    regData.suffix = controllers['suffix']?.text.trim();
-    regData.motherFirstName = controllers['motherInitials']?.text.trim();
-    regData.fatherFirstName = controllers['fatherInitials']?.text.trim();
+
     regData.birthOrder = int.tryParse(controllers['birthOrder']?.text ?? '');
 
     // Parse birthdate
@@ -164,14 +158,6 @@ class FormSubmissionHandler {
         throw Exception('Failed to save analytics data');
       }
 
-      // Step 2: Save hashed secure data (PII)
-      print('🔒 Saving secure hashed data...');
-      bool secureSuccess = await regData.saveSecureData();
-
-      if (!secureSuccess) {
-        throw Exception('Failed to save secure data');
-      }
-
       // Step 3: Save user profile
       print('👤 Saving user profile...');
       bool userSuccess = await regData.saveToUser();
@@ -276,13 +262,6 @@ extension RegistrationDataFormHelper on RegistrationData {
 
     // Count all optional fields
     final fields = [
-      philhealthNumber,
-      firstName,
-      middleName,
-      lastName,
-      suffix,
-      motherFirstName,
-      fatherFirstName,
       birthOrder,
       birthDate,
       sexAssignedAtBirth,

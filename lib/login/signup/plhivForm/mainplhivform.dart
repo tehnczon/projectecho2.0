@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/main/registration_data.dart';
-import 'package:projecho/form/plhivForm/step1_demographic_data.dart';
-import 'package:projecho/form/plhivForm/step2_occupation.dart';
-import 'package:projecho/form/plhivForm/Step3_HistoryOfExposureForm.dart';
-import 'package:projecho/form/plhivForm/step4_medical_history.dart';
-import 'package:projecho/form/plhivForm/step5_hiv_test.dart';
-import 'package:projecho/form/plhivForm/step6_confirmation.dart';
+import 'package:projecho/login/signup/plhivForm/step1_demographic_data.dart';
+import 'package:projecho/login/signup/plhivForm/step2_occupation.dart';
+import 'package:projecho/login/signup/plhivForm/Step3_HistoryOfExposureForm.dart';
+import 'package:projecho/login/signup/plhivForm/step4_medical_history.dart';
+import 'package:projecho/login/signup/plhivForm/step5_hiv_test.dart';
+import 'package:projecho/login/signup/plhivForm/step6_confirmation.dart';
 import 'package:projecho/login/registration_flow_manager.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'FormDataMapper.dart';
@@ -443,37 +444,34 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
         // Update location data
         widget.registrationData.updateLocationFromForm();
 
-        // Save analytics data (non-PII)
-        bool analyticsSuccess =
-            await widget.registrationData.saveToAnalyticData();
+        // 1. Encrypt phone number first
+        final encryptedPhone = await _encryptPhoneNumber(
+          widget.registrationData.phoneNumber ?? '',
+        );
 
-        if (!analyticsSuccess) {
-          throw Exception('Failed to save analytics data');
-        }
-
-        // Save hashed secure data (PII)
-        bool secureSuccess = await widget.registrationData.saveSecureData();
-
-        if (!secureSuccess) {
-          throw Exception('Failed to save secure data');
-        }
-
-        // Save user profile
-        bool userSuccess = await widget.registrationData.saveToUser();
+        // 2. Save to 'user' collection (WITH encrypted phone)
+        bool userSuccess = await widget.registrationData.saveToUser(
+          encryptedPhone: encryptedPhone,
+        );
 
         if (!userSuccess) {
           throw Exception('Failed to save user profile');
         }
 
-        // Save to profiles
+        // 3. Save to 'profiles' collection (user-specific data)
         bool profileSuccess = await widget.registrationData.saveToProfiles();
 
         if (!profileSuccess) {
           throw Exception('Failed to save profile');
         }
 
-        // Save demographics (optional, can fail without blocking)
-        await widget.registrationData.saveToUserDemographic();
+        // 4. Save analytics data (anonymized, non-PII) - optional, non-blocking
+        try {
+          await widget.registrationData.saveToAnalyticData();
+        } catch (e) {
+          // Non-critical, log and continue
+          print('⚠️ Analytics save failed (non-critical): $e');
+        }
 
         // Success - clear local progress
         await _clearLocalProgress();
@@ -516,6 +514,33 @@ class _PLHIVStepperScreenState extends State<PLHIVStepperScreen>
           return;
         }
       }
+    }
+  }
+
+  /// Encrypt phone number using cloud function
+  Future<String?> _encryptPhoneNumber(String phoneNumber) async {
+    try {
+      final url = Uri.parse('https://encryptphone-sgjiksmfoa-uc.a.run.app');
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'phoneNumber': phoneNumber}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final encryptedPhone = data['encrypted'] as String?;
+        print('✅ Phone encrypted successfully');
+        return encryptedPhone;
+      } else {
+        print('⚠️ Encryption returned ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('⚠️ Failed to encrypt phone: $e');
+      return null;
     }
   }
 

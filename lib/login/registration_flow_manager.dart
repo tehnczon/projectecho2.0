@@ -7,12 +7,11 @@ import 'package:projecho/login/signup/UIC.dart';
 import 'package:projecho/login/signup/location.dart';
 import 'package:projecho/login/signup/genID.dart';
 import 'package:projecho/login/signup/userType.dart';
-import 'package:projecho/form/plhivForm/yeardiag.dart';
-import 'package:projecho/form/plhivForm/trtmentHub.dart';
-import 'package:projecho/form/plhivForm/profilingOnbrding_1.dart';
-import 'package:projecho/form/plhivForm/mainplhivform.dart';
+import 'package:projecho/login/signup/plhivForm/yeardiag.dart';
+import 'package:projecho/login/signup/plhivForm/trtmentHub.dart';
+import 'package:projecho/login/signup/plhivForm/profilingOnbrding_1.dart';
+import 'package:projecho/login/signup/plhivForm/mainplhivform.dart';
 import 'package:projecho/login/signup/wlcmPrjecho.dart';
-import 'package:projecho/form/demographic/demographic.dart';
 
 class RegistrationFlowManager {
   static const String _progressKey = 'registration_progress';
@@ -30,7 +29,6 @@ class RegistrationFlowManager {
     'plhivForm': 7,
     'complete': 8,
     //infoseeker onboarding
-    'Demographic': 4,
   };
 
   // Save current progress
@@ -206,7 +204,11 @@ class RegistrationFlowManager {
         _handleNavigationError(context, error);
       });
     } else {
-      _handleFlowCompletion(context, registrationData);
+      await clearProgress();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => WelcomeScreen()),
+      );
     }
   }
 
@@ -243,10 +245,8 @@ class RegistrationFlowManager {
         if (data.userType == 'PLHIV') {
           return 'yearDiag';
         } else {
-          return 'Demographic'; // Info seekers complete here
+          return 'complete'; // Info seekers complete here
         }
-      case 'Demographic':
-        return 'complete';
       case 'yearDiag':
         return 'treatmentHub';
       case 'treatmentHub':
@@ -270,8 +270,6 @@ class RegistrationFlowManager {
       case 'userType':
         return 'gender';
       case 'yearDiag':
-        return 'userType';
-      case 'Demographic':
         return 'userType';
       case 'treatmentHub':
         return 'yearDiag';
@@ -297,8 +295,6 @@ class RegistrationFlowManager {
         return UserTypeScreen(registrationData: data);
       case 'yearDiag':
         return YearDiagPage(registrationData: data);
-      case 'Demographic':
-        return Demographic(registrationData: data);
       case 'treatmentHub':
         return TreatmentHubScreen(registrationData: data);
       case 'plhivOnboarding':
@@ -309,69 +305,6 @@ class RegistrationFlowManager {
         return null; // Handle completion separately
       default:
         return null;
-    }
-  }
-
-  // Handle flow completion
-  static void _handleFlowCompletion(
-    BuildContext context,
-    RegistrationData registrationData,
-  ) async {
-    try {
-      // Show completion loading
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder:
-            (_) => WillPopScope(
-              onWillPop: () async => false,
-              child: AlertDialog(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
-                    Text('Completing registration...'),
-                  ],
-                ),
-              ),
-            ),
-      );
-
-      // Save to Firestore
-      bool success = await registrationData.saveToUser();
-
-      if (success) {
-        // Clear progress
-        await clearProgress();
-
-        Navigator.pop(context); // Close loading dialog
-
-        // Navigate to appropriate completion screen
-        if (registrationData.userType == 'PLHIV') {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => WelcomeScreen()),
-            (route) => false,
-          );
-        } else {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (_) => WelcomeScreen()),
-            (route) => false,
-          );
-        }
-
-        // Show success message
-      } else {
-        throw Exception('Failed to save registration data');
-      }
-    } catch (e) {
-      Navigator.pop(context); // Close loading dialog
-      _handleSaveError(context, e.toString());
     }
   }
 
@@ -461,8 +394,6 @@ class RegistrationFlowManager {
         return 'User Type Selection';
       case 'yearDiag':
         return 'Diagnosis Year';
-      case 'Demographic':
-        return 'Demographic';
       case 'treatmentHub':
         return 'Treatment Hub';
       case 'plhivOnboarding':

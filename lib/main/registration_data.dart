@@ -1,24 +1,13 @@
 import 'dart:async';
-import 'dart:convert';
-import 'package:crypto/crypto.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:projecho/screens/analytics/components/services/analytics_processing_service.dart';
 
 class RegistrationData {
-  // ============================================
-  // PERSONAL IDENTIFIABLE INFORMATION (PII)
-  // Stored as plaintext locally, hashed in Firestore
-  // ============================================
   String uid;
 
   // Step 1: Demographic Data (PII)
-  String? philhealthNumber;
-  String? firstName;
-  String? middleName;
-  String? lastName;
-  String? suffix;
-  String? motherFirstName;
-  String? fatherFirstName;
+  String? phoneNumber;
+  String? encryptedPhone; // The encrypted version for security
   int? birthOrder;
   DateTime? birthDate;
   String? currentCity;
@@ -109,13 +98,6 @@ class RegistrationData {
 
   RegistrationData({
     required this.uid,
-    this.philhealthNumber,
-    this.firstName,
-    this.middleName,
-    this.lastName,
-    this.suffix,
-    this.motherFirstName,
-    this.fatherFirstName,
     this.birthOrder,
     this.birthDate,
     this.currentCity,
@@ -169,31 +151,6 @@ class RegistrationData {
     this.city,
     this.barangay,
   });
-
-  // ============================================
-  // HASHING UTILITIES
-  // ============================================
-
-  /// Hash sensitive data using SHA-256
-  static String _hashData(String? data) {
-    if (data == null || data.isEmpty) return '';
-    var bytes = utf8.encode(data);
-    var digest = sha256.convert(bytes);
-    return digest.toString();
-  }
-
-  /// Create composite hash for unique identification
-  String _createCompositeHash() {
-    final components = [
-      firstName ?? '',
-      middleName ?? '',
-      lastName ?? '',
-      birthDate?.toIso8601String() ?? '',
-      motherFirstName ?? '',
-      fatherFirstName ?? '',
-    ].join('|');
-    return _hashData(components);
-  }
 
   // ============================================
   // COMPUTED PROPERTIES
@@ -292,7 +249,6 @@ class RegistrationData {
       'generatedUIC': generatedUIC,
 
       // Hashed identifier (for deduplication without exposing PII)
-      'compositeHash': _createCompositeHash(),
 
       // Step 1: Demographic (Non-PII)
       'birthDate': birthDate != null ? Timestamp.fromDate(birthDate!) : null,
@@ -365,37 +321,6 @@ class RegistrationData {
     return data;
   }
 
-  /// Prepare PII data for secure storage (HASHED)
-  Map<String, dynamic> toSecureFirestore() {
-    return {
-      'uid': uid,
-      'compositeHash': _createCompositeHash(),
-
-      // Hashed PII
-      'philhealthNumberHash': _hashData(philhealthNumber),
-      'firstNameHash': _hashData(firstName),
-      'middleNameHash': _hashData(middleName),
-      'lastNameHash': _hashData(lastName),
-      'suffixHash': _hashData(suffix),
-      'motherFirstNameHash': _hashData(motherFirstName),
-      'fatherFirstNameHash': _hashData(fatherFirstName),
-      'birthOrderHash': _hashData(birthOrder?.toString()),
-
-      // Location hashes
-      'currentCityHash': _hashData(currentCity),
-      'currentProvinceHash': _hashData(currentProvince),
-      'permanentCityHash': _hashData(permanentCity),
-      'permanentProvinceHash': _hashData(permanentProvince),
-      'birthCityHash': _hashData(birthCity),
-      'birthProvinceHash': _hashData(birthProvince),
-      'testFacilityHash': _hashData(testFacility),
-      'testCityHash': _hashData(testCity),
-
-      'createdAt': FieldValue.serverTimestamp(),
-      'updatedAt': FieldValue.serverTimestamp(),
-    };
-  }
-
   // ============================================
   // SAVE TO FIRESTORE
   // ============================================
@@ -430,24 +355,6 @@ class RegistrationData {
       return true;
     } catch (e) {
       print('❌ Error saving analytics data: $e');
-      return false;
-    }
-  }
-
-  /// Save hashed PII to secure collection
-  Future<bool> saveSecureData() async {
-    try {
-      final firestore = FirebaseFirestore.instance;
-
-      await firestore
-          .collection('secureUserData')
-          .doc(uid)
-          .set(toSecureFirestore(), SetOptions(merge: true));
-
-      print('✅ Secure hashed data saved for user: $uid');
-      return true;
-    } catch (e) {
-      print('❌ Error saving secure data: $e');
       return false;
     }
   }
@@ -564,19 +471,17 @@ class RegistrationData {
     }
   }
 
-  Future<bool> saveToUser() async {
+  Future<bool> saveToUser({String? encryptedPhone}) async {
     try {
       await FirebaseFirestore.instance.collection('user').doc(uid).set({
         'role': role,
         'createdAt': FieldValue.serverTimestamp(),
         'lastLogin': FieldValue.serverTimestamp(),
         'isActive': true,
+        'phone': encryptedPhone ?? phoneNumber, // Use encrypted if available
       }, SetOptions(merge: true));
-
-      print('✅ User profile saved to Firestore: $uid');
       return true;
     } catch (e) {
-      print('❌ Error saving to Firestore: $e');
       return false;
     }
   }
@@ -631,13 +536,6 @@ class RegistrationData {
 
   Map<String, dynamic> toJson() => {
     'uid': uid,
-    'philhealthNumber': philhealthNumber,
-    'firstName': firstName,
-    'middleName': middleName,
-    'lastName': lastName,
-    'suffix': suffix,
-    'motherFirstName': motherFirstName,
-    'fatherFirstName': fatherFirstName,
     'birthOrder': birthOrder,
     'birthDate': birthDate?.toIso8601String(),
     'currentCity': currentCity,
@@ -675,13 +573,6 @@ class RegistrationData {
   factory RegistrationData.fromJson(Map<String, dynamic> json) =>
       RegistrationData(
         uid: json['uid'],
-        philhealthNumber: json['philhealthNumber'],
-        firstName: json['firstName'],
-        middleName: json['middleName'],
-        lastName: json['lastName'],
-        suffix: json['suffix'],
-        motherFirstName: json['motherFirstName'],
-        fatherFirstName: json['fatherFirstName'],
         birthOrder: json['birthOrder'],
         birthDate:
             json['birthDate'] != null

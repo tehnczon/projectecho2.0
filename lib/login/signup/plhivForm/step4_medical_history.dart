@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../main/registration_data.dart';
-import '../../main/app_theme.dart';
+import '../../../main/registration_data.dart';
+import '../../../main/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class Step4MedicalHistoryForm extends StatefulWidget {

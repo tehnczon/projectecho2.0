@@ -181,20 +181,16 @@ class SharedAxisTransition extends PageRouteBuilder {
     Widget child,
     SharedAxisTransitionType type,
   ) {
-    Offset primaryBegin, primaryEnd, secondaryBegin, secondaryEnd;
+    Offset primaryBegin, primaryEnd;
 
     switch (type) {
       case SharedAxisTransitionType.horizontal:
         primaryBegin = const Offset(1.0, 0.0);
         primaryEnd = Offset.zero;
-        secondaryBegin = Offset.zero;
-        secondaryEnd = const Offset(-1.0, 0.0);
         break;
       case SharedAxisTransitionType.vertical:
         primaryBegin = const Offset(0.0, 1.0);
         primaryEnd = Offset.zero;
-        secondaryBegin = Offset.zero;
-        secondaryEnd = const Offset(0.0, -1.0);
         break;
     }
 

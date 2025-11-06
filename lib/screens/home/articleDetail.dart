@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ArticleDetailPage extends StatelessWidget {
   final String id;
@@ -91,7 +92,7 @@ class ArticleDetailPage extends StatelessWidget {
           SliverToBoxAdapter(
             child: Container(
               decoration: BoxDecoration(
-                color: AppColors.background,
+                color: AppColors.surface,
                 borderRadius: const BorderRadius.only(
                   topLeft: Radius.circular(30),
                   topRight: Radius.circular(30),
@@ -158,19 +159,6 @@ class ArticleDetailPage extends StatelessWidget {
                     // Meta Info
                     Row(
                       children: [
-                        Icon(
-                          Icons.access_time,
-                          size: 16,
-                          color: AppColors.textLight,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${data['readTime'] ?? 5} min read',
-                          style: TextStyle(
-                            color: AppColors.textLight,
-                            fontSize: 14,
-                          ),
-                        ),
                         const SizedBox(width: 16),
                         Icon(
                           Icons.people,
@@ -191,26 +179,93 @@ class ArticleDetailPage extends StatelessWidget {
                       ],
                     ).animate().fadeIn(duration: 600.ms, delay: 200.ms),
 
+                    Divider(color: AppColors.divider),
                     const SizedBox(height: 24),
 
-                    // Divider
-                    Divider(color: AppColors.divider),
+                    Text(
+                      data['subtitle'] ?? '',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                        height: 1.8,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
 
                     const SizedBox(height: 24),
 
                     // Content
                     Text(
-                          data['content'] ?? '',
-                          style: GoogleFonts.inter(
+                      data['content'] ?? '',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        color: AppColors.textPrimary,
+                        height: 1.8,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+
+                    const SizedBox(height: 40),
+
+                    Divider(color: AppColors.divider),
+
+                    const SizedBox(height: 20),
+
+                    Text('📖 Learn More', style: TextStyle(fontSize: 16)),
+
+                    Row(
+                      children: [
+                        Text(
+                          'Source: ',
+                          style: TextStyle(
+                            color: AppColors.textLight,
                             fontSize: 16,
-                            color: AppColors.textSecondary,
-                            height: 1.8,
-                            letterSpacing: 0.2,
                           ),
-                        )
-                        .animate()
-                        .fadeIn(duration: 800.ms, delay: 300.ms)
-                        .slideY(begin: 0.05, end: 0),
+                        ),
+                        InkWell(
+                          onTap: () async {
+                            final url = data['source'] ?? '';
+                            if (url.isNotEmpty &&
+                                await canLaunchUrl(Uri.parse(url))) {
+                              await launchUrl(
+                                Uri.parse(url),
+                                mode: LaunchMode.externalApplication,
+                              );
+                            }
+                          },
+                          child: Text(
+                            data['source'] ?? '',
+                            style: GoogleFonts.inter(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.blue, // make it look like a link
+                              height: 1.8,
+                              letterSpacing: 0.2,
+                              decoration:
+                                  TextDecoration
+                                      .underline, // underline for visual cue
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    Divider(color: AppColors.divider),
+
+                    const SizedBox(height: 20),
+
+                    Text(
+                      'Project ECHO believes that knowledge saves lives — and no one should feel alone in their HIV journey.',
+                      style: TextStyle(
+                        color: AppColors.textLight,
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
 
                     const SizedBox(height: 40),
                   ],

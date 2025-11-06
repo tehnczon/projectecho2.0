@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_initicon/flutter_initicon.dart';
-import 'package:projecho/form/plhivForm/app_colors.dart';
+import 'package:projecho/login/signup/plhivForm/app_colors.dart';
 
 class ProfileHeader extends StatelessWidget {
   final String displayName;

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:projecho/form/plhivForm/app_colors.dart';
+import 'package:projecho/login/signup/plhivForm/app_colors.dart';
 
 class QuickActionsCard extends StatelessWidget {
   final VoidCallback onTermsTap;

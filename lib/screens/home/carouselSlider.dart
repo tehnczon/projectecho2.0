@@ -8,7 +8,7 @@ import 'webview_screen.dart';
 class ModernBannerModel {
   final String title;
   final String subtitle;
-  final List<Color> gradient;
+  // final List<Color> gradient;
   final String imageUrl;
   final IconData fallbackIcon;
   final String? url;
@@ -17,7 +17,7 @@ class ModernBannerModel {
   ModernBannerModel({
     required this.title,
     required this.subtitle,
-    required this.gradient,
+    // required this.gradient,
     required this.imageUrl,
     required this.fallbackIcon,
     this.url,
@@ -39,33 +39,34 @@ class _ModernCarouselSliderState extends State<ModernCarouselSlider> {
 
   final List<ModernBannerModel> banners = [
     ModernBannerModel(
-      title: 'HIV.gov',
-      subtitle:
-          'Official U.S. government portal for federal HIV and AIDS resources',
-      gradient: [const Color(0xFF1877F2), const Color(0xFF0C63D4)],
+      title: ' HIV 101',
+      subtitle: 'Understanding HIV',
+      // gradient: [const Color(0xFF1877F2), const Color(0xFF0C63D4)],
       imageUrl:
-          'https://files.hiv.gov/s3fs-public/2025-07/OIDP_HIVgov_Blog-Email_ClinicalInfo-v01-540x405_0_0%20%281%29.jpg',
+          'https://www.cdc.gov/hiv/media/images/cdc-about-hiv-thumbnail_1.jpg',
       fallbackIcon: Icons.health_and_safety,
-      url: 'https://www.hiv.gov/',
+      url: 'https://www.cdc.gov/hiv/about/index.html',
     ),
     ModernBannerModel(
-      title: 'CDC HIV',
+      title: 'PrEP, ART and PEP?',
       subtitle:
-          'Information for the public, healthcare workers, and policymakers',
-      gradient: [const Color(0xFF1877F2), const Color(0xFF0C63D4)],
+          'Address three crucial tools in the fight against HIV: PrEP, ART and PEP.',
+      // gradient: [const Color(0xFF1877F2), const Color(0xFF0C63D4)],
       imageUrl:
-          'https://logos-world.net/wp-content/uploads/2021/09/CDC-Logo.png',
+          'https://www.cdi.net.co/images/blogs/mac_diferencias-entre-prep-tarv-y-pep-entendiendo-las-herramientas-contra-el-vih_1692998334_wmhcR.jpg',
       fallbackIcon: Icons.article,
-      url: 'https://www.cdc.gov/hiv/',
+      url:
+          'https://www.cdi.net.co/blogs/news/differences-between-prep-art-and-pep-understanding-the-tools-against-hiv',
     ),
     ModernBannerModel(
-      title: 'PNAC',
+      title: 'Common Myths About HIV and AIDS',
       subtitle:
-          'Central advisory body for HIV/AIDS prevention in the Philippines',
-      gradient: [const Color(0xFF1877F2), const Color(0xFF0C63D4)],
-      imageUrl: 'https://commusta.ph/wp-content/uploads/2022/12/pnac.png',
+          'Learned enough to know that HIV-positive aren\'t dangerous or doomed.',
+      // gradient: [const Color(0xFF1877F2), const Color(0xFF0C63D4)],
+      imageUrl: 'https://img.youtube.com/vi/2X0o_w8YyGo/maxresdefault.jpg',
       fallbackIcon: Icons.people,
-      url: 'https://pnac.doh.gov.ph/',
+      url:
+          'https://www.webmd.com/hiv-aids/top-10-myths-misconceptions-about-hiv-aids',
     ),
   ];
 
@@ -137,37 +138,35 @@ class _ModernCarouselSliderState extends State<ModernCarouselSlider> {
                                 flex: 6,
                                 child: Container(
                                   width: double.infinity,
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      colors: banner.gradient,
-                                      begin: Alignment.topLeft,
-                                      end: Alignment.bottomRight,
-                                    ),
-                                  ),
+                                  // decoration: BoxDecoration(
+                                  //   gradient: LinearGradient(
+                                  //     colors: banner.gradient,
+                                  //     begin: Alignment.topLeft,
+                                  //     end: Alignment.bottomRight,
+                                  //   ),
+                                  // ),
                                   child: Stack(
                                     children: [
                                       // Background image with opacity
                                       Positioned.fill(
-                                        child: Opacity(
-                                          opacity: 0.15,
-                                          child: Image.network(
-                                            banner.imageUrl,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (
-                                              context,
-                                              error,
-                                              stackTrace,
-                                            ) {
-                                              return Center(
-                                                child: Icon(
-                                                  banner.fallbackIcon,
-                                                  size: 60,
-                                                  color: Colors.white
-                                                      .withOpacity(0.3),
+                                        child: Image.network(
+                                          banner.imageUrl,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (
+                                            context,
+                                            error,
+                                            stackTrace,
+                                          ) {
+                                            return Center(
+                                              child: Icon(
+                                                banner.fallbackIcon,
+                                                size: 60,
+                                                color: Colors.white.withOpacity(
+                                                  0.3,
                                                 ),
-                                              );
-                                            },
-                                          ),
+                                              ),
+                                            );
+                                          },
                                         ),
                                       ),
                                     ],
@@ -190,7 +189,7 @@ class _ModernCarouselSliderState extends State<ModernCarouselSlider> {
                                         banner.title,
                                         style: GoogleFonts.inter(
                                           color: const Color(0xFF1C1E21),
-                                          fontSize: 18,
+                                          fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                           letterSpacing: -0.3,
                                         ),

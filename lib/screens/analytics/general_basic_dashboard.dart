@@ -440,14 +440,6 @@ class GeneralBasicDashboard extends StatelessWidget {
                 ),
               ),
               SizedBox(width: 12),
-              Expanded(
-                child: _buildStatCard(
-                  icon: Icons.trending_up,
-                  value: '+${insights.communityGrowth.toStringAsFixed(1)}%',
-                  label: 'Monthly Growth',
-                  color: Color(0xFF42B883),
-                ),
-              ),
             ],
           ),
           SizedBox(height: 16),

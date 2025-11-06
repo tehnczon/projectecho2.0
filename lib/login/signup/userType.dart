@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:projecho/main/app_theme.dart';
@@ -29,14 +30,12 @@ class _UserTypeScreenState extends State<UserTypeScreen>
     {
       'type': 'PLHIV',
       'title': 'Person Living with HIV',
-
       'icon': Icons.favorite,
       'color': AppColors.primary,
       'benefits': [
-        'DOH HIV testing form profiling',
+        'STS form profiling',
         'Treatment hub locator',
-        'Personalized learnings',
-        'Encouragement dashboard',
+        'Health learning resources',
         'Feed anonymous data for research',
       ],
       'helpText':
@@ -45,14 +44,12 @@ class _UserTypeScreenState extends State<UserTypeScreen>
     {
       'type': 'Health Information Seeker',
       'title': 'Health Information Seeker',
-
       'icon': Icons.school,
       'color': AppColors.secondary,
       'benefits': [
-        'Demographic profiling',
         'Treatment hub locator',
-        'Personalized learnings',
-        'Encouragement dashboard',
+        'Health learning resources',
+        'Researcher proposal',
       ],
       'helpText':
           'Access educational content, find testing locations, and get reliable information about HIV prevention and care. No personal health disclosure required.',
@@ -113,12 +110,12 @@ class _UserTypeScreenState extends State<UserTypeScreen>
     await Future.delayed(const Duration(milliseconds: 500));
 
     if (selectedType == 'PLHIV') {
-      await widget.registrationData.saveToProfiles();
-      await widget.registrationData.saveToUser();
+      // PLHIV users: Continue to PLHIV flow WITHOUT storing data yet
+      // Data will be stored after completing mainplhivform
       _navigateToPLHIVFlow();
     } else {
-      await widget.registrationData.saveToProfiles();
-      _navigateToDemographic();
+      // Info Seekers: Store data NOW and complete registration
+      await _completeInfoSeekerRegistration();
     }
   }
 
@@ -131,12 +128,183 @@ class _UserTypeScreenState extends State<UserTypeScreen>
     );
   }
 
-  void _navigateToDemographic() {
-    setState(() => _isLoading = false);
-    RegistrationFlowManager.navigateToNextStep(
+  /// Complete registration for Info Seekers - stores ALL data to Firestore
+  Future<void> _completeInfoSeekerRegistration() async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder:
+            (_) => WillPopScope(
+              onWillPop: () async => false,
+              child: AlertDialog(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                contentPadding: EdgeInsets.all(20),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(color: AppColors.primary),
+                    SizedBox(height: 16),
+                    Text(
+                      'Completing registration...',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: 8),
+                    Text(
+                      'Securing your data',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+      );
+
+      // 1. Encrypt phone number
+      final encryptedPhone = await _encryptPhoneNumber(
+        widget.registrationData.phoneNumber ?? '',
+      );
+
+      // 2. Save to 'user' collection (with encrypted phone)
+      await widget.registrationData.saveToUser(encryptedPhone: encryptedPhone);
+
+      // 3. Save to 'profiles' collection
+      await widget.registrationData.saveToProfiles();
+
+      // 4. Clear local progress
+      await _clearLocalProgress();
+
+      // Close loading dialog
+      if (mounted) Navigator.pop(context);
+
+      // Show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('Registration completed successfully!'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+
+      // Navigate to completion
+      if (mounted) {
+        setState(() => _isLoading = false);
+        RegistrationFlowManager.navigateToNextStep(
+          context: context,
+          currentStep: 'userType',
+          registrationData: widget.registrationData,
+        );
+      }
+    } catch (e) {
+      // Close loading dialog if still showing
+      if (mounted) Navigator.pop(context);
+
+      print('❌ Failed to complete Info Seeker registration: $e');
+
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Failed to complete registration';
+        });
+
+        _showErrorDialog(
+          'Registration Error',
+          'We couldn\'t complete your registration. Please check your connection and try again.',
+        );
+      }
+    }
+  }
+
+  Future<void> _clearLocalProgress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('registration_progress');
+    } catch (e) {
+      print('Failed to clear local progress: $e');
+    }
+  }
+
+  /// Encrypt phone number using cloud function
+  Future<String?> _encryptPhoneNumber(String phoneNumber) async {
+    try {
+      final url = Uri.parse('https://encryptphone-sgjiksmfoa-uc.a.run.app');
+      final response = await http
+          .post(
+            url,
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({'phoneNumber': phoneNumber}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final encryptedPhone = data['encrypted'] as String?;
+        print('✅ Phone encrypted successfully');
+        return encryptedPhone;
+      } else {
+        print('⚠️ Encryption returned ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('⚠️ Failed to encrypt phone: $e');
+      return null;
+    }
+  }
+
+  void _showErrorDialog(String title, String message) {
+    showDialog(
       context: context,
-      currentStep: 'userType',
-      registrationData: widget.registrationData,
+      builder:
+          (context) => AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            title: Row(
+              children: [
+                Icon(Icons.error_outline, color: AppColors.error, size: 20),
+                SizedBox(width: 8),
+                Text(title, style: TextStyle(fontSize: 16)),
+              ],
+            ),
+            content: Text(message, style: TextStyle(fontSize: 13)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'Try Later',
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  _handleContinue();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text('Retry'),
+              ),
+            ],
+          ),
     );
   }
 
@@ -240,10 +408,10 @@ class _UserTypeScreenState extends State<UserTypeScreen>
               Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: AppColors.secondary.withOpacity(0.05),
+                      color: AppColors.primary.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: AppColors.secondary.withOpacity(0.15),
+                        color: AppColors.primary.withOpacity(0.15),
                       ),
                     ),
                     child: Column(
@@ -253,7 +421,7 @@ class _UserTypeScreenState extends State<UserTypeScreen>
                             Icon(
                               Icons.shield_outlined,
                               size: 20,
-                              color: AppColors.secondary,
+                              color: AppColors.primary,
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -262,7 +430,7 @@ class _UserTypeScreenState extends State<UserTypeScreen>
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.secondary,
+                                  color: AppColors.primary,
                                 ),
                               ),
                             ),
@@ -285,37 +453,6 @@ class _UserTypeScreenState extends State<UserTypeScreen>
                   .slideY(begin: 0.1, end: 0),
 
               const SizedBox(height: 24),
-
-              // Info Card
-              Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppColors.primary.withOpacity(0.05),
-                          AppColors.secondary.withOpacity(0.03),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.primary.withOpacity(0.1),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline,
-                          size: 20,
-                          color: AppColors.primary,
-                        ),
-                      ],
-                    ),
-                  )
-                  .animate()
-                  .fadeIn(duration: 700.ms, delay: 200.ms)
-                  .slideY(begin: 0.1, end: 0),
-
-              const SizedBox(height: 32),
 
               // Dropdown Label
               Align(
@@ -382,7 +519,6 @@ class _UserTypeScreenState extends State<UserTypeScreen>
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
-                  // Updated dropdown items to include descriptions
                   items:
                       userTypes.map((type) {
                         return DropdownMenuItem<String>(
@@ -596,57 +732,6 @@ class _UserTypeScreenState extends State<UserTypeScreen>
               ).animate().fadeIn(delay: 600.ms).slideY(begin: 0.1, end: 0),
 
               const SizedBox(height: 24),
-
-              // Privacy Badge
-              Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: AppColors.success.withOpacity(0.05),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: AppColors.success.withOpacity(0.2),
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.lock,
-                              size: 20,
-                              color: AppColors.success,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Complete Privacy Guaranteed',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: AppColors.success,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Your information is encrypted, confidential, and never shared. You have full control to update or delete your data anytime.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                            height: 1.4,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  )
-                  .animate()
-                  .fadeIn(duration: 1000.ms, delay: 800.ms)
-                  .scale(
-                    begin: const Offset(0.9, 0.9),
-                    end: const Offset(1, 1),
-                  ),
 
               // Loading Status
               if (_isLoading)

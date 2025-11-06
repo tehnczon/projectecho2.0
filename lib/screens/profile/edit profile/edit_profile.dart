@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:projecho/form/plhivForm/app_colors.dart';
+import 'package:projecho/login/signup/plhivForm/app_colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:projecho/login/signup/privacyPolicy.dart';
-import 'package:projecho/login/signup/terms.dart';
+import 'package:projecho/static/privacyPolicy.dart';
+import 'package:projecho/static/terms.dart';
 
 class EditProfile extends StatefulWidget {
   const EditProfile({super.key});
@@ -22,18 +22,251 @@ class _EditProfileState extends State<EditProfile> {
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isEditingUIC = false;
+  String? selectedCity;
+  String? selectedBarangay;
 
-  // String displayName = "Anonymous";
+  final List<String> cities = ['Davao City', 'Island Garden City of Samal'];
+  final Map<String, List<String>> barangays = {
+    'Davao City': [
+      'Acacia',
+      'Agdao',
+      'Alambre',
+      'Atan-Awe',
+      'Bago Gallera',
+      'Bago Oshiro',
+      'Baguio',
+      'Balengaeng',
+      'Baliok',
+      'Bangkas Heights',
+      'Baracatan',
+      'Bato',
+      'Bayabas',
+      'Biao Escuela',
+      'Biao Guianga',
+      'Biao Joaquin',
+      'Binugao',
+      'Bucana',
+      'Buhangin',
+      'Bunawan',
+      'Cabantian',
+      'Cadalian',
+      'Calinan',
+      'Callawa',
+      'Camansi',
+      'Carmen',
+      'Catalunan Grande',
+      'Catalunan PequeÃ±o',
+      'Catigan',
+      'Cawayan',
+      'Colosas',
+      'Communal',
+      'Crossing Bayabas',
+      'Dacudao',
+      'Dalag',
+      'Dalagdag',
+      'Daliao',
+      'Daliaon Plantation',
+      'Dominga',
+      'Dumoy',
+      'Eden',
+      'Fatima',
+      'Gatungan',
+      'Gumalang',
+      'Ilang',
+      'Indangan',
+      'Kilate',
+      'Lacson',
+      'Lamanan',
+      'Lampianao',
+      'Langub',
+      'Alejandra Navarro',
+      'Lizada',
+      'Los Amigos',
+      'Lubogan',
+      'Lumiad',
+      'Ma-a',
+      'Mabuhay',
+      'Magtuod',
+      'Mahayag',
+      'Malabog',
+      'Malagos',
+      'Malamba',
+      'Manambulan',
+      'Mandug',
+      'Manuel Guianga',
+      'Mapula',
+      'Marapangi',
+      'Marilog',
+      'Matina Aplaya',
+      'Matina Crossing',
+      'Matina Pangi',
+      'Matina Biao',
+      'Mintal',
+      'Mudiang',
+      'Mulig',
+      'New Carmen',
+      'New Valencia',
+      'Pampanga',
+      'Panacan',
+      'Panalum',
+      'Pandaitan',
+      'Pangyan',
+      'Paquibato',
+      'Paradise Embak',
+      'Riverside',
+      'Salapawan',
+      'Salaysay',
+      'San Isidro',
+      'Sasa',
+      'Sibulan',
+      'Sirawan',
+      'Sirib',
+      'Suawan',
+      'Subasta',
+      'Sumimao',
+      'Tacunan',
+      'Tagakpan',
+      'Tagluno',
+      'Tagurano',
+      'Talandang',
+      'Talomo',
+      'Talomo River',
+      'Tamayong',
+      'Tambobong',
+      'Tamugan',
+      'Tapak',
+      'Tawan-tawan',
+      'Tibuloy',
+      'Tibungco',
+      'Tigatto',
+      'Toril',
+      'Tugbok',
+      'Tungakalan',
+      'Ula',
+      'Wangan',
+      'Wines',
+      'Barangay 1-A',
+      'Barangay 2-A',
+      'Barangay 3-A',
+      'Barangay 4-A',
+      'Barangay 5-A',
+      'Barangay 6-A',
+      'Barangay 7-A',
+      'Barangay 8-A',
+      'Barangay 9-A',
+      'Barangay 10-A',
+      'Barangay 11-B',
+      'Barangay 12-B',
+      'Barangay 13-B',
+      'Barangay 14-B',
+      'Barangay 15-B',
+      'Barangay 16-B',
+      'Barangay 17-B',
+      'Barangay 18-B',
+      'Barangay 19-B',
+      'Barangay 20-B',
+      'Barangay 21-C',
+      'Barangay 22-C',
+      'Barangay 23-C',
+      'Barangay 24-C',
+      'Barangay 25-C',
+      'Barangay 26-C',
+      'Barangay 27-C',
+      'Barangay 28-C',
+      'Barangay 29-C',
+      'Barangay 30-C',
+      'Barangay 31-D',
+      'Barangay 32-D',
+      'Barangay 33-D',
+      'Barangay 34-D',
+      'Barangay 35-D',
+      'Barangay 36-D',
+      'Barangay 37-D',
+      'Barangay 38-D',
+      'Barangay 39-D',
+      'Barangay 40-D',
+      'Angalan',
+      'Baganihan',
+      'Bago Aplaya',
+      'Bantol',
+      'Buda',
+      'Centro',
+      'Datu Salumay',
+      'Gov. Paciano Bangoy',
+      'Gov. Vicente Duterte',
+      'Gumitan',
+      'Inayangan',
+      'Kap. Tomas Monteverde, Sr.',
+      'Lapu-lapu',
+      'Leon Garcia, Sr.',
+      'Magsaysay',
+      'Megkawayan',
+      'Rafael Castillo',
+      'Saloy',
+      'San Antonio',
+      'Santo NiÃ±o',
+      'Ubalde',
+      'Waan',
+      'Wilfredo Aquino',
+      'Alfonso Angliongto Sr.',
+      'Vicente Hizon Sr.',
+    ],
+    'Island Garden City of Samal': [
+      'Adecor',
+      'Anonang',
+      'Aumbay',
+      'Aundanao',
+      'Balet',
+      'Bandera',
+      'Caliclic',
+      'Camudmud',
+      'Catagman',
+      'Cawag',
+      'Cogon',
+      'Cogon (Talicod)',
+      'Dadatan',
+      'Del Monte',
+      'Guilon',
+      'Kanaan',
+      'Kinawitnon',
+      'Libertad',
+      'Libuak',
+      'Licup',
+      'Limao',
+      'Linosutan',
+      'Mambago-A',
+      'Mambago-B',
+      'Miranda',
+      'Moncado',
+      'Pangubatan',
+      'PeÃ±aplata',
+      'Poblacion',
+      'San Agustin',
+      'San Antonio',
+      'San Isidro (Babak)',
+      'San Isidro (Kaputian)',
+      'San Jose',
+      'San Miguel',
+      'San Remigio',
+      'Santa Cruz',
+      'Santo NiÃ±o',
+      'Sion',
+      'Tagbaobo',
+      'Tagbay',
+      'Tagbitan-ag',
+      'Tagdaliao',
+      'Tagpopongan',
+      'Tambo',
+      'Toril',
+    ],
+  };
 
   // Form controllers
-  final TextEditingController _cityController = TextEditingController();
-  final TextEditingController _barangayController = TextEditingController();
   final TextEditingController _customGenderController = TextEditingController();
-
-  // UIC Generation Controllers
   final TextEditingController _motherController = TextEditingController();
   final TextEditingController _fatherController = TextEditingController();
   final TextEditingController _birthOrderController = TextEditingController();
+
   DateTime? _selectedDate;
   String _generatedUIC = '';
 
@@ -43,7 +276,6 @@ class _EditProfileState extends State<EditProfile> {
   String? _selectedTreatmentHub;
   String? _userRole;
 
-  // Options
   final List<String> _genderOptions = [
     'Male',
     'Female',
@@ -69,8 +301,6 @@ class _EditProfileState extends State<EditProfile> {
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
-    _cityController.dispose();
-    _barangayController.dispose();
     _customGenderController.dispose();
     _motherController.dispose();
     _fatherController.dispose();
@@ -99,7 +329,6 @@ class _EditProfileState extends State<EditProfile> {
           await FirebaseFirestore.instance.collection('centers').get();
       final centers =
           snapshot.docs.map((doc) => doc['name'] as String).toList();
-
       setState(() {
         _treatmentHubs = ['Prefer not to share', ...centers];
       });
@@ -121,18 +350,15 @@ class _EditProfileState extends State<EditProfile> {
           mother.length >= 2
               ? mother.substring(0, 2).toUpperCase()
               : mother.padRight(2, 'X').toUpperCase();
-
       String fatherCode =
           father.length >= 2
               ? father.substring(0, 2).toUpperCase()
               : father.padRight(2, 'X').toUpperCase();
-
       int? birthOrder = int.tryParse(birthOrderStr);
       String birthOrderCode =
           (birthOrder == null || birthOrder <= 0)
               ? "99"
               : birthOrder.toString().padLeft(2, '0');
-
       String birthDateCode =
           "${_selectedDate!.month.toString().padLeft(2, '0')}"
           "${_selectedDate!.day.toString().padLeft(2, '0')}"
@@ -194,21 +420,37 @@ class _EditProfileState extends State<EditProfile> {
           _customGenderController.text = data['customGender'] ?? '';
 
           final location = data['location'] as Map<String, dynamic>?;
-          _cityController.text = location?['city'] ?? '';
-          _barangayController.text = location?['barangay'] ?? '';
+          // Load city and barangay, ensuring they match the dropdown values
+          String? loadedCity = location?['city'];
+          String? loadedBarangay = location?['barangay'];
+
+          // Only set if the value exists in our dropdown list
+          selectedCity =
+              (loadedCity != null && cities.contains(loadedCity))
+                  ? loadedCity
+                  : null;
+          selectedBarangay =
+              (loadedBarangay != null &&
+                      selectedCity != null &&
+                      barangays[selectedCity]?.contains(loadedBarangay) == true)
+                  ? loadedBarangay
+                  : null;
+
+          // Debug: print what was loaded
+          print('Loaded city: $loadedCity, Selected: $selectedCity');
+          print(
+            'Loaded barangay: $loadedBarangay, Selected: $selectedBarangay',
+          );
         });
 
-        // Load user role
         final userDoc =
             await FirebaseFirestore.instance
                 .collection('user')
                 .doc(user.uid)
                 .get();
-
         if (userDoc.exists) {
           _userRole = userDoc.data()?['role'];
 
-          // Load role-specific data for PLHIV
           if (_userRole == 'plhiv') {
             final roleDataDoc =
                 await FirebaseFirestore.instance
@@ -379,13 +621,12 @@ class _EditProfileState extends State<EditProfile> {
               ? _customGenderController.text
               : null;
 
-      // Save to profiles collection
       await FirebaseFirestore.instance.collection('profiles').doc(user.uid).set(
         {
           'generatedUIC': _generatedUIC,
           'location': {
-            'city': _cityController.text,
-            'barangay': _barangayController.text,
+            'city': selectedCity ?? '',
+            'barangay': selectedBarangay ?? '',
           },
           'genderIdentity': _selectedGenderIdentity,
           'customGender': finalCustomGender,
@@ -394,13 +635,11 @@ class _EditProfileState extends State<EditProfile> {
         SetOptions(merge: true),
       );
 
-      // Save role-specific data for PLHIV
       if (_userRole == 'plhiv') {
         final yearDiagnosed =
             _selectedYearDiagnosed == 'Prefer not to share'
                 ? null
                 : int.tryParse(_selectedYearDiagnosed ?? '');
-
         final treatmentHub =
             _selectedTreatmentHub == 'Prefer not to share'
                 ? null
@@ -604,14 +843,11 @@ class _EditProfileState extends State<EditProfile> {
 
   @override
   Widget build(BuildContext context) {
-    final double opacity = (_scrollOffset / 100).clamp(0.0, 1.0);
-
     return Scaffold(
       backgroundColor: AppColors.background,
       extendBodyBehindAppBar: true,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
-
         child: AppBar(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -621,7 +857,6 @@ class _EditProfileState extends State<EditProfile> {
           ),
         ),
       ),
-
       body: Stack(
         children: [
           if (!_isScrolled)
@@ -656,7 +891,6 @@ class _EditProfileState extends State<EditProfile> {
                   height: 250,
                 ),
               ),
-
               Padding(
                 padding: const EdgeInsets.all(20),
                 child: Column(
@@ -690,19 +924,13 @@ class _EditProfileState extends State<EditProfile> {
                           ),
                           const SizedBox(width: 16),
                           Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Edit your Profiling Data',
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.surface,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                              ],
+                            child: Text(
+                              'Edit your Profiling Data',
+                              style: GoogleFonts.poppins(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.surface,
+                              ),
                             ),
                           ),
                           Icon(
@@ -713,9 +941,7 @@ class _EditProfileState extends State<EditProfile> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 24),
-
                     Row(
                       children: [
                         Expanded(child: Divider(color: AppColors.divider)),
@@ -733,9 +959,7 @@ class _EditProfileState extends State<EditProfile> {
                         Expanded(child: Divider(color: AppColors.divider)),
                       ],
                     ),
-
                     const SizedBox(height: 24),
-
                     GestureDetector(
                       onTap: () {
                         setState(() {
@@ -796,689 +1020,15 @@ class _EditProfileState extends State<EditProfile> {
                         ),
                       ),
                     ),
-
                     AnimatedSize(
                       duration: const Duration(milliseconds: 300),
                       curve: Curves.easeInOut,
                       child:
                           _isExpanded
-                              ? Container(
-                                margin: const EdgeInsets.only(top: 16),
-                                padding: const EdgeInsets.all(20),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.grey.withOpacity(0.1),
-                                      spreadRadius: 1,
-                                      blurRadius: 10,
-                                    ),
-                                  ],
-                                ),
-                                child:
-                                    _isLoading
-                                        ? Center(
-                                          child: Padding(
-                                            padding: const EdgeInsets.all(20),
-                                            child: CircularProgressIndicator(
-                                              color: AppColors.primary,
-                                            ),
-                                          ),
-                                        )
-                                        : Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              'Profile Information',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.black87,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 20),
-
-                                            // UIC Section with Edit Toggle
-                                            Text(
-                                              'Your Unique ID',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.black87,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 12),
-
-                                            // Current UIC Display with Edit Button
-                                            Row(
-                                              children: [
-                                                Expanded(
-                                                  child: Container(
-                                                    padding:
-                                                        const EdgeInsets.symmetric(
-                                                          vertical: 16,
-                                                          horizontal: 20,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: AppColors.primary
-                                                          .withOpacity(0.1),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            16,
-                                                          ),
-                                                      border: Border.all(
-                                                        color: AppColors.primary
-                                                            .withOpacity(0.3),
-                                                      ),
-                                                    ),
-                                                    child: Row(
-                                                      children: [
-                                                        const SizedBox(
-                                                          width: 12,
-                                                        ),
-                                                        Expanded(
-                                                          child: Text(
-                                                            _generatedUIC
-                                                                    .isEmpty
-                                                                ? 'No UIC yet'
-                                                                : _generatedUIC,
-                                                            style: GoogleFonts.poppins(
-                                                              fontSize: 14,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              color:
-                                                                  AppColors
-                                                                      .primary,
-                                                              letterSpacing:
-                                                                  1.2,
-                                                            ),
-                                                          ),
-                                                        ),
-                                                        if (_generatedUIC
-                                                            .isNotEmpty)
-                                                          InkWell(
-                                                            onTap: () async {
-                                                              await Clipboard.setData(
-                                                                ClipboardData(
-                                                                  text:
-                                                                      _generatedUIC,
-                                                                ),
-                                                              );
-                                                              HapticFeedback.lightImpact();
-                                                              ScaffoldMessenger.of(
-                                                                context,
-                                                              ).showSnackBar(
-                                                                SnackBar(
-                                                                  content:
-                                                                      const Text(
-                                                                        'UIC copied to clipboard!',
-                                                                      ),
-                                                                  behavior:
-                                                                      SnackBarBehavior
-                                                                          .floating,
-                                                                  backgroundColor:
-                                                                      AppColors
-                                                                          .primary,
-                                                                  shape: RoundedRectangleBorder(
-                                                                    borderRadius:
-                                                                        BorderRadius.circular(
-                                                                          10,
-                                                                        ),
-                                                                  ),
-                                                                ),
-                                                              );
-                                                            },
-
-                                                            child: Icon(
-                                                              Icons
-                                                                  .content_copy,
-                                                              color:
-                                                                  AppColors
-                                                                      .primary,
-                                                              size: 20,
-                                                            ),
-                                                          ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                                ),
-
-                                                const SizedBox(width: 8),
-                                                // Edit Button
-                                                InkWell(
-                                                  onTap: () {
-                                                    setState(() {
-                                                      _isEditingUIC =
-                                                          !_isEditingUIC;
-                                                    });
-                                                  },
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                  child: Container(
-                                                    height: 56,
-                                                    width: 56,
-                                                    decoration: BoxDecoration(
-                                                      color:
-                                                          _isEditingUIC
-                                                              ? AppColors
-                                                                  .primary
-                                                              : AppColors
-                                                                  .primary
-                                                                  .withOpacity(
-                                                                    0.1,
-                                                                  ),
-                                                      borderRadius:
-                                                          BorderRadius.circular(
-                                                            12,
-                                                          ),
-                                                      border: Border.all(
-                                                        color: AppColors.primary
-                                                            .withOpacity(0.3),
-                                                      ),
-                                                    ),
-                                                    child: Icon(
-                                                      Icons.edit,
-                                                      color:
-                                                          _isEditingUIC
-                                                              ? Colors.white
-                                                              : AppColors
-                                                                  .primary,
-                                                      size: 20,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-
-                                            const SizedBox(height: 16),
-
-                                            // UIC Generation Form (Expandable)
-                                            AnimatedSize(
-                                              duration: const Duration(
-                                                milliseconds: 300,
-                                              ),
-                                              curve: Curves.easeInOut,
-                                              child:
-                                                  _isEditingUIC
-                                                      ? Column(
-                                                        crossAxisAlignment:
-                                                            CrossAxisAlignment
-                                                                .start,
-                                                        children: [
-                                                          Container(
-                                                            padding:
-                                                                const EdgeInsets.all(
-                                                                  12,
-                                                                ),
-                                                            decoration: BoxDecoration(
-                                                              color: AppColors
-                                                                  .warning
-                                                                  .withOpacity(
-                                                                    0.1,
-                                                                  ),
-                                                              borderRadius:
-                                                                  BorderRadius.circular(
-                                                                    12,
-                                                                  ),
-                                                              border: Border.all(
-                                                                color: AppColors
-                                                                    .warning
-                                                                    .withOpacity(
-                                                                      0.3,
-                                                                    ),
-                                                              ),
-                                                            ),
-                                                            child: Row(
-                                                              children: [
-                                                                Icon(
-                                                                  Icons
-                                                                      .warning_amber_rounded,
-                                                                  size: 16,
-                                                                  color:
-                                                                      AppColors
-                                                                          .warning,
-                                                                ),
-                                                                const SizedBox(
-                                                                  width: 8,
-                                                                ),
-                                                                Expanded(
-                                                                  child: Text(
-                                                                    'Fill in all fields to generate a new UIC',
-                                                                    style: GoogleFonts.poppins(
-                                                                      fontSize:
-                                                                          11,
-                                                                      color:
-                                                                          AppColors
-                                                                              .textSecondary,
-                                                                    ),
-                                                                  ),
-                                                                ),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                          const SizedBox(
-                                                            height: 16,
-                                                          ),
-
-                                                          _buildTextField(
-                                                            label:
-                                                                "Mother's First Name",
-                                                            controller:
-                                                                _motherController,
-                                                            icon:
-                                                                Icons
-                                                                    .person_outline,
-                                                            hint:
-                                                                "Enter mother's first name",
-                                                            onChanged:
-                                                                (_) =>
-                                                                    _updateUIC(),
-                                                          ),
-
-                                                          _buildTextField(
-                                                            label:
-                                                                "Father's First Name",
-                                                            controller:
-                                                                _fatherController,
-                                                            icon:
-                                                                Icons
-                                                                    .person_outline,
-                                                            hint:
-                                                                "Enter father's first name",
-                                                            onChanged:
-                                                                (_) =>
-                                                                    _updateUIC(),
-                                                          ),
-
-                                                          _buildTextField(
-                                                            label:
-                                                                "Birth Order",
-                                                            controller:
-                                                                _birthOrderController,
-                                                            icon:
-                                                                Icons
-                                                                    .format_list_numbered,
-                                                            keyboardType:
-                                                                TextInputType
-                                                                    .number,
-                                                            hint:
-                                                                "e.g., 1, 2, 3",
-                                                            onChanged:
-                                                                (_) =>
-                                                                    _updateUIC(),
-                                                          ),
-
-                                                          Text(
-                                                            'Birthdate',
-                                                            style: GoogleFonts.poppins(
-                                                              fontSize: 12,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w500,
-                                                              color:
-                                                                  AppColors
-                                                                      .textSecondary,
-                                                            ),
-                                                          ),
-                                                          const SizedBox(
-                                                            height: 8,
-                                                          ),
-                                                          InkWell(
-                                                            onTap: _pickDate,
-                                                            borderRadius:
-                                                                BorderRadius.circular(
-                                                                  16,
-                                                                ),
-                                                            child: Container(
-                                                              padding:
-                                                                  const EdgeInsets.all(
-                                                                    16,
-                                                                  ),
-                                                              decoration: BoxDecoration(
-                                                                color:
-                                                                    AppColors
-                                                                        .surface,
-                                                                borderRadius:
-                                                                    BorderRadius.circular(
-                                                                      16,
-                                                                    ),
-                                                                boxShadow: [
-                                                                  BoxShadow(
-                                                                    color: Colors
-                                                                        .black
-                                                                        .withOpacity(
-                                                                          0.05,
-                                                                        ),
-                                                                    blurRadius:
-                                                                        10,
-                                                                    offset:
-                                                                        const Offset(
-                                                                          0,
-                                                                          2,
-                                                                        ),
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                              child: Row(
-                                                                children: [
-                                                                  Icon(
-                                                                    Icons
-                                                                        .calendar_today,
-                                                                    color:
-                                                                        AppColors
-                                                                            .primary,
-                                                                  ),
-                                                                  const SizedBox(
-                                                                    width: 16,
-                                                                  ),
-                                                                  Expanded(
-                                                                    child: Text(
-                                                                      _selectedDate ==
-                                                                              null
-                                                                          ? "Select Birthdate"
-                                                                          : "${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}",
-                                                                      style: GoogleFonts.poppins(
-                                                                        fontSize:
-                                                                            14,
-                                                                        color:
-                                                                            _selectedDate ==
-                                                                                    null
-                                                                                ? AppColors.textSecondary
-                                                                                : AppColors.textPrimary,
-                                                                      ),
-                                                                    ),
-                                                                  ),
-                                                                  Icon(
-                                                                    Icons
-                                                                        .arrow_drop_down,
-                                                                    color:
-                                                                        AppColors
-                                                                            .textSecondary,
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                          ),
-
-                                                          const SizedBox(
-                                                            height: 16,
-                                                          ),
-
-                                                          // Save UIC Button
-                                                          SizedBox(
-                                                            width:
-                                                                double.infinity,
-                                                            child: ElevatedButton(
-                                                              onPressed: () {
-                                                                if (_generatedUIC
-                                                                    .isNotEmpty) {
-                                                                  HapticFeedback.mediumImpact();
-                                                                  setState(() {
-                                                                    _isEditingUIC =
-                                                                        false;
-                                                                  });
-                                                                  ScaffoldMessenger.of(
-                                                                    context,
-                                                                  ).showSnackBar(
-                                                                    SnackBar(
-                                                                      content: Row(
-                                                                        children: [
-                                                                          Icon(
-                                                                            Icons.check_circle,
-                                                                            color:
-                                                                                Colors.white,
-                                                                          ),
-                                                                          const SizedBox(
-                                                                            width:
-                                                                                12,
-                                                                          ),
-                                                                          Text(
-                                                                            'UIC updated! Remember to save changes below.',
-                                                                          ),
-                                                                        ],
-                                                                      ),
-                                                                      backgroundColor:
-                                                                          AppColors
-                                                                              .primary,
-                                                                      behavior:
-                                                                          SnackBarBehavior
-                                                                              .floating,
-                                                                      shape: RoundedRectangleBorder(
-                                                                        borderRadius:
-                                                                            BorderRadius.circular(
-                                                                              10,
-                                                                            ),
-                                                                      ),
-                                                                    ),
-                                                                  );
-                                                                } else {
-                                                                  ScaffoldMessenger.of(
-                                                                    context,
-                                                                  ).showSnackBar(
-                                                                    SnackBar(
-                                                                      content: Text(
-                                                                        'Please fill in all fields to generate UIC',
-                                                                      ),
-                                                                      backgroundColor:
-                                                                          AppColors
-                                                                              .error,
-                                                                      behavior:
-                                                                          SnackBarBehavior
-                                                                              .floating,
-                                                                      shape: RoundedRectangleBorder(
-                                                                        borderRadius:
-                                                                            BorderRadius.circular(
-                                                                              10,
-                                                                            ),
-                                                                      ),
-                                                                    ),
-                                                                  );
-                                                                }
-                                                              },
-                                                              style: ElevatedButton.styleFrom(
-                                                                backgroundColor:
-                                                                    AppColors
-                                                                        .primary,
-                                                                padding:
-                                                                    const EdgeInsets.symmetric(
-                                                                      vertical:
-                                                                          14,
-                                                                    ),
-                                                                shape: RoundedRectangleBorder(
-                                                                  borderRadius:
-                                                                      BorderRadius.circular(
-                                                                        12,
-                                                                      ),
-                                                                ),
-                                                                elevation: 0,
-                                                              ),
-                                                              child: Row(
-                                                                mainAxisAlignment:
-                                                                    MainAxisAlignment
-                                                                        .center,
-                                                                children: [
-                                                                  Text(
-                                                                    'Save UIC',
-                                                                    style: GoogleFonts.poppins(
-                                                                      fontSize:
-                                                                          14,
-                                                                      fontWeight:
-                                                                          FontWeight
-                                                                              .w600,
-                                                                      color:
-                                                                          Colors
-                                                                              .white,
-                                                                    ),
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ),
-                                                          ),
-                                                        ],
-                                                      )
-                                                      : const SizedBox.shrink(),
-                                            ),
-
-                                            const SizedBox(height: 24),
-                                            Divider(color: AppColors.divider),
-                                            const SizedBox(height: 24),
-
-                                            // Other Profile Fields
-                                            Text(
-                                              'Personal Information',
-                                              style: GoogleFonts.poppins(
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                                color: Colors.black87,
-                                              ),
-                                            ),
-                                            const SizedBox(height: 16),
-
-                                            _buildDropdown(
-                                              label: 'Gender Identity',
-                                              value: _selectedGenderIdentity,
-                                              items: _genderOptions,
-                                              onChanged: (value) {
-                                                setState(() {
-                                                  _selectedGenderIdentity =
-                                                      value;
-                                                });
-                                              },
-                                            ),
-
-                                            if (_selectedGenderIdentity ==
-                                                'Other')
-                                              _buildTextField(
-                                                label: 'Please Specify Gender',
-                                                controller:
-                                                    _customGenderController,
-                                              ),
-
-                                            _buildTextField(
-                                              label: 'City',
-                                              controller: _cityController,
-                                            ),
-
-                                            _buildTextField(
-                                              label: 'Barangay',
-                                              controller: _barangayController,
-                                            ),
-
-                                            if (_userRole == 'plhiv') ...[
-                                              Divider(
-                                                color: AppColors.divider,
-                                                height: 32,
-                                              ),
-                                              Text(
-                                                'HIV Information',
-                                                style: GoogleFonts.poppins(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: Colors.black87,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 16),
-
-                                              _buildDropdown(
-                                                label: 'Year Diagnosed',
-                                                value: _selectedYearDiagnosed,
-                                                items: _yearOptions,
-                                                onChanged: (value) {
-                                                  setState(() {
-                                                    _selectedYearDiagnosed =
-                                                        value;
-                                                  });
-                                                },
-                                                prefixIcon:
-                                                    Icons
-                                                        .calendar_today_outlined,
-                                              ),
-
-                                              _buildDropdown(
-                                                label: 'Treatment Hub',
-                                                value: _selectedTreatmentHub,
-                                                items: _treatmentHubs,
-                                                onChanged: (value) {
-                                                  setState(() {
-                                                    _selectedTreatmentHub =
-                                                        value;
-                                                  });
-                                                },
-                                                prefixIcon:
-                                                    Icons.local_hospital,
-                                              ),
-                                            ],
-
-                                            const SizedBox(height: 24),
-
-                                            SizedBox(
-                                              width: double.infinity,
-                                              child: ElevatedButton(
-                                                onPressed:
-                                                    _isSaving
-                                                        ? null
-                                                        : _showConfirmationDialog,
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor:
-                                                      AppColors.primary,
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        vertical: 16,
-                                                      ),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          12,
-                                                        ),
-                                                  ),
-                                                  elevation: 0,
-                                                ),
-                                                child:
-                                                    _isSaving
-                                                        ? SizedBox(
-                                                          height: 20,
-                                                          width: 20,
-                                                          child:
-                                                              CircularProgressIndicator(
-                                                                color:
-                                                                    Colors
-                                                                        .white,
-                                                                strokeWidth: 2,
-                                                              ),
-                                                        )
-                                                        : Row(
-                                                          mainAxisAlignment:
-                                                              MainAxisAlignment
-                                                                  .center,
-                                                          children: [
-                                                            Text(
-                                                              'Save Changes',
-                                                              style: GoogleFonts.poppins(
-                                                                fontSize: 14,
-                                                                fontWeight:
-                                                                    FontWeight
-                                                                        .w600,
-                                                                color:
-                                                                    Colors
-                                                                        .white,
-                                                              ),
-                                                            ),
-                                                          ],
-                                                        ),
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                              )
+                              ? _buildExpandedContent()
                               : const SizedBox.shrink(),
                     ),
-
                     const SizedBox(height: 40),
-
-                    // Disclaimer text with blue clickable link
                     Wrap(
                       alignment: WrapAlignment.center,
                       children: [
@@ -1490,12 +1040,13 @@ class _EditProfileState extends State<EditProfile> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (context) => Terms()),
-                            );
-                          },
+                          onTap:
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => Terms(),
+                                ),
+                              ),
                           child: Text(
                             "Terms ",
                             style: TextStyle(
@@ -1514,14 +1065,13 @@ class _EditProfileState extends State<EditProfile> {
                           ),
                         ),
                         GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => Privacypolicy(),
+                          onTap:
+                              () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => Privacypolicy(),
+                                ),
                               ),
-                            );
-                          },
                           child: Text(
                             "Privacy Policy",
                             style: TextStyle(
@@ -1541,6 +1091,446 @@ class _EditProfileState extends State<EditProfile> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildExpandedContent() {
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child:
+          _isLoading
+              ? Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              )
+              : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Profile Information',
+                    style: GoogleFonts.poppins(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Your Unique ID',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 16,
+                            horizontal: 20,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  _generatedUIC.isEmpty
+                                      ? 'No UIC yet'
+                                      : _generatedUIC,
+                                  style: GoogleFonts.poppins(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.primary,
+                                    letterSpacing: 1.2,
+                                  ),
+                                ),
+                              ),
+                              if (_generatedUIC.isNotEmpty)
+                                InkWell(
+                                  onTap: () async {
+                                    await Clipboard.setData(
+                                      ClipboardData(text: _generatedUIC),
+                                    );
+                                    HapticFeedback.lightImpact();
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: const Text(
+                                          'UIC copied to clipboard!',
+                                        ),
+                                        behavior: SnackBarBehavior.floating,
+                                        backgroundColor: AppColors.primary,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            10,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: Icon(
+                                    Icons.content_copy,
+                                    color: AppColors.primary,
+                                    size: 20,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            _isEditingUIC = !_isEditingUIC;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          height: 56,
+                          width: 56,
+                          decoration: BoxDecoration(
+                            color:
+                                _isEditingUIC
+                                    ? AppColors.primary
+                                    : AppColors.primary.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: AppColors.primary.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.edit,
+                            color:
+                                _isEditingUIC
+                                    ? Colors.white
+                                    : AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  AnimatedSize(
+                    duration: const Duration(milliseconds: 300),
+                    curve: Curves.easeInOut,
+                    child:
+                        _isEditingUIC
+                            ? _buildUICEditor()
+                            : const SizedBox.shrink(),
+                  ),
+                  const SizedBox(height: 24),
+                  Divider(color: AppColors.divider),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Personal Information',
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildDropdown(
+                    label: 'Gender Identity',
+                    value: _selectedGenderIdentity,
+                    items: _genderOptions,
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedGenderIdentity = value;
+                      });
+                    },
+                  ),
+                  if (_selectedGenderIdentity == 'Other')
+                    _buildTextField(
+                      label: 'Please Specify Gender',
+                      controller: _customGenderController,
+                    ),
+                  _buildDropdown(
+                    label: 'City',
+                    value: selectedCity,
+                    items: cities,
+                    prefixIcon: Icons.location_city,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedCity = value;
+                        selectedBarangay = null;
+                      });
+                      HapticFeedback.lightImpact();
+                    },
+                  ),
+                  _buildDropdown(
+                    label: 'Barangay',
+                    value: selectedBarangay,
+                    items:
+                        selectedCity != null &&
+                                barangays.containsKey(selectedCity)
+                            ? barangays[selectedCity]!
+                            : [],
+                    prefixIcon: Icons.location_on,
+                    onChanged: (value) {
+                      setState(() {
+                        selectedBarangay = value;
+                      });
+                      HapticFeedback.lightImpact();
+                    },
+                  ),
+                  if (_userRole == 'plhiv') ...[
+                    Divider(color: AppColors.divider, height: 32),
+                    Text(
+                      'HIV Information',
+                      style: GoogleFonts.poppins(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _buildDropdown(
+                      label: 'Year Diagnosed',
+                      value: _selectedYearDiagnosed,
+                      items: _yearOptions,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedYearDiagnosed = value;
+                        });
+                      },
+                      prefixIcon: Icons.calendar_today_outlined,
+                    ),
+                    _buildDropdown(
+                      label: 'Treatment Hub',
+                      value: _selectedTreatmentHub,
+                      items: _treatmentHubs,
+                      onChanged: (value) {
+                        setState(() {
+                          _selectedTreatmentHub = value;
+                        });
+                      },
+                      prefixIcon: Icons.local_hospital,
+                    ),
+                  ],
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isSaving ? null : _showConfirmationDialog,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                      child:
+                          _isSaving
+                              ? SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : Text(
+                                'Save Changes',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                    ),
+                  ),
+                ],
+              ),
+    );
+  }
+
+  Widget _buildUICEditor() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: AppColors.warning.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.warning.withOpacity(0.3)),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.warning_amber_rounded,
+                size: 16,
+                color: AppColors.warning,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Fill in all fields to generate a new UIC',
+                  style: GoogleFonts.poppins(
+                    fontSize: 11,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildTextField(
+          label: "Mother's First Name",
+          controller: _motherController,
+          icon: Icons.person_outline,
+          hint: "Enter mother's first name",
+          onChanged: (_) => _updateUIC(),
+        ),
+        _buildTextField(
+          label: "Father's First Name",
+          controller: _fatherController,
+          icon: Icons.person_outline,
+          hint: "Enter father's first name",
+          onChanged: (_) => _updateUIC(),
+        ),
+        _buildTextField(
+          label: "Birth Order",
+          controller: _birthOrderController,
+          icon: Icons.format_list_numbered,
+          keyboardType: TextInputType.number,
+          hint: "e.g., 1, 2, 3",
+          onChanged: (_) => _updateUIC(),
+        ),
+        Text(
+          'Birthdate',
+          style: GoogleFonts.poppins(
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            color: AppColors.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: _pickDate,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.calendar_today, color: AppColors.primary),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    _selectedDate == null
+                        ? "Select Birthdate"
+                        : "${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}",
+                    style: GoogleFonts.poppins(
+                      fontSize: 14,
+                      color:
+                          _selectedDate == null
+                              ? AppColors.textSecondary
+                              : AppColors.textPrimary,
+                    ),
+                  ),
+                ),
+                Icon(Icons.arrow_drop_down, color: AppColors.textSecondary),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: () {
+              if (_generatedUIC.isNotEmpty) {
+                HapticFeedback.mediumImpact();
+                setState(() {
+                  _isEditingUIC = false;
+                });
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.check_circle, color: Colors.white),
+                        const SizedBox(width: 12),
+                        Text('UIC updated! Remember to save changes below.'),
+                      ],
+                    ),
+                    backgroundColor: AppColors.primary,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Please fill in all fields to generate UIC'),
+                    backgroundColor: AppColors.error,
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              padding: const EdgeInsets.symmetric(vertical: 14),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 0,
+            ),
+            child: Text(
+              'Save UIC',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../main/registration_data.dart';
-import '../../main/app_theme.dart';
+import '../../../main/registration_data.dart';
+import '../../../main/app_theme.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:projecho/login/signup/privacyPolicy.dart';
-import 'package:projecho/login/signup/terms.dart';
+import 'package:projecho/static/privacyPolicy.dart';
+import 'package:projecho/static/terms.dart';
 
 class Step6FinalConfirmation extends StatefulWidget {
   final RegistrationData registrationData;

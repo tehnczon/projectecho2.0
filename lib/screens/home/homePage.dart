@@ -9,6 +9,9 @@ import 'package:projecho/screens/home/carouselSlider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:badges/badges.dart' as badges;
 import './notification/notifications_screen.dart';
+import './all_article.dart';
+import 'dart:async';
+import 'dart:math';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -24,6 +27,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   String userRole = 'infoSeeker';
   bool isLoadingRole = true;
   int _notificationCount = 0;
+  int _currentFeaturedIndex = 0;
+  Timer? _rotationTimer;
+  List<DocumentSnapshot> _allArticles = [];
 
   @override
   void initState() {
@@ -40,6 +46,17 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     _loadUserRole();
     _listenToNotifications();
+    _startArticleRotation();
+  }
+
+  void _startArticleRotation() {
+    _rotationTimer = Timer.periodic(const Duration(minutes: 5), (timer) {
+      if (_allArticles.isNotEmpty) {
+        setState(() {
+          _currentFeaturedIndex = Random().nextInt(_allArticles.length);
+        });
+      }
+    });
   }
 
   Future<void> _loadUserRole() async {
@@ -89,6 +106,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   void dispose() {
     _fadeController.dispose();
     _scaleController.dispose();
+    _rotationTimer?.cancel();
     super.dispose();
   }
 
@@ -309,7 +327,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                         ),
                         TextButton.icon(
                           onPressed: () {
-                            // Navigate to full articles list
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder:
+                                    (context) =>
+                                        AllArticlesScreen(userRole: userRole),
+                              ),
+                            );
                           },
                           icon: Icon(
                             Icons.library_books,
@@ -349,17 +374,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  // ... (rest of the existing methods remain the same)
-  // Copy all your existing _buildFeaturedArticle, _buildQuickReadSection, etc.
-
   Widget _buildFeaturedArticle() {
-    // Same as your existing code
     return StreamBuilder<QuerySnapshot>(
       stream:
           FirebaseFirestore.instance
               .collection('articles')
               .where('targetRoles', arrayContainsAny: [userRole, 'all'])
-              .where('featured', isEqualTo: true)
               .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
@@ -376,13 +396,19 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           return bTime.compareTo(aTime);
         });
 
-        final doc = docs.first;
+        // Update articles list and ensure index is valid
+        _allArticles = docs;
+        if (_currentFeaturedIndex >= _allArticles.length) {
+          _currentFeaturedIndex = 0;
+        }
+
+        final doc = _allArticles[_currentFeaturedIndex];
         final data = doc.data() as Map<String, dynamic>;
         final imageUrl = data['imageUrl'] as String?;
 
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 10),
-          height: imageUrl != null ? 280 : 200,
+          height: imageUrl != null ? 280 : 130,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(20),
             gradient: LinearGradient(
@@ -459,86 +485,68 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
+                        Column(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 10,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.25),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: Row(
-                                children: [
-                                  const Icon(
-                                    Icons.star,
-                                    size: 14,
-                                    color: Colors.white,
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'FEATURED',
-                                    style: GoogleFonts.poppins(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 1,
-                                    ),
-                                  ),
-                                ],
+                            Text(
+                              data['hub'] ?? 'Untitled',
+                              style: GoogleFonts.poppins(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                height: 1.2,
                               ),
                             ),
-                            const Spacer(),
-                            if (imageUrl == null)
-                              Text(
-                                data['emoji'] ?? '📄',
-                                style: const TextStyle(fontSize: 32),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.25),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  data['title'] ?? 'Untitled',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1.2,
+                                    shadows:
+                                        imageUrl != null
+                                            ? [
+                                              Shadow(
+                                                color: Colors.black.withOpacity(
+                                                  0.5,
+                                                ),
+                                                blurRadius: 4,
+                                              ),
+                                            ]
+                                            : null,
+                                  ),
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              data['emoji'] ?? '📄',
+                              style: const TextStyle(fontSize: 32),
+                            ),
                           ],
                         ),
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              data['title'] ?? 'Untitled',
-                              style: GoogleFonts.poppins(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                height: 1.2,
-                                shadows:
-                                    imageUrl != null
-                                        ? [
-                                          Shadow(
-                                            color: Colors.black.withOpacity(
-                                              0.5,
-                                            ),
-                                            blurRadius: 4,
-                                          ),
-                                        ]
-                                        : null,
-                              ),
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
                             const SizedBox(height: 8),
                             Row(
                               children: [
-                                Icon(
-                                  Icons.access_time,
-                                  size: 14,
-                                  color: Colors.white.withOpacity(0.9),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  '${data['readTime'] ?? 5} min read',
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontSize: 12,
-                                  ),
-                                ),
                                 const SizedBox(width: 12),
                                 const Icon(
                                   Icons.arrow_forward,
@@ -565,7 +573,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               ),
             ),
           ),
-        ).animate().fadeIn(duration: 800.ms, delay: 600.ms).scale();
+        );
       },
     );
   }
@@ -633,7 +641,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     emoji: data['emoji'] ?? '📄',
                     title: data['title'] ?? 'Untitled',
                     category: data['category'] ?? 'general',
-                    readTime: data['readTime'] ?? 5,
                     imageUrl: data['imageUrl'] as String?,
                     data: data,
                     index: index,
@@ -652,7 +659,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     required String emoji,
     required String title,
     required String category,
-    required int readTime,
     String? imageUrl,
     required Map<String, dynamic> data,
     required int index,
@@ -759,16 +765,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 Row(
                   children: [
                     Icon(
-                      Icons.access_time,
+                      Icons.location_on,
                       size: 10,
                       color: AppColors.textLight,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      '$readTime min',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppColors.textLight,
+                    Expanded(
+                      child: Text(
+                        data['hub'] ?? 'N/A',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppColors.textLight,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -810,6 +820,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         return Colors.purple;
       case 'living':
         return Colors.orange;
+      case 'transmission':
+        return Colors.red;
+      case 'testing':
+        return Colors.cyan;
       default:
         return AppColors.primary;
     }

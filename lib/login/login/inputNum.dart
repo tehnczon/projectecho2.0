@@ -4,8 +4,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projecho/main/app_theme.dart';
 import 'package:projecho/login/login/rceiverOTP.dart';
-import 'package:projecho/login/signup/privacyPolicy.dart';
-import 'package:projecho/login/signup/terms.dart';
+import 'package:projecho/static/privacyPolicy.dart';
+import 'package:projecho/static/terms.dart';
 import 'package:projecho/main/mainPage.dart';
 import './google_auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -61,7 +61,6 @@ class _EnterNumberPageState extends State<EnterNumberPage>
 
       final user = userCredential.user!;
       final uid = user.uid;
-      final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
 
       // Check if user exists in Firestore
       final userDoc =
@@ -90,7 +89,9 @@ class _EnterNumberPageState extends State<EnterNumberPage>
         print('✅ New Google user - starting registration');
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => TermsAndConditionsPage(uid: uid)),
+          MaterialPageRoute(
+            builder: (_) => TermsAndConditionsPage(uid: uid, phoneNumber: ''),
+          ),
         );
       }
     } catch (e) {

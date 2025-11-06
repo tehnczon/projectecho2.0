@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
+// ---------------- APP THEME ----------------
 class AppTheme {
   AppTheme._();
 
@@ -30,7 +32,6 @@ class AppTheme {
   );
 
   static const TextStyle display1 = TextStyle(
-    // h4 -> display1
     fontFamily: fontName,
     fontWeight: FontWeight.bold,
     fontSize: 36,
@@ -40,7 +41,6 @@ class AppTheme {
   );
 
   static const TextStyle headline = TextStyle(
-    // h5 -> headline
     fontFamily: fontName,
     fontWeight: FontWeight.bold,
     fontSize: 24,
@@ -49,7 +49,6 @@ class AppTheme {
   );
 
   static const TextStyle title = TextStyle(
-    // h6 -> title
     fontFamily: fontName,
     fontWeight: FontWeight.bold,
     fontSize: 16,
@@ -58,7 +57,6 @@ class AppTheme {
   );
 
   static const TextStyle subtitle = TextStyle(
-    // subtitle2 -> subtitle
     fontFamily: fontName,
     fontWeight: FontWeight.w400,
     fontSize: 14,
@@ -67,7 +65,6 @@ class AppTheme {
   );
 
   static const TextStyle body2 = TextStyle(
-    // body1 -> body2
     fontFamily: fontName,
     fontWeight: FontWeight.w400,
     fontSize: 14,
@@ -76,7 +73,6 @@ class AppTheme {
   );
 
   static const TextStyle body1 = TextStyle(
-    // body2 -> body1
     fontFamily: fontName,
     fontWeight: FontWeight.w400,
     fontSize: 16,
@@ -85,17 +81,16 @@ class AppTheme {
   );
 
   static const TextStyle caption = TextStyle(
-    // Caption -> caption
     fontFamily: fontName,
     fontWeight: FontWeight.w400,
     fontSize: 12,
     letterSpacing: 0.2,
-    color: lightText, // was lightText
+    color: lightText,
   );
 }
 
+// ---------------- APP COLORS ----------------
 class AppColors {
-  // Facebook-inspired color palette
   static const Color primary = Color(0xFF1877F2);
   static const Color primaryLight = Color(0xFF42A5F5);
   static const Color primaryDark = Color(0xFF0D47A1);
@@ -110,4 +105,64 @@ class AppColors {
   static const Color error = Color(0xFFFA383E);
   static const Color warning = Color(0xFFFFA726);
   static const Color success = Color(0xFF42B883);
+}
+
+// ---------------- APP LOADING WIDGET ----------------
+class AppLoading extends StatelessWidget {
+  final String? message;
+
+  const AppLoading({this.message, super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Animated gradient circle
+            Container(
+              width: 60,
+              height: 60,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.primary.withOpacity(0.2),
+                    AppColors.secondary.withOpacity(0.1),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.primary.withOpacity(0.2),
+                    blurRadius: 20,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                  strokeWidth: 2,
+                ),
+              ),
+            ).animate().scale(duration: 800.ms, curve: Curves.easeOutBack),
+
+            const SizedBox(height: 40),
+
+            // Optional message text
+            if (message != null)
+              Text(
+                message!,
+                style: const TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }

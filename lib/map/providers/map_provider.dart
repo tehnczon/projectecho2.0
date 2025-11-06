@@ -59,32 +59,25 @@ class MapProvider extends ChangeNotifier {
 
   /// Initialize the provider and load centers from Firestore
   Future<void> initialize() async {
-    print('🚀 MapProvider: Starting Firestore initialization...');
     _setLoading(true);
     _errorMessage = null;
 
     try {
-      // Initialize repository first
       await _repository.initialize();
-
-      // Load centers from Firestore
       _allCenters = await _repository.getAllCenters();
-      print(
-        '📊 MapProvider: Loaded ${_allCenters.length} centers from Firestore',
-      );
 
-      // Print first center for debugging
-      if (_allCenters.isNotEmpty) {
-        final first = _allCenters.first;
-        print('📍 First center: ${first.name} at ${first.position}');
-        print('🏷️ Category: ${first.category}, Services: ${first.services}');
-      }
+      // Commented out debug prints
+      // if (_allCenters.isNotEmpty) {
+      //   final first = _allCenters.first;
+      //   print('📍 First center: ${first.name} at ${first.position}');
+      //   print('🏷️ Category: ${first.category}, Services: ${first.services}');
+      // }
 
       await _applyFiltersAndSearch();
-      print('✅ MapProvider: Firestore initialization complete');
+      // print('✅ MapProvider: Firestore initialization complete');
     } catch (e, stackTrace) {
-      print('❌ MapProvider Error: $e');
-      print('📜 Stack trace: $stackTrace');
+      // print('❌ MapProvider Error: $e');
+      // print('📜 Stack trace: $stackTrace');
       _errorMessage = 'Failed to load centers: $e';
     } finally {
       _setLoading(false);
@@ -93,27 +86,26 @@ class MapProvider extends ChangeNotifier {
 
   /// Initialize with real-time updates
   void initializeWithStream() {
-    print('🚀 MapProvider: Starting real-time Firestore stream...');
+    // print('🚀 MapProvider: Starting real-time Firestore stream...');
     _setLoading(true);
     _errorMessage = null;
 
-    // Listen to real-time updates
     _centersStream = _repository.getCentersStream();
     _centersStream!.listen(
       (centers) async {
-        print('📊 MapProvider: Received ${centers.length} centers from stream');
+        // print('📊 MapProvider: Received ${centers.length} centers from stream');
         _allCenters = centers;
 
-        if (_allCenters.isNotEmpty) {
-          final first = _allCenters.first;
-          print('📍 Stream update - First center: ${first.name}');
-        }
+        // if (_allCenters.isNotEmpty) {
+        //   final first = _allCenters.first;
+        //   print('📍 Stream update - First center: ${first.name}');
+        // }
 
         await _applyFiltersAndSearch();
         _setLoading(false);
       },
       onError: (error) {
-        print('❌ MapProvider Stream Error: $error');
+        // print('❌ MapProvider Stream Error: $error');
         _errorMessage = 'Failed to load centers: $error';
         _setLoading(false);
       },
@@ -122,16 +114,16 @@ class MapProvider extends ChangeNotifier {
 
   /// Refresh data from Firestore
   Future<void> refresh() async {
-    print('🔄 MapProvider: Refreshing data from Firestore...');
+    // print('🔄 MapProvider: Refreshing data from Firestore...');
     _errorMessage = null;
 
     try {
       await _repository.refresh();
       _allCenters = await _repository.getAllCenters();
-      print('📊 MapProvider: Refreshed ${_allCenters.length} centers');
+      // print('📊 MapProvider: Refreshed ${_allCenters.length} centers');
       await _applyFiltersAndSearch();
     } catch (e) {
-      print('❌ MapProvider Refresh Error: $e');
+      // print('❌ MapProvider Refresh Error: $e');
       _errorMessage = 'Failed to refresh centers: $e';
     }
   }
@@ -139,7 +131,7 @@ class MapProvider extends ChangeNotifier {
   /// Set Google Map Controller
   void setMapController(GoogleMapController controller) {
     _mapController = controller;
-    print('🗺️ MapProvider: Map controller set');
+    // print('🗺️ MapProvider: Map controller set');
   }
 
   /// Search centers by query
@@ -147,7 +139,7 @@ class MapProvider extends ChangeNotifier {
     if (_searchQuery == query) return;
 
     _searchQuery = query;
-    print('🔍 MapProvider: Searching for "$query"');
+    // print('🔍 MapProvider: Searching for "$query"');
     _applyFiltersAndSearch();
   }
 
@@ -183,23 +175,21 @@ class MapProvider extends ChangeNotifier {
     }
 
     if (changed) {
-      print('🎛️ MapProvider: Filters updated');
+      // print('🎛️ MapProvider: Filters updated');
       _applyFiltersAndSearch();
     }
   }
 
   /// Select a center by ID
   Future<void> selectCenter(String centerId) async {
-    print('🎯 MapProvider: Selecting center $centerId');
+    // print('🎯 MapProvider: Selecting center $centerId');
 
     try {
-      // First check in current centers
       HIVCenter? center = _allCenters.firstWhere(
         (c) => c.id == centerId,
         orElse: () => null as dynamic,
       );
 
-      // If not found, fetch from Firestore
       if (center == null) {
         center = await _repository.getCenterById(centerId);
       }
@@ -208,7 +198,6 @@ class MapProvider extends ChangeNotifier {
         _selectedCenter = center;
         _clearRoute();
 
-        // Animate camera to selected center
         if (_mapController != null) {
           _mapController!.animateCamera(
             CameraUpdate.newCameraPosition(
@@ -220,7 +209,7 @@ class MapProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      print('❌ Error selecting center: $e');
+      // print('❌ Error selecting center: $e');
     }
   }
 
@@ -265,7 +254,7 @@ class MapProvider extends ChangeNotifier {
 
       notifyListeners();
     } catch (e) {
-      print('❌ Error showing route: $e');
+      // print('❌ Error showing route: $e');
     } finally {
       _setLoadingRoute(false);
     }
@@ -278,18 +267,14 @@ class MapProvider extends ChangeNotifier {
 
   /// Apply filters and search, then update markers
   Future<void> _applyFiltersAndSearch() async {
-    print('🔧 MapProvider: Applying filters and search...');
+    // print('🔧 MapProvider: Applying filters and search...');
 
-    // Start with all centers
     List<HIVCenter> filtered = List.from(_allCenters);
 
-    // Apply filters
     filtered =
         filtered.where((center) {
-          // Multi-service filter
           if (center.isMultiService && !_showMultiService) return false;
 
-          // Single service filters
           if (!center.isMultiService) {
             final primaryService = center.primaryService;
             switch (primaryService) {
@@ -311,15 +296,14 @@ class MapProvider extends ChangeNotifier {
           return true;
         }).toList();
 
-    print('📋 After filtering: ${filtered.length} centers');
+    // print('📋 After filtering: ${filtered.length} centers');
 
-    // Apply search
     if (_searchQuery.isNotEmpty) {
       filtered =
           filtered
               .where((center) => center.matchesQuery(_searchQuery))
               .toList();
-      print('🔍 After search: ${filtered.length} centers');
+      // print('🔍 After search: ${filtered.length} centers');
     }
 
     _filteredCenters = filtered;
@@ -329,15 +313,15 @@ class MapProvider extends ChangeNotifier {
 
   /// Create markers for filtered centers
   Future<void> _createMarkers() async {
-    print(
-      '📍 MapProvider: Creating markers for ${_filteredCenters.length} centers...',
-    );
+    // print(
+    //   '📍 MapProvider: Creating markers for ${_filteredCenters.length} centers...',
+    // );
     final Set<Marker> newMarkers = {};
 
     try {
       for (int i = 0; i < _filteredCenters.length; i++) {
         final center = _filteredCenters[i];
-        print('📌 Creating marker $i: ${center.name}');
+        // print('📌 Creating marker $i: ${center.name}');
 
         final marker = Marker(
           markerId: MarkerId(center.id),
@@ -351,19 +335,19 @@ class MapProvider extends ChangeNotifier {
           ),
           icon: _getMarkerIcon(center),
           onTap: () {
-            print('👆 Marker tapped: ${center.name}');
+            // print('👆 Marker tapped: ${center.name}');
             selectCenter(center.id);
           },
         );
         newMarkers.add(marker);
-        print('✅ Marker created for ${center.name}');
+        // print('✅ Marker created for ${center.name}');
       }
 
       _markers = newMarkers;
-      print('🎯 MapProvider: ${_markers.length} markers created successfully');
+      // print('🎯 MapProvider: ${_markers.length} markers created successfully');
     } catch (e, stackTrace) {
-      print('❌ Error creating markers: $e');
-      print('📜 Stack trace: $stackTrace');
+      // print('❌ Error creating markers: $e');
+      // print('📜 Stack trace: $stackTrace');
     }
   }
 
@@ -393,7 +377,7 @@ class MapProvider extends ChangeNotifier {
           );
       }
     } catch (e) {
-      print('❌ Error getting marker icon for ${center.name}: $e');
+      // print('❌ Error getting marker icon for ${center.name}: $e');
       return BitmapDescriptor.defaultMarker; // Fallback
     }
   }
@@ -412,7 +396,6 @@ class MapProvider extends ChangeNotifier {
     );
   }
 
-  /// Set loading state
   void _setLoading(bool loading) {
     if (_isLoading != loading) {
       _isLoading = loading;
@@ -420,7 +403,6 @@ class MapProvider extends ChangeNotifier {
     }
   }
 
-  /// Set route loading state
   void _setLoadingRoute(bool loading) {
     if (_isLoadingRoute != loading) {
       _isLoadingRoute = loading;
@@ -428,7 +410,6 @@ class MapProvider extends ChangeNotifier {
     }
   }
 
-  /// Clear route polylines
   void _clearRoute() {
     if (_polylines.isNotEmpty) {
       _polylines = {};
@@ -436,31 +417,26 @@ class MapProvider extends ChangeNotifier {
     }
   }
 
-  /// Save a center to Firestore
   Future<void> saveCenter(HIVCenter center) async {
     try {
       await _repository.saveCenter(center);
-      // Refresh the data
       await refresh();
     } catch (e) {
-      print('❌ Error saving center: $e');
+      // print('❌ Error saving center: $e');
       _errorMessage = 'Failed to save center: $e';
       notifyListeners();
     }
   }
 
-  /// Delete a center from Firestore
   Future<void> deleteCenter(String centerId) async {
     try {
       await _repository.deleteCenter(centerId);
-      // Clear selection if deleted center was selected
       if (_selectedCenter?.id == centerId) {
         clearSelection();
       }
-      // Refresh the data
       await refresh();
     } catch (e) {
-      print('❌ Error deleting center: $e');
+      // print('❌ Error deleting center: $e');
       _errorMessage = 'Failed to delete center: $e';
       notifyListeners();
     }

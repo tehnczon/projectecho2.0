@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:projecho/form/plhivForm/app_colors.dart';
+import 'package:projecho/login/signup/plhivForm/app_colors.dart';
 import './services/profile_service.dart';
 import './services/auth_service.dart';
 import './widgets/profile_header.dart';
@@ -12,8 +12,8 @@ import './widgets/quick_actions_card.dart';
 import 'package:projecho/screens/profile/edit profile/edit_profile.dart';
 import 'package:projecho/screens/profile/manageaccount/link_account_screen.dart';
 import 'package:projecho/login/login/inputNum.dart';
-import 'package:projecho/login/signup/privacyPolicy.dart';
-import 'package:projecho/login/signup/terms.dart';
+import 'package:projecho/static/privacyPolicy.dart';
+import 'package:projecho/static/terms.dart';
 import 'package:projecho/screens/profile/support.dart';
 import 'package:projecho/screens/profile/userSettings.dart';
 

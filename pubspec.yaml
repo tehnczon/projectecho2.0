@@ -55,7 +55,7 @@ dependencies:
   google_maps_flutter: ^2.12.2
   geocoding: ^4.0.0
   location: ^8.0.0
-  flutter_launcher_icons: ^0.14.3
+  flutter_launcher_icons: ^0.14.4
   flutter_form_builder: ^10.0.1
   im_stepper: ^1.0.1+1
   encrypt: ^5.0.3
@@ -91,14 +91,13 @@ dependencies:
   google_places_flutter: ^2.1.1
   table_calendar: ^3.2.0
   cached_network_image: ^3.4.1
-  flutter_local_notifications: ^19.5.0
-  timezone: ^0.10.1
+  flutter_local_notifications: ^17.2.1
   badges: ^3.1.2
 
 flutter_icons:
   android: true
   ios: false
-  image_path: "assets/images/icon.png"
+  image_path: "assets/icon/icon.png"
 
 dev_dependencies:
   flutter_test:

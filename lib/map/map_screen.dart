@@ -6,6 +6,7 @@ import 'providers/map_provider.dart';
 import 'providers/location_provider.dart';
 import 'center_details_sheet.dart';
 import 'models/service_type.dart';
+import '../main/app_theme.dart';
 
 class MapScreen extends StatefulWidget {
   @override
@@ -134,7 +135,8 @@ class _MapScreenState extends State<MapScreen>
           Consumer<MapProvider>(
             builder: (context, provider, _) {
               if (!provider.isLoading) return const SizedBox.shrink();
-              return _buildLoadingOverlay(theme);
+
+              return AppLoading();
             },
           ),
         ],

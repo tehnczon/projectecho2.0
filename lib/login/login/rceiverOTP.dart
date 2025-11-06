@@ -12,7 +12,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:math';
 
-/// Enhanced OTP Screen with better error handling, state management, and UX
+/// Enhanced OTP Screen with secure phone storage and proper user flow
 class OTPScreen extends StatefulWidget {
   final String phoneNumber;
   final String verificationId;
@@ -138,13 +138,9 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
       final uid = user.uid;
       final phoneNumber = user.phoneNumber!;
 
-      // Encrypt and store phone number (non-blocking)
-      _encryptAndStorePhone(phoneNumber);
-
-      // Check if user exists
+      // Check if user already exists (returning user)
       final userDoc = await _firestore.collection('user').doc(uid).get();
       final userExists = userDoc.exists;
-      final isNewUser = userCredential.additionalUserInfo?.isNewUser ?? false;
 
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -153,11 +149,13 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
       widget.onVerificationSuccess?.call();
 
       // Navigate based on user status
-      if (!isNewUser && userExists) {
+      if (userExists) {
+        // Existing user - go to main page
         _navigateToMainPage();
       } else {
-        await _createUserDocument(uid, phoneNumber);
-        _navigateToOnboarding(uid);
+        // New user - go to onboarding (DON'T create Firestore doc yet)
+        // Pass both uid and phoneNumber to onboarding
+        _navigateToOnboarding(uid, phoneNumber);
       }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
@@ -197,7 +195,9 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
     print('❌ Firebase Auth error: ${e.code} - ${e.message}');
   }
 
-  Future<void> _encryptAndStorePhone(String phoneNumber) async {
+  /// Encrypt phone number and return encrypted version
+  /// This should be called when creating the user document (after onboarding)
+  Future<String?> encryptPhoneNumber(String phoneNumber) async {
     try {
       final url = Uri.parse('https://encryptphone-sgjiksmfoa-uc.a.run.app');
       final response = await http
@@ -210,31 +210,18 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        print('✅ Phone encrypted and stored: ${data['encrypted']}');
+        final encryptedPhone = data['encrypted'] as String?;
+        print('✅ Phone encrypted successfully');
+        return encryptedPhone;
       } else {
         print(
           '⚠️ Encryption function returned ${response.statusCode}: ${response.body}',
         );
+        return null;
       }
     } catch (e) {
-      // Non-critical error, log and continue
       print('⚠️ Failed to encrypt phone number: $e');
-    }
-  }
-
-  Future<void> _createUserDocument(String uid, String phoneNumber) async {
-    try {
-      await _firestore.collection('user').doc(uid).set({
-        'phone': phoneNumber,
-        'createdAt': FieldValue.serverTimestamp(),
-        'authMethod': 'phone',
-        'profileCompleted': false,
-      }, SetOptions(merge: true));
-
-      print('✅ User document created for UID: $uid');
-    } catch (e) {
-      print('⚠️ Failed to create user document: $e');
-      // Continue anyway, document can be created later
+      return null;
     }
   }
 
@@ -323,10 +310,19 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
     );
   }
 
-  void _navigateToOnboarding(String uid) {
+  void _navigateToOnboarding(String uid, String phoneNumber) {
+    // Pass phoneNumber to onboarding so it can be encrypted and stored
+    // ONLY after the user completes registration (after userType for InfoSeeker,
+    // after mainplhivform for PLHIV)
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (_) => TermsAndConditionsPage(uid: uid)),
+      MaterialPageRoute(
+        builder:
+            (_) => TermsAndConditionsPage(
+              uid: uid,
+              phoneNumber: phoneNumber, // Add this parameter
+            ),
+      ),
       (Route<dynamic> route) => false,
     );
   }
@@ -729,5 +725,3 @@ class _OTPScreenState extends State<OTPScreen> with TickerProviderStateMixin {
     );
   }
 }
-
-// Import for shake animation

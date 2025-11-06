@@ -213,8 +213,11 @@ class _AdvancedSettingsPageState extends State<AdvancedSettingsPage> {
 
       batch.delete(firestore.collection('user').doc(uid));
       batch.delete(firestore.collection('analyticData').doc(uid));
-      batch.delete(firestore.collection('userDemographic').doc(uid));
+      batch.delete(firestore.collection('medicalTracker').doc(uid));
       batch.delete(firestore.collection('profiles').doc(uid));
+      batch.delete(firestore.collection('requests').doc(uid));
+      batch.delete(firestore.collection('refillLogs').doc(uid));
+      batch.delete(firestore.collection('intakeLogs').doc(uid));
 
       final requestsQuery =
           await firestore

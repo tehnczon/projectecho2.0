@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:projecho/form/plhivForm/app_colors.dart';
+import 'package:projecho/login/signup/plhivForm/app_colors.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:projecho/login/signup/privacyPolicy.dart';
-import 'package:projecho/login/signup/terms.dart';
+import 'package:projecho/static/privacyPolicy.dart';
+import 'package:projecho/static/terms.dart';
 
 class AccountLinkingPage extends StatefulWidget {
   const AccountLinkingPage({super.key});

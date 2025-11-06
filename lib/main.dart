@@ -63,13 +63,15 @@ class _MyAppState extends State<MyApp> {
     final hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
 
     if (!hasSeenOnboarding) {
-      // show onboarding once
+      // Show onboarding once
+      if (!mounted) return;
       setState(() {
         _currentScreen = onboarding.MyOnboardingScreen();
       });
 
       await prefs.setBool('hasSeenOnboarding', true);
     } else {
+      if (!mounted) return;
       setState(() {
         _currentScreen = nextScreen;
         _showSplash = false;
@@ -83,6 +85,7 @@ class _MyAppState extends State<MyApp> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
+    if (!mounted) return;
     setState(() => _isCheckingRegistration = true);
 
     try {
@@ -91,6 +94,7 @@ class _MyAppState extends State<MyApp> {
       );
 
       if (resumeScreen != null) {
+        if (!mounted) return;
         setState(() {
           _currentScreen = resumeScreen;
         });
@@ -99,6 +103,7 @@ class _MyAppState extends State<MyApp> {
       print('Error checking registration progress: $e');
       await RegistrationFlowManager.emergencyReset();
     } finally {
+      if (!mounted) return;
       setState(() => _isCheckingRegistration = false);
     }
   }
