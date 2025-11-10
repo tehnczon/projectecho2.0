@@ -105,26 +105,13 @@ class _AccountLinkingPageState extends State<AccountLinkingPage> {
               child: Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     CircularProgressIndicator(color: AppColors.primary),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Enter your 10-digit mobile number',
-                      style: GoogleFonts.poppins(
-                        fontSize: 12,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Linking Google Account...',
-                      style: GoogleFonts.poppins(fontSize: 14),
-                    ),
                   ],
                 ),
               ),

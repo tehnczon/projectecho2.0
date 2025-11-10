@@ -33,7 +33,7 @@ class _UserTypeScreenState extends State<UserTypeScreen>
       'icon': Icons.favorite,
       'color': AppColors.primary,
       'benefits': [
-        'STS form profiling',
+        'Medical tracker',
         'Treatment hub locator',
         'Health learning resources',
         'Feed anonymous data for research',

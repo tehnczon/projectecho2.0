@@ -92,12 +92,12 @@ class AnalyticsProcessingService {
         'totalRecords': records.length,
       });
 
-      print('✅ Analytics summary updated successfully');
+      print('âœ… Analytics summary updated successfully');
       print(
-        '📊 Total Users: $totalUsers (PLHIV: $plhivCountFromUsers, InfoSeekers: $infoSeekerCountFromUsers, Researchers: $researcherCountFromUsers) | Analytics Records: ${records.length}',
+        'ðŸ“Š Total Users: $totalUsers (PLHIV: $plhivCountFromUsers, InfoSeekers: $infoSeekerCountFromUsers, Researchers: $researcherCountFromUsers) | Analytics Records: ${records.length}',
       );
     } catch (e) {
-      print('❌ Error processing analytics: $e');
+      print('âŒ Error processing analytics: $e');
     }
   }
 
@@ -321,7 +321,7 @@ class AnalyticsProcessingService {
               : '0.0',
     };
 
-    // 2. Gender × STI diagnosis
+    // 2. Gender Ã— STI diagnosis
     Map<String, dynamic> genderSTI = {};
     genderUsers.forEach((gender, users) {
       final withSTI = users.where((r) => r['diagnosedSTI'] == true).length;
@@ -336,7 +336,7 @@ class AnalyticsProcessingService {
     });
     crossTabData['gender_sti'] = genderSTI;
 
-    // 3. Education × Risk Factors
+    // 3. Education Ã— Risk Factors
     Map<String, dynamic> educationRisk = {};
     educationUsers.forEach((education, users) {
       final multiplePartners =
@@ -367,7 +367,7 @@ class AnalyticsProcessingService {
     });
     crossTabData['education_risk'] = educationRisk;
 
-    // 4. City × Age × High-risk behavior
+    // 4. City Ã— Age Ã— High-risk behavior
     Map<String, dynamic> cityAgeRisk = {};
     cityAgeUsers.forEach((city, ageGroups) {
       cityAgeRisk[city] = {};
@@ -461,7 +461,7 @@ class AnalyticsProcessingService {
     };
     crossTabData['sexual_behavior_health'] = sexualBehaviorHealth;
 
-    // 6. Civil Status × Pregnancy
+    // 6. Civil Status Ã— Pregnancy
     Map<String, dynamic> civilStatusPregnancy = {};
     civilStatusDist.keys.forEach((status) {
       final statusUsers =

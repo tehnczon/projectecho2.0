@@ -87,8 +87,7 @@ class RegistrationData {
   int? lastTestYear;
   String? testFacility;
   String? testCity;
-  String?
-  testResult; // Positive/Negative/Indeterminate/Was not able to get result
+  String? testResult;
 
   // Computed fields
   String? unprotectedSexWith;
@@ -334,12 +333,7 @@ class RegistrationData {
 
       // Check returning user status
       final userDoc = await firestore.collection('user').doc(uid).get();
-      final isReturningUser = userDoc.data()?['isReturningUser'] ?? false;
       final doNotCount = userDoc.data()?['doNotCountInAnalytics'] ?? false;
-
-      if (isReturningUser) {
-        print('⚠️ Returning deleted user detected - marking as do not count');
-      }
 
       // Save analytics data (NON-PII)
       await firestore
@@ -347,14 +341,14 @@ class RegistrationData {
           .doc(uid)
           .set(toFirestore(), SetOptions(merge: true));
 
-      print('✅ Analytics data saved for user: $uid');
+      print(' Analytics data saved for user: $uid');
 
       // Schedule analytics update
       await _scheduleAnalyticsUpdate(forceImmediate: !doNotCount);
 
       return true;
     } catch (e) {
-      print('❌ Error saving analytics data: $e');
+      print('Error saving analytics data: $e');
       return false;
     }
   }
@@ -383,18 +377,20 @@ class RegistrationData {
 
       if (shouldUpdate) {
         try {
-          print('🔄 Updating analytics summary (pending: $_pendingUpdates)...');
+          print(
+            'ðŸ”„ Updating analytics summary (pending: $_pendingUpdates)...',
+          );
           await AnalyticsProcessingService.updateAnalyticsSummary();
           _lastAnalyticsUpdate = now;
           _pendingUpdates = 0;
-          print('✅ Analytics summary updated at ${now.toIso8601String()}');
+          print('âœ… Analytics summary updated at ${now.toIso8601String()}');
         } catch (e) {
-          print('❌ Failed to update analytics summary: $e');
+          print('âŒ Failed to update analytics summary: $e');
           _scheduleRetry();
         }
       } else {
         print(
-          '⏭️ Analytics update skipped (updated ${now.difference(_lastAnalyticsUpdate!).inMinutes} min ago)',
+          'â­ï¸ Analytics update skipped (updated ${now.difference(_lastAnalyticsUpdate!).inMinutes} min ago)',
         );
       }
     });
@@ -404,13 +400,13 @@ class RegistrationData {
     Timer(Duration(minutes: 1), () async {
       if (_pendingUpdates > 0) {
         try {
-          print('🔄 Retrying analytics update...');
+          print('ðŸ”„ Retrying analytics update...');
           await AnalyticsProcessingService.updateAnalyticsSummary();
           _lastAnalyticsUpdate = DateTime.now();
           _pendingUpdates = 0;
-          print('✅ Analytics retry successful');
+          print('âœ… Analytics retry successful');
         } catch (e) {
-          print('❌ Analytics retry failed: $e');
+          print('âŒ Analytics retry failed: $e');
         }
       }
     });
@@ -421,12 +417,12 @@ class RegistrationData {
     _pendingUpdates = 0;
 
     try {
-      print('⚡ Force updating analytics...');
+      print('âš¡ Force updating analytics...');
       await AnalyticsProcessingService.updateAnalyticsSummary();
       _lastAnalyticsUpdate = DateTime.now();
-      print('✅ Force update completed');
+      print('âœ… Force update completed');
     } catch (e) {
-      print('❌ Force update failed: $e');
+      print('âŒ Force update failed: $e');
       rethrow;
     }
   }
@@ -444,7 +440,7 @@ class RegistrationData {
 
       if (isReturningUser) {
         print(
-          '⚠️ Returning user - demographic data will not affect total count',
+          'âš ï¸ Returning user - demographic data will not affect total count',
         );
       }
 
@@ -462,11 +458,11 @@ class RegistrationData {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
-      print('✅ User demographic saved to Firestore: $uid');
+      print('âœ… User demographic saved to Firestore: $uid');
       await _scheduleAnalyticsUpdate();
       return true;
     } catch (e) {
-      print('❌ Error saving to Firestore: $e');
+      print('âŒ Error saving to Firestore: $e');
       return false;
     }
   }
@@ -522,10 +518,10 @@ class RegistrationData {
             .set(roleData, SetOptions(merge: true));
       }
 
-      print('✅ Profile saved to Firestore: $uid');
+      print('âœ… Profile saved to Firestore: $uid');
       return true;
     } catch (e) {
-      print('❌ Error saving profile to Firestore: $e');
+      print('âŒ Error saving profile to Firestore: $e');
       return false;
     }
   }

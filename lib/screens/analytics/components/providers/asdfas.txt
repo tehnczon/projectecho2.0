@@ -1,0 +1,338 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import './analytics_processing_service.dart';
+
+class PLHIVFormService {
+  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  /// Save PLHIV form data to analyticData collection
+  /// This automatically triggers analytics processing for the user's hub
+  static Future<bool> savePLHIVFormToAnalytics({
+    required String userId,
+    required Map<String, dynamic> formData,
+  }) async {
+    try {
+      // Get user's treatment hub
+      final userDoc = await _firestore.collection('user').doc(userId).get();
+      if (!userDoc.exists) {
+        print('❌ User not found: $userId');
+        return false;
+      }
+
+      final userData = userDoc.data()!;
+      final treatmentHub = userData['treatmentHub'] ?? 'Unassigned';
+      final userRole = userData['role'] ?? 'Unknown';
+
+      // Calculate age range
+      final birthDate = formData['birthDate'];
+      String ageRange = 'Unknown';
+      if (birthDate != null) {
+        final age = _calculateAge(birthDate);
+        ageRange = _getAgeRange(age);
+      }
+
+      // Determine sexual behavior flags
+      final bool isMSM = _determineMSM(formData);
+      final bool isMSW = _determineMSW(formData);
+      final bool isWSW = _determineWSW(formData);
+
+      // Prepare analytics data
+      final analyticsData = {
+        'userId': userId,
+        'treatmentHub': treatmentHub,
+        'userType': userRole,
+        'role': userRole,
+
+        // Demographics
+        'ageRange': ageRange,
+        'genderIdentity': formData['genderIdentity'] ?? 'Unknown',
+        'sexAssignedAtBirth': formData['sexAssignedAtBirth'] ?? 'Unknown',
+        'city': formData['city'] ?? 'Unknown',
+        'barangay': formData['barangay'] ?? 'Unknown',
+        'educationLevel': formData['educationLevel'] ?? 'Unknown',
+        'civilStatus': formData['civilStatus'] ?? 'Unknown',
+
+        // Sexual Behavior
+        'isMSM': isMSM,
+        'isMSW': isMSW,
+        'isWSW': isWSW,
+        'unprotectedSexWith': formData['unprotectedSexWith'] ?? 'Unknown',
+        'hasMultiplePartnerRisk': formData['hasMultiplePartnerRisk'] ?? false,
+
+        // Health Conditions
+        'diagnosedSTI': formData['diagnosedSTI'] ?? false,
+        'hasHepatitis': formData['hasHepatitis'] ?? false,
+        'hasTuberculosis': formData['hasTuberculosis'] ?? false,
+        'isPregnant': formData['isPregnant'] ?? false,
+
+        // Other Factors
+        'isOFW': formData['isOFW'] ?? false,
+        'isStudying': formData['isStudying'] ?? false,
+        'livingWithPartner': formData['livingWithPartner'] ?? false,
+        'motherHadHIV': formData['motherHadHIV'] ?? false,
+
+        // Status
+        'isActive': formData['isActive'] ?? true,
+
+        // Metadata
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+        'lastModifiedBy': userId,
+      };
+
+      // Check if analytics record already exists for this user
+      final existingQuery =
+          await _firestore
+              .collection('analyticData')
+              .where('userId', isEqualTo: userId)
+              .limit(1)
+              .get();
+
+      if (existingQuery.docs.isNotEmpty) {
+        // Update existing record
+        final docId = existingQuery.docs.first.id;
+        await _firestore
+            .collection('analyticData')
+            .doc(docId)
+            .update(analyticsData);
+        print('✅ Updated analytics data for user: $userId');
+      } else {
+        // Create new record
+        await _firestore.collection('analyticData').add(analyticsData);
+        print('✅ Created analytics data for user: $userId');
+      }
+
+      // Trigger analytics processing for this hub
+      await AnalyticsProcessingService.updateAnalyticsSummary(
+        specificHub: treatmentHub,
+      );
+
+      return true;
+    } catch (e) {
+      print('❌ Error saving PLHIV form to analytics: $e');
+      return false;
+    }
+  }
+
+  /// Update existing analytics record
+  static Future<bool> updatePLHIVAnalytics({
+    required String userId,
+    required Map<String, dynamic> updatedData,
+  }) async {
+    try {
+      final query =
+          await _firestore
+              .collection('analyticData')
+              .where('userId', isEqualTo: userId)
+              .limit(1)
+              .get();
+
+      if (query.docs.isEmpty) {
+        print('⚠️ No analytics record found for user: $userId');
+        return await savePLHIVFormToAnalytics(
+          userId: userId,
+          formData: updatedData,
+        );
+      }
+
+      final docId = query.docs.first.id;
+      final currentData = query.docs.first.data();
+      final treatmentHub = currentData['treatmentHub'];
+
+      await _firestore.collection('analyticData').doc(docId).update({
+        ...updatedData,
+        'updatedAt': FieldValue.serverTimestamp(),
+        'lastModifiedBy': userId,
+      });
+
+      // Trigger analytics processing for this hub
+      await AnalyticsProcessingService.updateAnalyticsSummary(
+        specificHub: treatmentHub,
+      );
+
+      print('✅ Updated analytics record for user: $userId');
+      return true;
+    } catch (e) {
+      print('❌ Error updating analytics: $e');
+      return false;
+    }
+  }
+
+  /// Delete analytics record (when user is deleted)
+  static Future<bool> deletePLHIVAnalytics(String userId) async {
+    try {
+      final query =
+          await _firestore
+              .collection('analyticData')
+              .where('userId', isEqualTo: userId)
+              .get();
+
+      if (query.docs.isEmpty) {
+        print('⚠️ No analytics record found for user: $userId');
+        return true;
+      }
+
+      final treatmentHub = query.docs.first.data()['treatmentHub'];
+
+      for (var doc in query.docs) {
+        await doc.reference.delete();
+      }
+
+      // Trigger analytics processing for this hub
+      await AnalyticsProcessingService.updateAnalyticsSummary(
+        specificHub: treatmentHub,
+      );
+
+      print('✅ Deleted analytics record for user: $userId');
+      return true;
+    } catch (e) {
+      print('❌ Error deleting analytics: $e');
+      return false;
+    }
+  }
+
+  /// Helper: Calculate age from birthdate
+  static int _calculateAge(dynamic birthDate) {
+    DateTime birth;
+
+    if (birthDate is Timestamp) {
+      birth = birthDate.toDate();
+    } else if (birthDate is DateTime) {
+      birth = birthDate;
+    } else if (birthDate is String) {
+      birth = DateTime.parse(birthDate);
+    } else {
+      return 0;
+    }
+
+    final now = DateTime.now();
+    int age = now.year - birth.year;
+    if (now.month < birth.month ||
+        (now.month == birth.month && now.day < birth.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  /// Helper: Get age range category
+  static String _getAgeRange(int age) {
+    if (age < 18) return 'Under 18';
+    if (age <= 24) return '18-24';
+    if (age <= 34) return '25-34';
+    if (age <= 44) return '35-44';
+    if (age <= 54) return '45-54';
+    if (age <= 64) return '55-64';
+    return '65+';
+  }
+
+  /// Helper: Determine if user is MSM (Men who have Sex with Men)
+  static bool _determineMSM(Map<String, dynamic> formData) {
+    final sexAtBirth = (formData['sexAssignedAtBirth'] ?? '').toLowerCase();
+    final genderIdentity = (formData['genderIdentity'] ?? '').toLowerCase();
+    final unprotectedWith =
+        (formData['unprotectedSexWith'] ?? '').toLowerCase();
+
+    // Male at birth + (identifies as male or transgender) + has sex with men
+    if (sexAtBirth == 'male') {
+      if (unprotectedWith.contains('male') ||
+          unprotectedWith.contains('men') ||
+          unprotectedWith == 'both') {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Helper: Determine if user is MSW (Men who have Sex with Women)
+  static bool _determineMSW(Map<String, dynamic> formData) {
+    final sexAtBirth = (formData['sexAssignedAtBirth'] ?? '').toLowerCase();
+    final unprotectedWith =
+        (formData['unprotectedSexWith'] ?? '').toLowerCase();
+
+    // Male at birth + has sex with women
+    if (sexAtBirth == 'male') {
+      if (unprotectedWith.contains('female') ||
+          unprotectedWith.contains('women') ||
+          unprotectedWith == 'both') {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Helper: Determine if user is WSW (Women who have Sex with Women)
+  static bool _determineWSW(Map<String, dynamic> formData) {
+    final sexAtBirth = (formData['sexAssignedAtBirth'] ?? '').toLowerCase();
+    final unprotectedWith =
+        (formData['unprotectedSexWith'] ?? '').toLowerCase();
+
+    // Female at birth + has sex with women
+    if (sexAtBirth == 'female') {
+      if (unprotectedWith.contains('female') ||
+          unprotectedWith.contains('women') ||
+          unprotectedWith == 'both') {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /// Bulk import: Process multiple PLHIV forms at once
+  static Future<Map<String, dynamic>> bulkImportPLHIVForms(
+    List<Map<String, dynamic>> formsList,
+  ) async {
+    int successful = 0;
+    int failed = 0;
+    List<String> errors = [];
+    Set<String> hubsToUpdate = {};
+
+    for (var formData in formsList) {
+      try {
+        final userId = formData['userId'];
+        if (userId == null) {
+          failed++;
+          errors.add('Missing userId in form data');
+          continue;
+        }
+
+        final success = await savePLHIVFormToAnalytics(
+          userId: userId,
+          formData: formData,
+        );
+
+        if (success) {
+          successful++;
+          // Track which hubs need updating
+          final userDoc = await _firestore.collection('user').doc(userId).get();
+          if (userDoc.exists) {
+            final hub = userDoc.data()?['treatmentHub'];
+            if (hub != null) hubsToUpdate.add(hub);
+          }
+        } else {
+          failed++;
+        }
+      } catch (e) {
+        failed++;
+        errors.add('Error processing form: $e');
+      }
+    }
+
+    // Update analytics for all affected hubs
+    for (var hub in hubsToUpdate) {
+      await AnalyticsProcessingService.updateAnalyticsSummary(specificHub: hub);
+    }
+
+    // Update global analytics
+    await AnalyticsProcessingService.updateAnalyticsSummary();
+
+    return {
+      'successful': successful,
+      'failed': failed,
+      'total': formsList.length,
+      'errors': errors,
+      'hubsUpdated': hubsToUpdate.toList(),
+    };
+  }
+}

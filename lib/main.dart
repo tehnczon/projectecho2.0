@@ -20,6 +20,7 @@ import 'package:projecho/login/animation/appstart.dart' as splash;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:projecho/screens/med_tracker/medication_provider.dart';
 import 'package:projecho/screens/home/articleDetail.dart';
+import 'package:projecho/screens/home/notification/notification_service.dart'; // ✅ Add this
 
 class AppTheme {
   AppTheme._();
@@ -30,7 +31,19 @@ class AppTheme {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // ✅ Initialize Notification Service
+  try {
+    final notificationService = NotificationService();
+    await notificationService.initialize();
+    await notificationService.requestPermissions();
+    print('✅ Notification service initialized successfully');
+  } catch (e) {
+    print('⚠️ Error initializing notifications: $e');
+  }
 
   await SystemChrome.setPreferredOrientations(<DeviceOrientation>[
     DeviceOrientation.portraitUp,

@@ -6,6 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projecho/static/privacyPolicy.dart';
 import 'package:projecho/static/terms.dart';
+import './editprofiling.dart';
+import 'package:projecho/main/registration_data.dart';
 
 class EditProfile extends StatefulWidget {
   const EditProfile({super.key});
@@ -55,7 +57,7 @@ class _EditProfileState extends State<EditProfile> {
       'Camansi',
       'Carmen',
       'Catalunan Grande',
-      'Catalunan PequeÃ±o',
+      'Catalunan Pequeño',
       'Catigan',
       'Cawayan',
       'Colosas',
@@ -204,7 +206,7 @@ class _EditProfileState extends State<EditProfile> {
       'Rafael Castillo',
       'Saloy',
       'San Antonio',
-      'Santo NiÃ±o',
+      'Santo Niño',
       'Ubalde',
       'Waan',
       'Wilfredo Aquino',
@@ -239,7 +241,7 @@ class _EditProfileState extends State<EditProfile> {
       'Miranda',
       'Moncado',
       'Pangubatan',
-      'PeÃ±aplata',
+      'Peñaplata',
       'Poblacion',
       'San Agustin',
       'San Antonio',
@@ -249,7 +251,7 @@ class _EditProfileState extends State<EditProfile> {
       'San Miguel',
       'San Remigio',
       'Santa Cruz',
-      'Santo NiÃ±o',
+      'Santo Niño',
       'Sion',
       'Tagbaobo',
       'Tagbay',
@@ -420,34 +422,33 @@ class _EditProfileState extends State<EditProfile> {
           _customGenderController.text = data['customGender'] ?? '';
 
           final location = data['location'] as Map<String, dynamic>?;
-          // Load city and barangay, ensuring they match the dropdown values
           String? loadedCity = location?['city'];
           String? loadedBarangay = location?['barangay'];
 
-          // Only set if the value exists in our dropdown list
+          // Only set if value exists in dropdown AND is not empty
           selectedCity =
-              (loadedCity != null && cities.contains(loadedCity))
+              (loadedCity != null &&
+                      loadedCity.isNotEmpty &&
+                      cities.contains(loadedCity))
                   ? loadedCity
                   : null;
+
           selectedBarangay =
               (loadedBarangay != null &&
+                      loadedBarangay.isNotEmpty &&
                       selectedCity != null &&
                       barangays[selectedCity]?.contains(loadedBarangay) == true)
                   ? loadedBarangay
                   : null;
-
-          // Debug: print what was loaded
-          print('Loaded city: $loadedCity, Selected: $selectedCity');
-          print(
-            'Loaded barangay: $loadedBarangay, Selected: $selectedBarangay',
-          );
         });
 
+        // FIX: Use consistent collection name 'users' (not 'user')
         final userDoc =
             await FirebaseFirestore.instance
-                .collection('user')
+                .collection('user') // Changed from 'user'
                 .doc(user.uid)
                 .get();
+
         if (userDoc.exists) {
           _userRole = userDoc.data()?['role'];
 
@@ -479,6 +480,15 @@ class _EditProfileState extends State<EditProfile> {
       setState(() {
         _isLoading = false;
       });
+      // Show error to user
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load profile data'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -625,8 +635,8 @@ class _EditProfileState extends State<EditProfile> {
         {
           'generatedUIC': _generatedUIC,
           'location': {
-            'city': selectedCity ?? '',
-            'barangay': selectedBarangay ?? '',
+            'city': selectedCity, // Save null if not selected
+            'barangay': selectedBarangay, // Save null if not selected
           },
           'genderIdentity': _selectedGenderIdentity,
           'customGender': finalCustomGender,
@@ -656,50 +666,56 @@ class _EditProfileState extends State<EditProfile> {
             }, SetOptions(merge: true));
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white),
-              const SizedBox(width: 12),
-              Text('Profile updated successfully!'),
-            ],
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Text('Profile updated successfully!'),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-          backgroundColor: Colors.green,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+        );
 
-      setState(() {
-        _isExpanded = false;
-      });
+        setState(() {
+          _isExpanded = false;
+        });
+      }
     } catch (e) {
       print('Error saving profile: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.error_outline, color: Colors.white),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text('Failed to update profile. Please try again.'),
-              ),
-            ],
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text('Failed to update profile. Please try again.'),
+                ),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
           ),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
-      );
+        );
+      }
     } finally {
-      setState(() {
-        _isSaving = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
     }
   }
 
@@ -895,50 +911,215 @@ class _EditProfileState extends State<EditProfile> {
                 padding: const EdgeInsets.all(20),
                 child: Column(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 10,
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: AppColors.surface,
-                              borderRadius: BorderRadius.circular(8),
+                    GestureDetector(
+                      onTap: () async {
+                        final user = FirebaseAuth.instance.currentUser;
+                        if (user == null) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Please log in to edit profiling data',
+                              ),
+                              backgroundColor: Colors.red,
                             ),
-                            child: Icon(
-                              Icons.edit,
-                              size: 12,
-                              color: AppColors.primary,
+                          );
+                          return;
+                        }
+
+                        // Show loading indicator while fetching data
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder:
+                              (context) => Center(
+                                child: CircularProgressIndicator(
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                        );
+
+                        try {
+                          // Fetch existing data from Firestore
+                          final profileDoc =
+                              await FirebaseFirestore.instance
+                                  .collection('profiles')
+                                  .doc(user.uid)
+                                  .get();
+
+                          final analyticDoc =
+                              await FirebaseFirestore.instance
+                                  .collection('analyticData')
+                                  .doc(user.uid)
+                                  .get();
+
+                          // Create RegistrationData with existing data
+                          final registrationData = RegistrationData(
+                            uid: user.uid,
+                            // Load from profiles
+                            generatedUIC: profileDoc.data()?['generatedUIC'],
+                            genderIdentity:
+                                profileDoc.data()?['genderIdentity'],
+                            customGender: profileDoc.data()?['customGender'],
+                            city: profileDoc.data()?['location']?['city'],
+                            barangay:
+                                profileDoc.data()?['location']?['barangay'],
+
+                            // Load from analyticData if exists
+                            sexAssignedAtBirth:
+                                analyticDoc.data()?['sexAssignedAtBirth'],
+                            ageRange: analyticDoc.data()?['ageRange'],
+                            nationality: analyticDoc.data()?['nationality'],
+                            educationLevel:
+                                analyticDoc.data()?['educationLevel'],
+                            civilStatus: analyticDoc.data()?['civilStatus'],
+                            livingWithPartner:
+                                analyticDoc.data()?['livingWithPartner'],
+                            isPregnant: analyticDoc.data()?['isPregnant'],
+                            numberOfChildren:
+                                analyticDoc.data()?['numberOfChildren'],
+                            currentOccupation:
+                                analyticDoc.data()?['currentOccupation'],
+                            previousOccupation:
+                                analyticDoc.data()?['previousOccupation'],
+                            isStudying: analyticDoc.data()?['isStudying'],
+                            schoolLevel: analyticDoc.data()?['schoolLevel'],
+                            isOFW: analyticDoc.data()?['isOFW'],
+                            ofwReturnYear: analyticDoc.data()?['ofwReturnYear'],
+                            ofwBasedLocation:
+                                analyticDoc.data()?['ofwBasedLocation'],
+                            ofwLastCountry:
+                                analyticDoc.data()?['ofwLastCountry'],
+                            motherHadHIV: analyticDoc.data()?['motherHadHIV'],
+                            ageAtFirstSex: analyticDoc.data()?['ageAtFirstSex'],
+                            ageAtFirstDrugUse:
+                                analyticDoc.data()?['ageAtFirstDrugUse'],
+                            femalePartnerCount:
+                                analyticDoc.data()?['femalePartnerCount'],
+                            malePartnerCount:
+                                analyticDoc.data()?['malePartnerCount'],
+                            yearLastSexFemale:
+                                analyticDoc.data()?['yearLastSexFemale'],
+                            yearLastSexMale:
+                                analyticDoc.data()?['yearLastSexMale'],
+                            hasTuberculosis:
+                                analyticDoc.data()?['hasTuberculosis'],
+                            hasHepatitisB: analyticDoc.data()?['hasHepatitisB'],
+                            hasHepatitisC: analyticDoc.data()?['hasHepatitisC'],
+                            cbsReactive: analyticDoc.data()?['cbsReactive'],
+                            takingPreP: analyticDoc.data()?['takingPreP'],
+                            diagnosedSTI: analyticDoc.data()?['diagnosedSTI'],
+                            everTestedForHIV:
+                                analyticDoc.data()?['everTestedForHIV'],
+                            lastTestMonth: analyticDoc.data()?['lastTestMonth'],
+                            lastTestYear: analyticDoc.data()?['lastTestYear'],
+                            testResult: analyticDoc.data()?['testResult'],
+                          );
+
+                          // Load exposure history if exists
+                          if (analyticDoc.data()?['exposureHistory'] != null) {
+                            final exposureMap =
+                                analyticDoc.data()!['exposureHistory']
+                                    as Map<String, dynamic>;
+                            registrationData.exposureHistory = exposureMap.map(
+                              (key, value) => MapEntry(key, value?.toString()),
+                            );
+                          }
+
+                          // Parse birthDate if exists
+                          if (analyticDoc.data()?['birthDate'] != null) {
+                            final timestamp =
+                                analyticDoc.data()!['birthDate'] as Timestamp;
+                            registrationData.birthDate = timestamp.toDate();
+                          }
+
+                          Navigator.pop(context); // Close loading dialog
+
+                          // Navigate with populated data
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder:
+                                  (context) => ProfilingeditScreen(
+                                    registrationData: registrationData,
+                                    uid: user.uid,
+                                  ),
                             ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Text(
-                              'Edit your Profiling Data',
-                              style: GoogleFonts.poppins(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.surface,
+                          );
+                        } catch (e) {
+                          Navigator.pop(context); // Close loading dialog
+
+                          print('Error loading profiling data: $e');
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Row(
+                                children: [
+                                  Icon(
+                                    Icons.error_outline,
+                                    color: Colors.white,
+                                  ),
+                                  SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Failed to load profiling data. Please try again.',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              backgroundColor: Colors.red,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
                               ),
                             ),
-                          ),
-                          Icon(
-                            Icons.arrow_forward_ios,
-                            size: 16,
-                            color: AppColors.surface,
-                          ),
-                        ],
+                          );
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.grey.withOpacity(0.1),
+                              spreadRadius: 1,
+                              blurRadius: 10,
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.edit,
+                                size: 12,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Text(
+                                'Edit your Profiling Data',
+                                style: GoogleFonts.poppins(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.surface,
+                                ),
+                              ),
+                            ),
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              size: 16,
+                              color: AppColors.surface,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 24),

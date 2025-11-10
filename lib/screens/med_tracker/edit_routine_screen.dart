@@ -181,10 +181,7 @@ class _EditRoutineScreenState extends State<EditRoutineScreen> {
 
     if (timeSuccess && thresholdSuccess && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('✅ Settings saved successfully!'),
-          backgroundColor: Colors.green,
-        ),
+        const SnackBar(content: Text(''), backgroundColor: Colors.transparent),
       );
       Navigator.pop(context);
     } else if (mounted) {

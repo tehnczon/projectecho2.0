@@ -153,55 +153,55 @@ class _ResearcherDashboardState extends State<ResearcherDashboard>
                 'Anonymized Health Metrics & Analytics',
                 style: TextStyle(color: Colors.blue[100], fontSize: 14),
               ),
-              SizedBox(height: 12),
-              ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[800],
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 24,
-                    vertical: 12,
-                  ),
-                  elevation: 3,
-                ),
-                onPressed: () async {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('⏳ Updating analytics summary...'),
-                      behavior: SnackBarBehavior.floating,
-                    ),
-                  );
+              // SizedBox(height: 12),
+              // ElevatedButton(
+              //   style: ElevatedButton.styleFrom(
+              //     backgroundColor: Colors.blue[800],
+              //     foregroundColor: Colors.white,
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(12),
+              //     ),
+              //     padding: const EdgeInsets.symmetric(
+              //       horizontal: 24,
+              //       vertical: 12,
+              //     ),
+              //     elevation: 3,
+              //   ),
+              //   onPressed: () async {
+              //     ScaffoldMessenger.of(context).showSnackBar(
+              //       const SnackBar(
+              //         content: Text('⏳ Updating analytics summary...'),
+              //         behavior: SnackBarBehavior.floating,
+              //       ),
+              //     );
 
-                  try {
-                    await RegistrationData.forceAnalyticsUpdate();
-                    await _loadAnalytics();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          '✅ Analytics summary updated successfully!',
-                        ),
-                        backgroundColor: Colors.green,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('❌ Failed to update analytics: $e'),
-                        backgroundColor: Colors.redAccent,
-                        behavior: SnackBarBehavior.floating,
-                      ),
-                    );
-                  }
-                },
-                child: const Text(
-                  'Force Update Analytics',
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
+              //     try {
+              //       await RegistrationData.forceAnalyticsUpdate();
+              //       await _loadAnalytics();
+              //       ScaffoldMessenger.of(context).showSnackBar(
+              //         const SnackBar(
+              //           content: Text(
+              //             '✅ Analytics summary updated successfully!',
+              //           ),
+              //           backgroundColor: Colors.green,
+              //           behavior: SnackBarBehavior.floating,
+              //         ),
+              //       );
+              //     } catch (e) {
+              //       ScaffoldMessenger.of(context).showSnackBar(
+              //         SnackBar(
+              //           content: Text('❌ Failed to update analytics: $e'),
+              //           backgroundColor: Colors.redAccent,
+              //           behavior: SnackBarBehavior.floating,
+              //         ),
+              //       );
+              //     }
+              //   },
+              //   child: const Text(
+              //     'Force Update Analytics',
+              //     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              //   ),
+              // ),
             ],
           ),
         ),

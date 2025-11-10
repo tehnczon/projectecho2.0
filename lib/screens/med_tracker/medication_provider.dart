@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:projecho/screens/home/notification/notification_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import './persistence_helper.dart';
 
 class MedicationProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -20,6 +22,168 @@ class MedicationProvider extends ChangeNotifier {
   int consecutiveMissedDays = 0;
   List<DateTime> takenDates = [];
   DateTime? inventoryRunsOutDate;
+
+  /// Check if device is online
+  Future<bool> _isOnline() async {
+    try {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      return connectivityResult != ConnectivityResult.none;
+    } catch (e) {
+      print('❌ Error checking connectivity: $e');
+      return false;
+    }
+  }
+
+  /// Enhanced logMedicationTaken with offline support
+  Future<bool> logMedicationTaken() async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+
+      if (!isSetupComplete) {
+        print('⚠️ Cannot log medication - setup not complete');
+        return false;
+      }
+
+      if (currentInventory <= 0) {
+        print('⚠️ No pills in inventory');
+        return false;
+      }
+
+      final now = DateTime.now();
+      final today = DateTime(now.year, now.month, now.day);
+
+      if (wasTakenOnDate(today)) {
+        print('⚠️ Medication already logged for today');
+        return false;
+      }
+
+      final newInventory = currentInventory - 1;
+
+      // ✅ Check if online
+      final isOnline = await _isOnline();
+
+      if (isOnline) {
+        // 🌐 ONLINE: Sync to Firestore immediately
+        await _firestore
+            .collection('medicalTracker')
+            .doc(user.uid)
+            .collection('intakeLogs')
+            .add({
+              'timestamp': FieldValue.serverTimestamp(),
+              'inventoryBefore': currentInventory,
+              'inventoryAfter': newInventory,
+              'generatedUIC': generatedUIC,
+              'treatmentHub': treatmentHub,
+            });
+
+        await _firestore.collection('medicalTracker').doc(user.uid).update({
+          'currentInventory': newInventory,
+          'lastTakenDate': FieldValue.serverTimestamp(),
+          'consecutiveMissedDays': 0,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+
+        print('✅ Synced to Firestore');
+      } else {
+        // 📴 OFFLINE: Save locally
+        await OfflinePersistenceHelper.savePendingLog(
+          uid: user.uid,
+          takenDate: now,
+          inventoryBefore: currentInventory,
+          inventoryAfter: newInventory,
+        );
+
+        print('📴 Saved offline - will sync when online');
+      }
+
+      // ✅ Update local state (works offline)
+      currentInventory = newInventory;
+      lastTakenDate = now;
+      consecutiveMissedDays = 0;
+      takenDates.insert(0, now);
+
+      _calculateInventoryRunsOut();
+
+      // Check if below threshold (notification works offline)
+      if (newInventory <= threshold) {
+        if (isOnline) {
+          await _sendLowInventoryAlert();
+        }
+
+        // ✅ Show local notification (works offline)
+        final notificationService = NotificationService();
+        await notificationService.showLowInventoryNotification(
+          newInventory,
+          threshold,
+        );
+      }
+
+      // Check for LTF status (only if online)
+      if (isOnline) {
+        await NotificationService.checkLostToFollowUp();
+      }
+
+      notifyListeners();
+      print('✅ Medication logged successfully');
+      return true;
+    } catch (e) {
+      print('❌ Error logging medication intake: $e');
+      return false;
+    }
+  }
+
+  /// Sync pending logs when back online
+  Future<void> syncPendingLogs() async {
+    try {
+      final isOnline = await _isOnline();
+      if (!isOnline) {
+        print('📴 Still offline, cannot sync');
+        return;
+      }
+
+      final pendingLogs = await OfflinePersistenceHelper.getPendingLogs();
+      if (pendingLogs.isEmpty) {
+        print('✅ No pending logs to sync');
+        return;
+      }
+
+      print('🔄 Syncing ${pendingLogs.length} pending logs...');
+
+      final user = _auth.currentUser;
+      if (user == null) return;
+
+      for (var log in pendingLogs) {
+        try {
+          // Add to Firestore
+          await _firestore
+              .collection('medicalTracker')
+              .doc(user.uid)
+              .collection('intakeLogs')
+              .add({
+                'timestamp': Timestamp.fromDate(
+                  DateTime.parse(log['takenDate']),
+                ),
+                'inventoryBefore': log['inventoryBefore'],
+                'inventoryAfter': log['inventoryAfter'],
+                'generatedUIC': generatedUIC,
+                'treatmentHub': treatmentHub,
+                'syncedAt': FieldValue.serverTimestamp(),
+              });
+
+          print('✅ Synced log from ${log['takenDate']}');
+        } catch (e) {
+          print('❌ Error syncing log: $e');
+        }
+      }
+
+      // Clear pending logs after successful sync
+      await OfflinePersistenceHelper.clearPendingLogs();
+      print('✅ All pending logs synced!');
+    } catch (e) {
+      print('❌ Error syncing pending logs: $e');
+    }
+  }
 
   // Check if user has completed initial setup
   Future<bool> checkSetupStatus() async {
@@ -309,80 +473,80 @@ class MedicationProvider extends ChangeNotifier {
   // Log medication taken
 
   // Update the logMedicationTaken method:
-  Future<bool> logMedicationTaken() async {
-    try {
-      final user = _auth.currentUser;
-      if (user == null) return false;
+  // Future<bool> logMedicationTaken() async {
+  //   try {
+  //     final user = _auth.currentUser;
+  //     if (user == null) return false;
 
-      if (!isSetupComplete) {
-        print('⚠️ Cannot log medication - setup not complete');
-        return false;
-      }
+  //     if (!isSetupComplete) {
+  //       print('⚠️ Cannot log medication - setup not complete');
+  //       return false;
+  //     }
 
-      if (currentInventory <= 0) {
-        print('⚠️ No pills in inventory');
-        return false;
-      }
+  //     if (currentInventory <= 0) {
+  //       print('⚠️ No pills in inventory');
+  //       return false;
+  //     }
 
-      final now = DateTime.now();
-      final today = DateTime(now.year, now.month, now.day);
+  //     final now = DateTime.now();
+  //     final today = DateTime(now.year, now.month, now.day);
 
-      if (wasTakenOnDate(today)) {
-        print('⚠️ Medication already logged for today');
-        return false;
-      }
+  //     if (wasTakenOnDate(today)) {
+  //       print('⚠️ Medication already logged for today');
+  //       return false;
+  //     }
 
-      final newInventory = currentInventory - 1;
+  //     final newInventory = currentInventory - 1;
 
-      await _firestore
-          .collection('medicalTracker')
-          .doc(user.uid)
-          .collection('intakeLogs')
-          .add({
-            'timestamp': FieldValue.serverTimestamp(),
-            'inventoryBefore': currentInventory,
-            'inventoryAfter': newInventory,
-            'generatedUIC': generatedUIC,
-            'treatmentHub': treatmentHub,
-          });
+  //     await _firestore
+  //         .collection('medicalTracker')
+  //         .doc(user.uid)
+  //         .collection('intakeLogs')
+  //         .add({
+  //           'timestamp': FieldValue.serverTimestamp(),
+  //           'inventoryBefore': currentInventory,
+  //           'inventoryAfter': newInventory,
+  //           'generatedUIC': generatedUIC,
+  //           'treatmentHub': treatmentHub,
+  //         });
 
-      await _firestore.collection('medicalTracker').doc(user.uid).update({
-        'currentInventory': newInventory,
-        'lastTakenDate': FieldValue.serverTimestamp(),
-        'consecutiveMissedDays': 0,
-        'lastUpdated': FieldValue.serverTimestamp(),
-      });
+  //     await _firestore.collection('medicalTracker').doc(user.uid).update({
+  //       'currentInventory': newInventory,
+  //       'lastTakenDate': FieldValue.serverTimestamp(),
+  //       'consecutiveMissedDays': 0,
+  //       'lastUpdated': FieldValue.serverTimestamp(),
+  //     });
 
-      currentInventory = newInventory;
-      lastTakenDate = now;
-      consecutiveMissedDays = 0;
-      takenDates.insert(0, now);
+  //     currentInventory = newInventory;
+  //     lastTakenDate = now;
+  //     consecutiveMissedDays = 0;
+  //     takenDates.insert(0, now);
 
-      _calculateInventoryRunsOut();
+  //     _calculateInventoryRunsOut();
 
-      // Check if below threshold and send alert + notification
-      if (newInventory <= threshold) {
-        await _sendLowInventoryAlert();
+  //     // Check if below threshold and send alert + notification
+  //     if (newInventory <= threshold) {
+  //       await _sendLowInventoryAlert();
 
-        // Show local notification
-        final notificationService = NotificationService();
-        await notificationService.showLowInventoryNotification(
-          newInventory,
-          threshold,
-        );
-      }
+  //       // Show local notification
+  //       final notificationService = NotificationService();
+  //       await notificationService.showLowInventoryNotification(
+  //         newInventory,
+  //         threshold,
+  //       );
+  //     }
 
-      // Check for LTF status
-      await NotificationService.checkLostToFollowUp();
+  //     // Check for LTF status
+  //     await NotificationService.checkLostToFollowUp();
 
-      notifyListeners();
-      print('✅ Medication logged successfully');
-      return true;
-    } catch (e) {
-      print('Error logging medication intake: $e');
-      return false;
-    }
-  }
+  //     notifyListeners();
+  //     print('✅ Medication logged successfully');
+  //     return true;
+  //   } catch (e) {
+  //     print('Error logging medication intake: $e');
+  //     return false;
+  //   }
+  // }
 
   // Update the checkMissedDoses method:
   Future<void> checkMissedDoses() async {

@@ -151,7 +151,7 @@ class FormSubmissionHandler {
       _showLoadingDialog(context);
 
       // Step 1: Save analytics data (non-PII)
-      print('📊 Saving analytics data...');
+      print('ðŸ“Š Saving analytics data...');
       bool analyticsSuccess = await regData.saveToAnalyticData();
 
       if (!analyticsSuccess) {
@@ -159,7 +159,7 @@ class FormSubmissionHandler {
       }
 
       // Step 3: Save user profile
-      print('👤 Saving user profile...');
+      print('ðŸ‘¤ Saving user profile...');
       bool userSuccess = await regData.saveToUser();
 
       if (!userSuccess) {
@@ -167,7 +167,7 @@ class FormSubmissionHandler {
       }
 
       // Step 4: Save to profiles collection
-      print('📝 Saving profile details...');
+      print('ðŸ“ Saving profile details...');
       bool profileSuccess = await regData.saveToProfiles();
 
       if (!profileSuccess) {
@@ -175,13 +175,13 @@ class FormSubmissionHandler {
       }
 
       // Step 5: Save demographics (optional)
-      print('📍 Saving demographics...');
+      print('ðŸ“ Saving demographics...');
       await regData.saveToUserDemographic();
 
-      print('✅ All data saved successfully!');
+      print('âœ… All data saved successfully!');
       return true;
     } catch (e) {
-      print('❌ Error during form submission: $e');
+      print('âŒ Error during form submission: $e');
       return false;
     }
   }

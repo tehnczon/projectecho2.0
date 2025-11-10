@@ -18,10 +18,19 @@ class _SetupRoutineScreenState extends State<SetupRoutineScreen> {
   int threshold = 0;
   bool showError = false;
   bool isSaving = false;
+  int tempValue = 0;
+  int amountValue = 0;
+  int thresholdValue = 0;
+
+  final TextEditingController _amountController = TextEditingController();
+  final TextEditingController _thresholdController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _amountController.text = amountValue.toString();
+    _thresholdController.text = thresholdValue.toString();
+
     // Load provider data
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final medProvider = Provider.of<MedicationProvider>(
@@ -33,6 +42,8 @@ class _SetupRoutineScreenState extends State<SetupRoutineScreen> {
   }
 
   void _showAmountPicker(BuildContext context, bool isThreshold) {
+    // Use separate controllers and values
+    final controller = isThreshold ? _thresholdController : _amountController;
     int tempValue = isThreshold ? threshold : currentInventory;
 
     showDialog(
@@ -65,6 +76,7 @@ class _SetupRoutineScreenState extends State<SetupRoutineScreen> {
                             if (tempValue > 0) {
                               setDialogState(() {
                                 tempValue--;
+                                controller.text = tempValue.toString();
                               });
                             }
                           },
@@ -86,14 +98,24 @@ class _SetupRoutineScreenState extends State<SetupRoutineScreen> {
                             color: Colors.grey.shade300,
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Center(
-                            child: Text(
-                              '$tempValue',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
+                          child: TextField(
+                            controller: controller,
+                            keyboardType: TextInputType.number,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
+                            decoration: const InputDecoration(
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                            onChanged: (value) {
+                              final newValue = int.tryParse(value) ?? tempValue;
+                              setDialogState(() {
+                                tempValue = newValue;
+                              });
+                            },
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -101,6 +123,7 @@ class _SetupRoutineScreenState extends State<SetupRoutineScreen> {
                           onPressed: () {
                             setDialogState(() {
                               tempValue++;
+                              controller.text = tempValue.toString();
                             });
                           },
                           icon: Container(
